@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../core/widgets/responsive_container.dart';
@@ -27,6 +28,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = ref.watch(languageProvider);
     final authState = ref.watch(authProvider);
     final user = authState.userProfile;
     final mandalState = ref.watch(mandalProvider);
@@ -36,7 +38,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final configState = ref.watch(varganiConfigProvider);
     final activeMandal = mandalState.selectedMandal;
 
-    final userName = user?.fullName.split(' ').first ?? 'मित्र';
+    final userName = user?.fullName.split(' ').first ?? (lang.isMarathi ? 'मित्र' : 'Friend');
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -60,47 +62,47 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // 1. TOP HEADER WITH GREETING & MANDAL SWITCHER
-                  _buildHeader(context, userName, activeMandal, user),
+                  _buildHeader(context, userName, activeMandal, user, lang),
                   const SizedBox(height: 16),
 
                   // 2. SUPER ADMIN OR PENDING NOTICES
                   if (user?.isSuperAdmin == true) ...[
-                    _buildSuperAdminNotice(context),
+                    _buildSuperAdminNotice(context, lang),
                     const SizedBox(height: 12),
                   ],
                   if (summary.pendingDepositRequestsCount > 0) ...[
-                    _buildPendingApprovalBanner(context, summary.pendingDepositRequestsCount),
+                    _buildPendingApprovalBanner(context, summary.pendingDepositRequestsCount, lang),
                     const SizedBox(height: 12),
                   ],
 
                   // 3. HERO BALANCE CARD (FINANCIAL FORMULA: Confirmed Deposits - Approved Expenses)
-                  _buildHeroBalanceCard(context, summary),
+                  _buildHeroBalanceCard(context, summary, lang),
                   const SizedBox(height: 14),
 
                   // 4. FINANCIAL SUMMARY CARDS GRID (4 METRICS)
-                  _buildFinancialMetricsGrid(summary),
+                  _buildFinancialMetricsGrid(summary, lang),
                   const SizedBox(height: 16),
 
                   // 5. COLLECTION VS EXPENSE PROGRESS & BREAKDOWN
-                  _buildFinancialProgressCard(summary),
+                  _buildFinancialProgressCard(summary, lang),
                   const SizedBox(height: 16),
 
                   // 6. QUICK ACTIONS GRID
-                  _buildQuickActions(context),
+                  _buildQuickActions(context, lang),
                   const SizedBox(height: 16),
 
                   // 7. MANDAL INVITE CODE STRIP
                   if (activeMandal != null) ...[
-                    _buildInviteCodeStrip(context, activeMandal),
+                    _buildInviteCodeStrip(context, activeMandal, lang),
                     const SizedBox(height: 16),
                   ],
 
                   // 8. MANDAL RATE SUMMARY STRIP
-                  _buildVarganiRateStrip(context, configState),
+                  _buildVarganiRateStrip(context, configState, lang),
                   const SizedBox(height: 20),
 
                   // 9. RECENT TRANSACTIONS (COLLECTIONS & EXPENSES)
-                  _buildRecentTransactionsSection(context, collectionState, expenseState),
+                  _buildRecentTransactionsSection(context, collectionState, expenseState, lang),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -111,7 +113,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, String userName, dynamic activeMandal, dynamic user) {
+  Widget _buildHeader(BuildContext context, String userName, dynamic activeMandal, dynamic user, AppLanguage lang) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -121,7 +123,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'नमस्ते, $userName 👋',
+                lang.tr('नमस्ते, $userName 👋', 'Hello, $userName 👋'),
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
@@ -146,7 +148,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       const SizedBox(width: 5),
                       Flexible(
                         child: Text(
-                          activeMandal?.name ?? 'मंडळ निवडा',
+                          activeMandal?.name ?? lang.tr('मंडळ निवडा', 'Select Mandal'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -171,12 +173,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           children: [
             IconButton(
               icon: const Icon(Icons.support_agent_rounded, color: AppColors.primaryPurple),
-              tooltip: 'मदत व समस्या नोंदवा',
+              tooltip: lang.tr('मदत व समस्या नोंदवा', 'Support & Help'),
               onPressed: () => context.push('/report-issue'),
             ),
             IconButton(
               icon: const Icon(Icons.tune_rounded, color: AppColors.textSecondary),
-              tooltip: 'वर्गणी दर',
+              tooltip: lang.tr('वर्गणी दर', 'Vargani Rate'),
               onPressed: () => context.push('/vargani-config'),
             ),
             const SizedBox(width: 4),
@@ -205,7 +207,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildSuperAdminNotice(BuildContext context) {
+  Widget _buildSuperAdminNotice(BuildContext context, AppLanguage lang) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -217,10 +219,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         children: [
           const Icon(Icons.shield_rounded, color: AppColors.error, size: 22),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Text(
-              'सुपर ॲडमिन पॅनेल: मंडळांचे मेसेज व समस्या तपासा.',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.error),
+              lang.tr('सुपर ॲडमिन पॅनेल: मंडळांचे मेसेज व समस्या तपासा.', 'Super Admin: View mandal tickets & messages.'),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.error),
             ),
           ),
           TextButton(
@@ -230,14 +232,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            child: const Text('मेसेज उघडा', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.error)),
+            child: Text(lang.tr('मेसेज उघडा', 'Open Messages'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.error)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPendingApprovalBanner(BuildContext context, int count) {
+  Widget _buildPendingApprovalBanner(BuildContext context, int count, AppLanguage lang) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
@@ -251,7 +253,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              '$count नवीन ठेव विनंत्या मंजुरीसाठी प्रलंबित आहेत.',
+              lang.tr('$count नवीन ठेव विनंत्या मंजुरीसाठी प्रलंबित आहेत.', '$count deposit requests pending approval.'),
               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF92400E)),
             ),
           ),
@@ -265,14 +267,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               elevation: 0,
             ),
-            child: const Text('तपासा', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            child: Text(lang.tr('तपासा', 'Review'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHeroBalanceCard(BuildContext context, dynamic summary) {
+  Widget _buildHeroBalanceCard(BuildContext context, dynamic summary, AppLanguage lang) {
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
@@ -287,12 +289,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             children: [
               const Icon(Icons.account_balance_wallet_rounded, color: Colors.white70, size: 18),
               const SizedBox(width: 6),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'उपलब्ध शिल्लक (Balance)',
+                  lang.tr('उपलब्ध शिल्लक', 'Available Balance'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
                 ),
               ),
               const SizedBox(width: 8),
@@ -302,14 +304,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   color: Colors.white.withOpacity(0.18),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.fiber_manual_record, size: 8, color: Color(0xFF4ADE80)),
-                    SizedBox(width: 4),
+                    const Icon(Icons.fiber_manual_record, size: 8, color: Color(0xFF4ADE80)),
+                    const SizedBox(width: 4),
                     Text(
-                      'लाईव्ह हिशोब',
-                      style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                      lang.tr('लाईव्ह हिशोब', 'Live Account'),
+                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -331,9 +333,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           const SizedBox(height: 14),
           Row(
             children: [
-              Expanded(child: _buildSubStat('खजिनदाराकडे', AppFormatters.formatCurrency(summary.totalDeposited))),
-              Expanded(child: _buildSubStat('मंजूर खर्च', AppFormatters.formatCurrency(summary.totalApprovedExpenses))),
-              Expanded(child: _buildSubStat('संकलक बाकी', AppFormatters.formatCurrency(summary.awaitingDeposit), isWarning: summary.awaitingDeposit > 0)),
+              Expanded(child: _buildSubStat(lang.tr('खजिनदाराकडे', 'In Treasury'), AppFormatters.formatCurrency(summary.totalDeposited))),
+              Expanded(child: _buildSubStat(lang.tr('मंजूर खर्च', 'Approved Exp.'), AppFormatters.formatCurrency(summary.totalApprovedExpenses))),
+              Expanded(child: _buildSubStat(lang.tr('संकलक बाकी', 'With Collectors'), AppFormatters.formatCurrency(summary.awaitingDeposit), isWarning: summary.awaitingDeposit > 0)),
             ],
           ),
         ],
@@ -362,7 +364,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildFinancialMetricsGrid(dynamic summary) {
+  Widget _buildFinancialMetricsGrid(dynamic summary, AppLanguage lang) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 500;
@@ -375,33 +377,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           physics: const NeverScrollableScrollPhysics(),
           children: [
             _buildMetricTile(
-              title: 'एकूण वर्गणी जमा',
+              title: lang.tr('एकूण वर्गणी जमा', 'Total Collected'),
               amount: AppFormatters.formatCurrency(summary.totalCollected),
-              subtitle: 'एकूण अपेक्षित: ${AppFormatters.formatCurrency(summary.totalExpectedVargani)}',
+              subtitle: '${lang.tr("एकूण अपेक्षित:", "Expected:")} ${AppFormatters.formatCurrency(summary.totalExpectedVargani)}',
               icon: Icons.payments_rounded,
               color: AppColors.royalBlue,
               bgLight: AppColors.infoLight,
             ),
             _buildMetricTile(
-              title: 'एकूण खर्च',
+              title: lang.tr('एकूण खर्च', 'Total Expenses'),
               amount: AppFormatters.formatCurrency(summary.totalApprovedExpenses),
-              subtitle: 'प्रलंबित: ${AppFormatters.formatCurrency(summary.totalPendingExpenses)}',
+              subtitle: '${lang.tr("प्रलंबित:", "Pending:")} ${AppFormatters.formatCurrency(summary.totalPendingExpenses)}',
               icon: Icons.money_off_rounded,
               color: AppColors.error,
               bgLight: AppColors.errorLight,
             ),
             _buildMetricTile(
-              title: 'बाकी वर्गणी',
+              title: lang.tr('बाकी वर्गणी', 'Pending Vargani'),
               amount: AppFormatters.formatCurrency(summary.totalPendingVargani),
-              subtitle: '${summary.totalFamilies} नोंदणीकृत कुटुंबे',
+              subtitle: '${summary.totalFamilies} ${lang.tr("नोंदणीकृत कुटुंबे", "families")}',
               icon: Icons.hourglass_top_rounded,
               color: AppColors.accentOrange,
               bgLight: AppColors.warningLight,
             ),
             _buildMetricTile(
-              title: 'खजिनदाराकडे जमा',
+              title: lang.tr('खजिनदाराकडे जमा', 'In Treasury'),
               amount: AppFormatters.formatCurrency(summary.totalDeposited),
-              subtitle: 'स्वीकारलेली प्रत्यक्ष ठेव',
+              subtitle: lang.tr('स्वीकारलेली प्रत्यक्ष ठेव', 'Verified deposits'),
               icon: Icons.verified_rounded,
               color: AppColors.success,
               bgLight: AppColors.successLight,
@@ -474,7 +476,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildFinancialProgressCard(dynamic summary) {
+  Widget _buildFinancialProgressCard(dynamic summary, AppLanguage lang) {
     final expected = summary.totalExpectedVargani > 0 ? summary.totalExpectedVargani : 1.0;
     final collectionRatio = (summary.totalCollected / expected).clamp(0.0, 1.0);
     final percent = (collectionRatio * 100).toInt();
@@ -494,12 +496,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             children: [
               const Icon(Icons.pie_chart_outline_rounded, size: 18, color: AppColors.primaryPurple),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'वर्गणी संकलन प्रगती',
+                  lang.tr('वर्गणी संकलन प्रगती', 'Collection Progress'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary),
                 ),
               ),
               const SizedBox(width: 8),
@@ -510,7 +512,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '$percent% पूर्ण',
+                  '$percent% ${lang.tr("पूर्ण", "Done")}',
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryPurple),
                 ),
               ),
@@ -530,8 +532,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('गोळा: ${AppFormatters.formatCurrency(summary.totalCollected)}', style: const TextStyle(fontSize: 11, color: AppColors.royalBlue, fontWeight: FontWeight.w600)),
-              Text('बाकी: ${AppFormatters.formatCurrency(summary.totalPendingVargani)}', style: const TextStyle(fontSize: 11, color: AppColors.accentOrange, fontWeight: FontWeight.w600)),
+              Text('${lang.tr("गोळा:", "Collected:")} ${AppFormatters.formatCurrency(summary.totalCollected)}', style: const TextStyle(fontSize: 11, color: AppColors.royalBlue, fontWeight: FontWeight.w600)),
+              Text('${lang.tr("बाकी:", "Pending:")} ${AppFormatters.formatCurrency(summary.totalPendingVargani)}', style: const TextStyle(fontSize: 11, color: AppColors.accentOrange, fontWeight: FontWeight.w600)),
             ],
           ),
         ],
@@ -539,7 +541,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildQuickActions(BuildContext context) {
+  Widget _buildQuickActions(BuildContext context, AppLanguage lang) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -560,24 +562,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
             icon: const Icon(Icons.flash_on_rounded, size: 24, color: AppColors.accentOrange),
-            label: const FittedBox(
+            label: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                'थेट वर्गणी जमा करा (फास्ट पावती)',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                lang.tr('थेट वर्गणी जमा करा (फास्ट पावती)', 'Record Vargani (Instant Receipt)'),
+                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
               ),
             ),
           ),
         ),
         const SizedBox(height: 14),
 
-        const Row(
+        Row(
           children: [
-            Icon(Icons.dashboard_customize_rounded, size: 18, color: AppColors.primaryPurple),
-            SizedBox(width: 8),
+            const Icon(Icons.dashboard_customize_rounded, size: 18, color: AppColors.primaryPurple),
+            const SizedBox(width: 8),
             Text(
-              'जलद सेवा (Quick Actions)',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+              lang.tr('जलद सेवा', 'Quick Actions'),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
             ),
           ],
         ),
@@ -595,31 +597,31 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               children: [
                 _buildQuickActionItem(
                   icon: Icons.person_add_alt_1_rounded,
-                  label: 'कुटुंब जोडा',
+                  label: lang.tr('कुटुंब जोडा', 'Add Family'),
                   color: AppColors.primaryPurple,
                   onTap: () => context.push('/add-family'),
                 ),
                 _buildQuickActionItem(
                   icon: Icons.receipt_long_rounded,
-                  label: 'वर्गणी नोंद',
+                  label: lang.tr('वर्गणी नोंद', 'Add Vargani'),
                   color: AppColors.royalBlue,
                   onTap: () => context.push('/add-collection'),
                 ),
                 _buildQuickActionItem(
                   icon: Icons.money_off_rounded,
-                  label: 'खर्च नोंदवा',
+                  label: lang.tr('खर्च नोंदवा', 'Add Expense'),
                   color: AppColors.error,
                   onTap: () => context.push('/add-expense'),
                 ),
                 _buildQuickActionItem(
                   icon: Icons.account_balance_wallet_rounded,
-                  label: 'ठेव विनंती',
+                  label: lang.tr('ठेव विनंती', 'Deposit Req.'),
                   color: AppColors.accentOrange,
                   onTap: () => context.push('/create-deposit'),
                 ),
                 _buildQuickActionItem(
                   icon: Icons.analytics_rounded,
-                  label: 'अहवाल पहा',
+                  label: lang.tr('अहवाल पहा', 'Reports'),
                   color: AppColors.success,
                   onTap: () => context.push('/reports'),
                 ),
@@ -673,7 +675,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildInviteCodeStrip(BuildContext context, dynamic activeMandal) {
+  Widget _buildInviteCodeStrip(BuildContext context, dynamic activeMandal, AppLanguage lang) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -697,7 +699,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('मंडळ आमंत्रण कोड (Invite Code):', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                Text(lang.tr('मंडळ आमंत्रण कोड:', 'Mandal Invite Code:'), style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                 Text(
                   activeMandal.invitationCode,
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, letterSpacing: 1.5, color: AppColors.primaryPurple),
@@ -708,7 +710,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ElevatedButton.icon(
             onPressed: () {
               Share.share(
-                '🚩 *${activeMandal.name}* 🚩\nमंडळात सहभागी होण्यासाठी आमंत्रण कोड: *${activeMandal.invitationCode}*\n\nVargani Collection ॲप डाउनलोड करा.',
+                '🚩 *${activeMandal.name}* 🚩\n${lang.tr("मंडळात सहभागी होण्यासाठी आमंत्रण कोड:", "Invite code to join mandal:")} *${activeMandal.invitationCode}*\n\nVargani Collection App.',
               );
             },
             style: ElevatedButton.styleFrom(
@@ -727,7 +729,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildVarganiRateStrip(BuildContext context, dynamic configState) {
+  Widget _buildVarganiRateStrip(BuildContext context, dynamic configState, AppLanguage lang) {
     return InkWell(
       onTap: () => context.push('/vargani-config'),
       borderRadius: BorderRadius.circular(14),
@@ -745,14 +747,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             Expanded(
               child: Text(
                 configState.activeConfig != null
-                    ? 'मंडळाचा दर: ${configState.activeConfig!.calculationType == "per_member" ? "${AppFormatters.formatCurrency(configState.activeConfig!.perMemberAmount)} प्रति सदस्य" : "${AppFormatters.formatCurrency(configState.activeConfig!.fixedAmount)} प्रति कुटुंब"}'
-                    : 'मंडळाचे वर्गणी दर निश्चित करा (Set Vargani Rate)',
+                    ? '${lang.tr("मंडळाचा दर:", "Mandal Rate:")} ${configState.activeConfig!.calculationType == "per_member" ? "${AppFormatters.formatCurrency(configState.activeConfig!.perMemberAmount)} ${lang.tr('प्रति सदस्य', 'per member')}" : "${AppFormatters.formatCurrency(configState.activeConfig!.fixedAmount)} ${lang.tr('प्रति कुटुंब', 'per family')}"}'
+                    : lang.tr('मंडळाचे वर्गणी दर निश्चित करा', 'Set Mandal Vargani Rate'),
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryPurple),
               ),
             ),
-            const Text(
-              'बदला ⚙️',
-              style: TextStyle(color: AppColors.primaryPurple, fontSize: 12, fontWeight: FontWeight.bold),
+            Text(
+              lang.tr('बदला ⚙️', 'Edit ⚙️'),
+              style: const TextStyle(color: AppColors.primaryPurple, fontSize: 12, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -760,19 +762,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildRecentTransactionsSection(BuildContext context, dynamic collectionState, dynamic expenseState) {
+  Widget _buildRecentTransactionsSection(BuildContext context, dynamic collectionState, dynamic expenseState, AppLanguage lang) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Expanded(
+            Expanded(
               child: Text(
-                'अलीकडील व्यवहार',
+                lang.tr('अलीकडील व्यवहार', 'Recent Transactions'),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
               ),
             ),
             TextButton(
@@ -782,12 +784,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('सर्व पहा', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryPurple)),
-                  SizedBox(width: 3),
-                  Icon(Icons.arrow_forward_ios_rounded, size: 11, color: AppColors.primaryPurple),
+                  Text(lang.tr('सर्व पहा', 'View All'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryPurple)),
+                  const SizedBox(width: 3),
+                  const Icon(Icons.arrow_forward_ios_rounded, size: 11, color: AppColors.primaryPurple),
                 ],
               ),
             ),
@@ -798,21 +800,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         // Tab Switcher (वर्गणी संकलन vs खर्च)
         Row(
           children: [
-            _buildTabChip('वर्गणी संकलन (Collections)', 0),
+            _buildTabChip(lang.tr('वर्गणी संकलन', 'Collections'), 0),
             const SizedBox(width: 8),
-            _buildTabChip('खर्च (Expenses)', 1),
+            _buildTabChip(lang.tr('खर्च', 'Expenses'), 1),
           ],
         ),
         const SizedBox(height: 12),
 
         if (_transactionTab == 0) ...[
           if (collectionState.collections.isEmpty)
-            _buildEmptyState('अद्याप कोणतीही वर्गणी नोंदवलेली नाही.')
+            _buildEmptyState(lang.tr('अद्याप कोणतीही वर्गणी नोंदवलेली नाही.', 'No collections recorded yet.'))
           else
             ...collectionState.collections.take(5).map((c) => _buildCollectionItem(context, c)),
         ] else ...[
           if (expenseState.expenses.isEmpty)
-            _buildEmptyState('अद्याप कोणताही खर्च नोंदवलेला नाही.')
+            _buildEmptyState(lang.tr('अद्याप कोणताही खर्च नोंदवलेला नाही.', 'No expenses recorded yet.'))
           else
             ...expenseState.expenses.take(5).map((e) => _buildExpenseItem(e)),
         ],

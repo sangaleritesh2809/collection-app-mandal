@@ -19,11 +19,11 @@ class FamiliesListScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('कुटुंबे यादी (Families)'),
+        title: Text(lang.tr('कुटुंबे यादी', 'Families')),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'रिफ्रेश करा',
+            tooltip: lang.tr('रिफ्रेश करा', 'Refresh'),
             onPressed: () => ref.read(familyProvider.notifier).loadFamilies(),
           ),
         ],
@@ -35,7 +35,7 @@ class FamiliesListScreen extends ConsumerWidget {
         foregroundColor: Colors.white,
         elevation: 4,
         icon: const Icon(Icons.person_add_rounded),
-        label: const Text('नवीन कुटुंब जोडा', style: TextStyle(fontWeight: FontWeight.bold)),
+        label: Text(lang.tr('नवीन कुटुंब जोडा', 'Add Family'), style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: SafeArea(
         child: ResponsiveContainer(
@@ -49,7 +49,7 @@ class FamiliesListScreen extends ConsumerWidget {
                 child: TextField(
                   onChanged: (val) => ref.read(familyProvider.notifier).setSearchQuery(val),
                   decoration: InputDecoration(
-                    hintText: 'कुटुंब प्रमुख किंवा कुटुंबाचे नाव शोधा...',
+                    hintText: lang.tr('कुटुंब प्रमुख किंवा कुटुंबाचे नाव शोधा...', 'Search family head or surname...'),
                     prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primaryPurple),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     suffixIcon: familyState.searchQuery.isNotEmpty
@@ -68,13 +68,13 @@ class FamiliesListScreen extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: Row(
                   children: [
-                    _filterChip(ref, 'सर्व (${familyState.families.length})', 'all', familyState.filterType),
+                    _filterChip(ref, '${lang.tr('सर्व', 'All')} (${familyState.families.length})', 'all', familyState.filterType),
                     const SizedBox(width: 8),
-                    _filterChip(ref, 'बाकी असलेले (Unpaid)', 'unpaid', familyState.filterType, color: AppColors.error),
+                    _filterChip(ref, lang.tr('बाकी असलेले', 'Unpaid'), 'unpaid', familyState.filterType, color: AppColors.error),
                     const SizedBox(width: 8),
-                    _filterChip(ref, 'अंशतः भरलेले (Partial)', 'partially_paid', familyState.filterType, color: AppColors.warning),
+                    _filterChip(ref, lang.tr('अंशतः भरलेले', 'Partially Paid'), 'partially_paid', familyState.filterType, color: AppColors.warning),
                     const SizedBox(width: 8),
-                    _filterChip(ref, 'पूर्ण भरलेले (Paid)', 'fully_paid', familyState.filterType, color: AppColors.success),
+                    _filterChip(ref, lang.tr('पूर्ण भरलेले', 'Fully Paid'), 'fully_paid', familyState.filterType, color: AppColors.success),
                   ],
                 ),
               ),
@@ -154,13 +154,13 @@ class FamiliesListScreen extends ConsumerWidget {
                                                     ),
                                                     const SizedBox(height: 2),
                                                     Text(
-                                                      'प्रमुख: ${family.familyHeadName}',
+                                                      '${lang.tr("प्रमुख:", "Head:")} ${family.familyHeadName}',
                                                       style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                                                     ),
                                                   ],
                                                 ),
                                               ),
-                                              _buildStatusBadge(family),
+                                              _buildStatusBadge(family, lang),
                                             ],
                                           ),
                                           const SizedBox(height: 12),
@@ -168,7 +168,7 @@ class FamiliesListScreen extends ConsumerWidget {
                                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                             children: [
                                               Text(
-                                                '👥 सदस्य: ${family.totalMembers} व्यक्ती',
+                                                '👥 ${lang.tr("सदस्य:", "Members:")} ${family.totalMembers} ${lang.tr("व्यक्ती", "persons")}',
                                                 style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                                               ),
                                               if (family.mobileNumber != null && family.mobileNumber!.isNotEmpty)
@@ -182,9 +182,9 @@ class FamiliesListScreen extends ConsumerWidget {
                                           Row(
                                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                             children: [
-                                              _statColumn('ठरलेली वर्गणी', AppFormatters.formatCurrency(family.totalVargani)),
-                                              _statColumn('जमा रक्कम', AppFormatters.formatCurrency(family.paidAmount), color: AppColors.success),
-                                              _statColumn('बाकी रक्कम', AppFormatters.formatCurrency(family.pendingAmount), color: family.pendingAmount > 0 ? AppColors.error : AppColors.success),
+                                              _statColumn(lang.tr('ठरलेली वर्गणी', 'Total Vargani'), AppFormatters.formatCurrency(family.totalVargani)),
+                                              _statColumn(lang.tr('जमा रक्कम', 'Paid Amount'), AppFormatters.formatCurrency(family.paidAmount), color: AppColors.success),
+                                              _statColumn(lang.tr('बाकी रक्कम', 'Balance Due'), AppFormatters.formatCurrency(family.pendingAmount), color: family.pendingAmount > 0 ? AppColors.error : AppColors.success),
                                             ],
                                           ),
                                           if (family.pendingAmount > 0) ...[
@@ -201,7 +201,7 @@ class FamiliesListScreen extends ConsumerWidget {
                                                   elevation: 1,
                                                 ),
                                                 icon: const Icon(Icons.receipt_long_rounded, size: 16),
-                                                label: const Text('वर्गणी जमा करा (पावती बनवा)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                                                label: Text(lang.tr('वर्गणी जमा करा', 'Record Vargani'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                                               ),
                                             ),
                                           ],
@@ -239,7 +239,7 @@ class FamiliesListScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatusBadge(dynamic family) {
+  Widget _buildStatusBadge(dynamic family, AppLanguage lang) {
     Color bg;
     Color text;
     String label;
@@ -247,15 +247,15 @@ class FamiliesListScreen extends ConsumerWidget {
     if (family.isFullyPaid) {
       bg = AppColors.successLight;
       text = AppColors.success;
-      label = 'पूर्ण जमा';
+      label = lang.tr('पूर्ण जमा', 'Fully Paid');
     } else if (family.isPartiallyPaid) {
       bg = AppColors.warningLight;
       text = const Color(0xFFB45309);
-      label = 'अंशतः जमा';
+      label = lang.tr('अंशतः जमा', 'Partially Paid');
     } else {
       bg = AppColors.errorLight;
       text = AppColors.error;
-      label = 'शिल्लक बाकी';
+      label = lang.tr('शिल्लक बाकी', 'Unpaid');
     }
 
     return Container(

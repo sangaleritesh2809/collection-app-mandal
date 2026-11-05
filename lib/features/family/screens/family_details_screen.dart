@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' hide Family;
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/services/share_service.dart';
 import '../../../core/services/pdf_service.dart';
@@ -45,7 +46,7 @@ class _FamilyDetailsScreenState extends ConsumerState<FamilyDetailsScreen> {
     }
   }
 
-  void _showAddMemberDialog(BuildContext context) {
+  void _showAddMemberDialog(BuildContext context, AppLanguage lang) {
     final nameCtrl = TextEditingController();
     final mobileCtrl = TextEditingController();
     final ageCtrl = TextEditingController();
@@ -55,20 +56,26 @@ class _FamilyDetailsScreenState extends ConsumerState<FamilyDetailsScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('नवीन कुटुंब सदस्य जोडा'),
+          title: Text(lang.tr('नवीन कुटुंब सदस्य जोडा', 'Add Family Member')),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
                   controller: nameCtrl,
-                  decoration: const InputDecoration(labelText: 'सदस्याचे नाव *', prefixIcon: Icon(Icons.person)),
+                  decoration: InputDecoration(
+                    labelText: lang.tr('सदस्याचे नाव *', 'Member Name *'),
+                    prefixIcon: const Icon(Icons.person),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: mobileCtrl,
                   keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(labelText: 'मोबाईल नंबर', prefixIcon: Icon(Icons.phone)),
+                  decoration: InputDecoration(
+                    labelText: lang.tr('मोबाईल नंबर', 'Mobile Number'),
+                    prefixIcon: const Icon(Icons.phone),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -77,18 +84,21 @@ class _FamilyDetailsScreenState extends ConsumerState<FamilyDetailsScreen> {
                       child: TextField(
                         controller: ageCtrl,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'वय (Age)', prefixIcon: Icon(Icons.calendar_today)),
+                        decoration: InputDecoration(
+                          labelText: lang.tr('वय', 'Age'),
+                          prefixIcon: const Icon(Icons.calendar_today),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         value: gender,
-                        decoration: const InputDecoration(labelText: 'लिंग'),
-                        items: const [
-                          DropdownMenuItem(value: 'Male', child: Text('पुरुष')),
-                          DropdownMenuItem(value: 'Female', child: Text('स्त्री')),
-                          DropdownMenuItem(value: 'Other', child: Text('इतर')),
+                        decoration: InputDecoration(labelText: lang.tr('लिंग', 'Gender')),
+                        items: [
+                          DropdownMenuItem(value: 'Male', child: Text(lang.tr('पुरुष', 'Male'))),
+                          DropdownMenuItem(value: 'Female', child: Text(lang.tr('स्त्री', 'Female'))),
+                          DropdownMenuItem(value: 'Other', child: Text(lang.tr('इतर', 'Other'))),
                         ],
                         onChanged: (val) => setDialogState(() => gender = val ?? 'Male'),
                       ),
@@ -99,7 +109,7 @@ class _FamilyDetailsScreenState extends ConsumerState<FamilyDetailsScreen> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('रद्द करा')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(lang.tr('रद्द करा', 'Cancel'))),
             ElevatedButton(
               onPressed: () async {
                 if (nameCtrl.text.trim().isEmpty) return;
@@ -113,7 +123,7 @@ class _FamilyDetailsScreenState extends ConsumerState<FamilyDetailsScreen> {
                 );
                 _fetchMembers();
               },
-              child: const Text('जोडा (Add)'),
+              child: Text(lang.tr('जोडा', 'Add')),
             ),
           ],
         ),
@@ -123,6 +133,7 @@ class _FamilyDetailsScreenState extends ConsumerState<FamilyDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = ref.watch(languageProvider);
     final familyState = ref.watch(familyProvider);
     final collectionState = ref.watch(collectionProvider);
     final mandal = ref.watch(mandalProvider).selectedMandal;
@@ -157,10 +168,11 @@ class _FamilyDetailsScreenState extends ConsumerState<FamilyDetailsScreen> {
           child: ElevatedButton.icon(
             onPressed: () => context.push('/add-collection', extra: family),
             icon: const Icon(Icons.add_card),
-            label: const Text('वर्गणी पावती फाडा (Collect Vargani)'),
+            label: Text(lang.tr('वर्गणी पावती फाडा', 'Collect Vargani')),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
-              backgroundColor: AppColors.primary,
+              backgroundColor: AppColors.primaryPurple,
+              foregroundColor: Colors.white,
             ),
           ),
         ),
@@ -181,10 +193,10 @@ class _FamilyDetailsScreenState extends ConsumerState<FamilyDetailsScreen> {
                       children: [
                         CircleAvatar(
                           radius: 28,
-                          backgroundColor: AppColors.primary.withOpacity(0.15),
+                          backgroundColor: AppColors.primaryPurple.withOpacity(0.15),
                           child: Text(
                             family.familyName.isNotEmpty ? family.familyName[0] : 'फ',
-                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary),
+                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primaryPurple),
                           ),
                         ),
                         const SizedBox(width: 14),
@@ -193,8 +205,8 @@ class _FamilyDetailsScreenState extends ConsumerState<FamilyDetailsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(family.familyName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                              Text('प्रमुख: ${family.familyHeadName}', style: const TextStyle(color: AppColors.textSecondaryLight)),
-                              Text('कोड: ${family.familyCode} • घर क्र.: ${family.houseNumber ?? '-'}', style: const TextStyle(fontSize: 12)),
+                              Text('${lang.tr("प्रमुख:", "Head:")} ${family.familyHeadName}', style: const TextStyle(color: AppColors.textSecondary)),
+                              Text('${lang.tr("कोड:", "Code:")} ${family.familyCode} • ${lang.tr("घर क्र.:", "House No.:")} ${family.houseNumber ?? '-'}', style: const TextStyle(fontSize: 12)),
                             ],
                           ),
                         ),
@@ -204,7 +216,7 @@ class _FamilyDetailsScreenState extends ConsumerState<FamilyDetailsScreen> {
                     if (family.mobileNumber != null)
                       Row(
                         children: [
-                          const Icon(Icons.phone, size: 16, color: AppColors.textSecondaryLight),
+                          const Icon(Icons.phone, size: 16, color: AppColors.textSecondary),
                           const SizedBox(width: 6),
                           Text(family.mobileNumber!, style: const TextStyle(fontSize: 13)),
                         ],
@@ -213,7 +225,7 @@ class _FamilyDetailsScreenState extends ConsumerState<FamilyDetailsScreen> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Icons.place, size: 16, color: AppColors.textSecondaryLight),
+                          const Icon(Icons.place, size: 16, color: AppColors.textSecondary),
                           const SizedBox(width: 6),
                           Expanded(child: Text('${family.address!}, ${family.village ?? ''}', style: const TextStyle(fontSize: 13))),
                         ],
@@ -238,7 +250,7 @@ class _FamilyDetailsScreenState extends ConsumerState<FamilyDetailsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('वर्गणी स्थिती (Payment Status)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    Text(lang.tr('वर्गणी स्थिती', 'Payment Status'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                     const SizedBox(height: 12),
                     LinearProgressIndicator(
                       value: progress,
@@ -253,9 +265,9 @@ class _FamilyDetailsScreenState extends ConsumerState<FamilyDetailsScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _summaryCol('एकूण वर्गणी', AppFormatters.formatCurrency(family.totalVargani)),
-                        _summaryCol('जमा झालेली', AppFormatters.formatCurrency(family.paidAmount), color: AppColors.success),
-                        _summaryCol('बाकी रक्कम', AppFormatters.formatCurrency(family.pendingAmount), color: family.pendingAmount > 0 ? AppColors.error : AppColors.success),
+                        _summaryCol(lang.tr('एकूण वर्गणी', 'Total Vargani'), AppFormatters.formatCurrency(family.totalVargani)),
+                        _summaryCol(lang.tr('जमा झालेली', 'Paid Amount'), AppFormatters.formatCurrency(family.paidAmount), color: AppColors.success),
+                        _summaryCol(lang.tr('बाकी रक्कम', 'Balance Due'), AppFormatters.formatCurrency(family.pendingAmount), color: family.pendingAmount > 0 ? AppColors.error : AppColors.success),
                       ],
                     ),
                   ],
@@ -269,13 +281,13 @@ class _FamilyDetailsScreenState extends ConsumerState<FamilyDetailsScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'कुटुंब सदस्य (${_members.length})',
+                  '${lang.tr("कुटुंब सदस्य", "Family Members")} (${_members.length})',
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 TextButton.icon(
-                  onPressed: () => _showAddMemberDialog(context),
+                  onPressed: () => _showAddMemberDialog(context, lang),
                   icon: const Icon(Icons.add, size: 18),
-                  label: const Text('सदस्य जोडा'),
+                  label: Text(lang.tr('सदस्य जोडा', 'Add Member')),
                 ),
               ],
             ),
@@ -284,10 +296,10 @@ class _FamilyDetailsScreenState extends ConsumerState<FamilyDetailsScreen> {
             if (_isLoadingMembers)
               const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()))
             else if (_members.isEmpty)
-              const Card(
+              Card(
                 child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(child: Text('कोणताही सदस्य नोंदवलेला नाही')),
+                  padding: const EdgeInsets.all(16),
+                  child: Center(child: Text(lang.tr('कोणताही सदस्य नोंदवलेला नाही', 'No members recorded yet'))),
                 ),
               )
             else
@@ -300,21 +312,21 @@ class _FamilyDetailsScreenState extends ConsumerState<FamilyDetailsScreen> {
                     ),
                     title: Text(m.memberName, style: const TextStyle(fontWeight: FontWeight.w600)),
                     subtitle: Text(
-                      '${m.gender == 'Female' ? 'स्त्री' : 'पुरुष'}${m.age != null ? ' • वय: ${m.age}' : ''}${m.mobileNumber != null ? ' • ${m.mobileNumber}' : ''}',
+                      '${m.gender == 'Female' ? lang.tr('स्त्री', 'Female') : lang.tr('पुरुष', 'Male')}${m.age != null ? ' • ${lang.tr("वय:", "Age:")} ${m.age}' : ''}${m.mobileNumber != null ? ' • ${m.mobileNumber}' : ''}',
                       style: const TextStyle(fontSize: 12),
                     ),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete_outline, color: Colors.grey),
-                      tooltip: 'दप्तरबंद करा',
+                      tooltip: lang.tr('दप्तरबंद करा', 'Archive'),
                       onPressed: () async {
                         final confirm = await showDialog<bool>(
                           context: context,
                           builder: (ctx) => AlertDialog(
-                            title: const Text('सदस्य हटवायचा आहे का?'),
-                            content: Text('${m.memberName} या सदस्याला सुरक्षितपणे दप्तरबंद करण्यात येईल.'),
+                            title: Text(lang.tr('सदस्य हटवायचा आहे का?', 'Delete member?')),
+                            content: Text(lang.tr('${m.memberName} या सदस्याला सुरक्षितपणे दप्तरबंद करण्यात येईल.', '${m.memberName} will be archived safely.')),
                             actions: [
-                              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('रद्द करा')),
-                              ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('हटवा')),
+                              TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(lang.tr('रद्द करा', 'Cancel'))),
+                              ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: Text(lang.tr('हटवा', 'Delete'))),
                             ],
                           ),
                         );
@@ -333,9 +345,9 @@ class _FamilyDetailsScreenState extends ConsumerState<FamilyDetailsScreen> {
             const SizedBox(height: 20),
 
             // Payment History Section
-            const Text(
-              'वर्गणी पावती इतिहास (Payment Receipts)',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Text(
+              lang.tr('वर्गणी पावती इतिहास', 'Payment Receipts History'),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
 

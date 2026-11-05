@@ -35,7 +35,7 @@ class ExpensesListScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('मंडळ खर्च हिशोब (Expenses)'),
+        title: Text(lang.tr('मंडळ खर्च हिशोब', 'Mandal Expenses')),
         actions: [
           IconButton(
             icon: const Icon(Icons.file_download_outlined),
@@ -110,7 +110,7 @@ class ExpensesListScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('प्रलंबित खर्च (Pending)', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                          Text(lang.tr('प्रलंबित खर्च', 'Pending Expenses'), style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                           const SizedBox(height: 3),
                           Text(
                             AppFormatters.formatCurrency(expenseState.totalPendingExpenses),
@@ -249,7 +249,7 @@ class ExpensesListScreen extends ConsumerWidget {
                                               borderRadius: BorderRadius.circular(6),
                                             ),
                                             child: Text(
-                                              item.isApproved ? 'मंजूर (Approved)' : 'प्रलंबित (Pending)',
+                                              item.isApproved ? lang.tr('मंजूर', 'Approved') : lang.tr('प्रलंबित', 'Pending'),
                                               style: TextStyle(
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.bold,

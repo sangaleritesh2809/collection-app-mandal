@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/form_label.dart';
@@ -73,12 +74,13 @@ class _CreateDepositScreenState extends ConsumerState<CreateDepositScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = ref.watch(languageProvider);
     final depositState = ref.watch(depositProvider);
     final collectionState = ref.watch(collectionProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ठेव विनंती करा (Deposit Request)'),
+        title: Text(lang.tr('ठेव विनंती करा', 'Deposit Request')),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -167,24 +169,24 @@ class _CreateDepositScreenState extends ConsumerState<CreateDepositScreen> {
                     decoration: const InputDecoration(
                       prefixIcon: Icon(Icons.payment),
                     ),
-                    items: const [
-                      DropdownMenuItem(value: 'cash', child: Text('रोख (Cash)')),
-                      DropdownMenuItem(value: 'upi', child: Text('UPI ट्रान्सफर')),
-                      DropdownMenuItem(value: 'bank_transfer', child: Text('बँक खात्यात थेट जमा')),
-                      DropdownMenuItem(value: 'other', child: Text('इतर')),
+                    items: [
+                      DropdownMenuItem(value: 'cash', child: Text(lang.tr('रोख', 'Cash'))),
+                      DropdownMenuItem(value: 'upi', child: Text(lang.tr('UPI ट्रान्सफर', 'UPI Transfer'))),
+                      DropdownMenuItem(value: 'bank_transfer', child: Text(lang.tr('बँक खात्यात थेट जमा', 'Direct Bank Deposit'))),
+                      DropdownMenuItem(value: 'other', child: Text(lang.tr('इतर', 'Other'))),
                     ],
                     onChanged: (val) => setState(() => _paymentMode = val ?? 'cash'),
                   ),
                   const SizedBox(height: 16),
 
                   // Description
-                  const FormLabel('तपशील / वर्णन'),
+                  FormLabel(lang.tr('तपशील / वर्णन', 'Description / Details')),
                   TextFormField(
                     controller: _descController,
                     maxLines: 3,
-                    decoration: const InputDecoration(
-                      hintText: 'उदा. आज शिवाजी चौकातील १० कुटुंबांकडून गोळा केलेली रोख वर्गणी.',
-                      prefixIcon: Icon(Icons.description),
+                    decoration: InputDecoration(
+                      hintText: lang.tr('उदा. आज शिवाजी चौकातील १० कुटुंबांकडून गोळा केलेली रोख वर्गणी.', 'e.g. Cash collected today from 10 families.'),
+                      prefixIcon: const Icon(Icons.description),
                     ),
                   ),
                   const SizedBox(height: 28),
@@ -199,7 +201,7 @@ class _CreateDepositScreenState extends ConsumerState<CreateDepositScreen> {
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                           )
-                        : const Text('ठेव विनंती पाठवा (Submit Request)'),
+                        : Text(lang.tr('ठेव विनंती पाठवा', 'Submit Request')),
                   ),
                 ],
               ),

@@ -22,6 +22,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _obscurePassword = true;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(authProvider.notifier).clearError();
+    });
+  }
+
+  @override
   void dispose() {
     _identifierController.dispose();
     _passwordController.dispose();
@@ -105,11 +113,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: 4),
 
                     // Welcome Text
-                    const Center(
+                    Center(
                       child: Text(
-                        'मंडळ व्यवस्थापनात आपले स्वागत आहे! लॉग इन करा.',
+                        lang.tr('मंडळ व्यवस्थापनात आपले स्वागत आहे! लॉग इन करा.', 'Welcome to Mandal Management! Please Log In.'),
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 13,
                           color: AppColors.textSecondary,
                         ),
@@ -143,15 +151,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                     // Email or Mobile Field
                     FormLabel(
-                      '${AppStrings.tr(BuildContextKey.email, lang)} किंवा ${AppStrings.tr(BuildContextKey.mobile, lang)}',
+                      lang.tr(
+                        '${AppStrings.tr(BuildContextKey.email, lang)} किंवा ${AppStrings.tr(BuildContextKey.mobile, lang)}',
+                        '${AppStrings.tr(BuildContextKey.email, lang)} or ${AppStrings.tr(BuildContextKey.mobile, lang)}',
+                      ),
                       isRequired: true,
                     ),
                     TextFormField(
                       controller: _identifierController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.person_outline_rounded, color: AppColors.primaryPurple),
-                        hintText: 'user@example.com किंवा 9699342811',
+                      onChanged: (_) {
+                        if (ref.read(authProvider).errorMessage != null) {
+                          ref.read(authProvider.notifier).clearError();
+                        }
+                      },
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.primaryPurple),
+                        hintText: lang.tr('user@example.com किंवा 9699342811', 'user@example.com or 9699342811'),
                       ),
                       validator: (val) {
                         if (val == null || val.trim().isEmpty) {
@@ -173,8 +189,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
+                      onChanged: (_) {
+                        if (ref.read(authProvider).errorMessage != null) {
+                          ref.read(authProvider.notifier).clearError();
+                        }
+                      },
                       decoration: InputDecoration(
-                        hintText: 'पासवर्ड टाका',
+                        hintText: lang.tr('पासवर्ड टाका', 'Enter password'),
                         prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primaryPurple),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -192,7 +213,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () => _showForgotPasswordDialog(context),
+                        onPressed: () => _showForgotPasswordDialog(context, lang),
                         style: TextButton.styleFrom(
                           foregroundColor: AppColors.royalBlue,
                           padding: EdgeInsets.zero,
@@ -240,12 +261,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text(
-                          'नवीन खाते तयार करायचे आहे? ',
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                        Text(
+                          lang.tr('नवीन खाते तयार करायचे आहे? ', 'Want to create a new account? '),
+                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                         ),
                         GestureDetector(
-                          onTap: () => context.pushReplacement('/register'),
+                          onTap: () {
+                            ref.read(authProvider.notifier).clearError();
+                            context.pushReplacement('/register');
+                          },
                           child: Text(
                             AppStrings.tr(BuildContextKey.register, lang),
                             style: const TextStyle(
@@ -267,55 +291,326 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  void _showForgotPasswordDialog(BuildContext context) {
-    final emailCtrl = TextEditingController();
+  void _showForgotPasswordDialog(BuildContext context, AppLanguage lang) {
+    final identifierCtrl = TextEditingController();
+    final otpCtrl = TextEditingController();
+    final newPasswordCtrl = TextEditingController();
+    final confirmPasswordCtrl = TextEditingController();
+
+    int step = 0; // 0 = Enter Email/Mobile, 1 = Enter OTP & New Password
+    bool isLoading = false;
+    bool obscureNew = true;
+    String? resolvedEmail;
+    String? dialogError;
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('पासवर्ड रिसेट करा (Reset Password)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'तुमचा नोंदणीकृत ईमेल पत्ता टाका. आम्ही रिसेट लिंक पाठवू.',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 16),
-            const FormLabel('ईमेल पत्ता', isRequired: true),
-            TextField(
-              controller: emailCtrl,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                hintText: 'user@example.com',
-                prefixIcon: Icon(Icons.email_outlined),
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryPurple.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  step == 0 ? Icons.lock_reset_rounded : Icons.mark_email_read_rounded,
+                  color: AppColors.primaryPurple,
+                  size: 22,
+                ),
               ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  step == 0
+                      ? lang.tr('पासवर्ड रिसेट करा', 'Reset Password')
+                      : lang.tr('OTP व नवीन पासवर्ड', 'Enter OTP & New Password'),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (dialogError != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.errorLight,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: AppColors.error, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            dialogError!,
+                            style: const TextStyle(color: AppColors.error, fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                if (step == 0) ...[
+                  Text(
+                    lang.tr(
+                      'तुमचा नोंदणीकृत ईमेल किंवा मोबाईल नंबर टाका. आम्ही पासवर्ड रिसेट करण्यासाठी ६-अंकी OTP पाठवू.',
+                      'Enter your registered email or mobile number. We will send a 6-digit OTP to reset your password.',
+                    ),
+                    style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+                  ),
+                  const SizedBox(height: 16),
+                  FormLabel(
+                    lang.tr('ईमेल किंवा मोबाईल नंबर', 'Email or Mobile Number'),
+                    isRequired: true,
+                  ),
+                  TextField(
+                    controller: identifierCtrl,
+                    keyboardType: TextInputType.emailAddress,
+                    onChanged: (_) {
+                      if (dialogError != null) setDialogState(() => dialogError = null);
+                    },
+                    decoration: InputDecoration(
+                      hintText: lang.tr('user@example.com किंवा 9876543210', 'user@example.com or 9876543210'),
+                      prefixIcon: const Icon(Icons.contact_mail_outlined, color: AppColors.primaryPurple),
+                    ),
+                  ),
+                ] else ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.successLight,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.check_circle_outline, color: AppColors.success, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${lang.tr("OTP पाठवला आहे:", "OTP sent to:")}\n$resolvedEmail',
+                            style: const TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // OTP field
+                  FormLabel(lang.tr('६-अंकी OTP कोड', '6-Digit OTP Code'), isRequired: true),
+                  TextField(
+                    controller: otpCtrl,
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 22, letterSpacing: 6, fontWeight: FontWeight.bold),
+                    onChanged: (_) {
+                      if (dialogError != null) setDialogState(() => dialogError = null);
+                    },
+                    decoration: const InputDecoration(
+                      hintText: '123456',
+                      counterText: '',
+                      prefixIcon: Icon(Icons.password_rounded, color: AppColors.primaryPurple),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // New Password
+                  FormLabel(lang.tr('नवीन पासवर्ड', 'New Password'), isRequired: true),
+                  TextField(
+                    controller: newPasswordCtrl,
+                    obscureText: obscureNew,
+                    onChanged: (_) {
+                      if (dialogError != null) setDialogState(() => dialogError = null);
+                    },
+                    decoration: InputDecoration(
+                      hintText: lang.tr('किमान ६ अक्षरांचा पासवर्ड', 'Minimum 6 character password'),
+                      prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primaryPurple),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscureNew ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                          color: AppColors.textSecondary,
+                        ),
+                        onPressed: () => setDialogState(() => obscureNew = !obscureNew),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Confirm Password
+                  FormLabel(lang.tr('पासवर्ड पुन्हा टाका', 'Confirm Password'), isRequired: true),
+                  TextField(
+                    controller: confirmPasswordCtrl,
+                    obscureText: obscureNew,
+                    onChanged: (_) {
+                      if (dialogError != null) setDialogState(() => dialogError = null);
+                    },
+                    decoration: InputDecoration(
+                      hintText: lang.tr('पासवर्ड पुन्हा टाका', 'Re-enter password'),
+                      prefixIcon: const Icon(Icons.lock_reset_rounded, color: AppColors.primaryPurple),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Resend OTP
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      icon: const Icon(Icons.refresh_rounded, size: 16),
+                      label: Text(
+                        lang.tr('पुन्हा OTP पाठवा', 'Resend OTP'),
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                      onPressed: isLoading
+                          ? null
+                          : () async {
+                              setDialogState(() {
+                                isLoading = true;
+                                dialogError = null;
+                              });
+                              final res = await ref.read(authProvider.notifier).sendPasswordResetOtp(resolvedEmail!);
+                              setDialogState(() {
+                                isLoading = false;
+                                if (res['success'] != true) {
+                                  dialogError = res['message'] as String?;
+                                }
+                              });
+                              if (res['success'] == true) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(res['message'] as String)),
+                                );
+                              }
+                            },
+                    ),
+                  ),
+                ],
+              ],
             ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isLoading ? null : () => Navigator.pop(ctx),
+              child: Text(lang.tr('रद्द करा', 'Cancel'), style: const TextStyle(color: AppColors.textSecondary)),
+            ),
+            if (step == 0)
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryPurple,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: isLoading
+                    ? null
+                    : () async {
+                        final input = identifierCtrl.text.trim();
+                        if (input.isEmpty) {
+                          setDialogState(() => dialogError = 'कृपया ईमेल किंवा मोबाईल नंबर टाका.');
+                          return;
+                        }
+
+                        setDialogState(() {
+                          isLoading = true;
+                          dialogError = null;
+                        });
+
+                        final res = await ref.read(authProvider.notifier).sendPasswordResetOtp(input);
+
+                        setDialogState(() {
+                          isLoading = false;
+                          if (res['success'] == true) {
+                            resolvedEmail = res['email'] as String?;
+                            step = 1;
+                          } else {
+                            dialogError = res['message'] as String?;
+                          }
+                        });
+                      },
+                child: isLoading
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : Text(lang.tr('OTP पाठवा', 'Send OTP')),
+              )
+            else
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.success,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: isLoading
+                    ? null
+                    : () async {
+                        final otp = otpCtrl.text.trim();
+                        final newPass = newPasswordCtrl.text;
+                        final confirmPass = confirmPasswordCtrl.text;
+
+                        if (otp.length != 6) {
+                          setDialogState(() => dialogError = 'कृपया ६-अंकी वैध OTP कोड टाका.');
+                          return;
+                        }
+                        if (newPass.length < 6) {
+                          setDialogState(() => dialogError = 'नवीन पासवर्ड किमान ६ अक्षरांचा असावा.');
+                          return;
+                        }
+                        if (newPass != confirmPass) {
+                          setDialogState(() => dialogError = 'दोन्ही पासवर्ड जुळत नाहीत.');
+                          return;
+                        }
+
+                        setDialogState(() {
+                          isLoading = true;
+                          dialogError = null;
+                        });
+
+                        final res = await ref.read(authProvider.notifier).verifyOtpAndResetPassword(
+                              email: resolvedEmail!,
+                              otp: otp,
+                              newPassword: newPass,
+                            );
+
+                        setDialogState(() => isLoading = false);
+
+                        if (res['success'] == true) {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(res['message'] as String),
+                              backgroundColor: AppColors.success,
+                              duration: const Duration(seconds: 4),
+                            ),
+                          );
+                        } else {
+                          setDialogState(() => dialogError = res['message'] as String?);
+                        }
+                      },
+                child: isLoading
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : Text(lang.tr('पासवर्ड बदला', 'Reset Password')),
+              ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('रद्द करा', style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryPurple),
-            onPressed: () {
-              final err = AppValidators.email(emailCtrl.text.trim(), isRequired: true);
-              if (err != null) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
-                return;
-              }
-              ref.read(authProvider.notifier).forgotPassword(emailCtrl.text.trim());
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('पासवर्ड रिसेट लिंक पाठवली गेली आहे.')),
-              );
-            },
-            child: const Text('लिंक पाठवा'),
-          ),
-        ],
       ),
     );
   }

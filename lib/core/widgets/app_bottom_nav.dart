@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../constants/app_colors.dart';
+import '../constants/app_strings.dart';
 
-class AppBottomNav extends StatelessWidget {
+class AppBottomNav extends ConsumerWidget {
   final int currentIndex;
 
   const AppBottomNav({
@@ -33,7 +35,9 @@ class AppBottomNav extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageProvider);
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -54,11 +58,11 @@ class AppBottomNav extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildNavItem(context, 0, Icons.home_rounded, Icons.home_outlined, 'मुख्य'),
-              _buildNavItem(context, 1, Icons.payments_rounded, Icons.payments_outlined, 'वर्गणी'),
-              _buildNavItem(context, 2, Icons.people_alt_rounded, Icons.people_alt_outlined, 'कुटुंबे'),
-              _buildNavItem(context, 3, Icons.insert_chart_rounded, Icons.insert_chart_outlined, 'अहवाल'),
-              _buildNavItem(context, 4, Icons.person_rounded, Icons.person_outline_rounded, 'प्रोफाइल'),
+              _buildNavItem(context, 0, Icons.home_rounded, Icons.home_outlined, lang.tr('मुख्य', 'Home')),
+              _buildNavItem(context, 1, Icons.payments_rounded, Icons.payments_outlined, lang.tr('वर्गणी', 'Collections')),
+              _buildNavItem(context, 2, Icons.people_alt_rounded, Icons.people_alt_outlined, lang.tr('कुटुंबे', 'Families')),
+              _buildNavItem(context, 3, Icons.insert_chart_rounded, Icons.insert_chart_outlined, lang.tr('अहवाल', 'Reports')),
+              _buildNavItem(context, 4, Icons.person_rounded, Icons.person_outline_rounded, lang.tr('प्रोफाइल', 'Profile')),
             ],
           ),
         ),

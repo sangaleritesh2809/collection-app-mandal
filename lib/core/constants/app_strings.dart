@@ -3,6 +3,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 enum AppLanguage { marathi, english }
 
+extension AppLanguageX on AppLanguage {
+  bool get isMarathi => this == AppLanguage.marathi;
+  bool get isEnglish => this == AppLanguage.english;
+  String tr(String mr, String en) => isMarathi ? mr : en;
+}
+
 final languageProvider = StateNotifierProvider<LanguageNotifier, AppLanguage>((ref) {
   return LanguageNotifier();
 });
@@ -53,7 +59,7 @@ class AppStrings {
       case BuildContextKey.register:
         return isMr ? 'नवीन नोंदणी करा' : 'Register';
       case BuildContextKey.logout:
-        return isMr ? 'बाहेर पडा (Logout)' : 'Logout';
+        return isMr ? 'बाहेर पडा' : 'Logout';
       case BuildContextKey.save:
         return isMr ? 'जतन करा' : 'Save';
       case BuildContextKey.cancel:

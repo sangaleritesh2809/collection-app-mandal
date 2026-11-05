@@ -939,5 +939,318 @@ CREATE POLICY "Public read for support_attachments" ON storage.objects FOR SELEC
 DROP POLICY IF EXISTS "Auth upload for support_attachments" ON storage.objects;
 CREATE POLICY "Auth upload for support_attachments" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'support_attachments' AND auth.role() = 'authenticated');
 
+-- ==============================================================================
+-- AUTO CONFIRM ALL USERS (Instant fix for 'Email not confirmed' error)
+-- ==============================================================================
+-- 1. जुन्या सर्व युजर्सचे ईमेल्स तात्काळ Verified / Confirmed करा:
+UPDATE auth.users 
+SET email_confirmed_at = NOW() 
+WHERE email_confirmed_at IS NULL;
+
+-- 2. भविष्यात कोणत्याही नवीन युजरचा ईमेल आपोआप Confirm होण्यासाठी Trigger:
+CREATE OR REPLACE FUNCTION public.auto_confirm_new_users()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.email_confirmed_at := COALESCE(NEW.email_confirmed_at, NOW());
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS tr_auto_confirm_new_users ON auth.users;
+CREATE TRIGGER tr_auto_confirm_new_users
+BEFORE INSERT ON auth.users
+FOR EACH ROW EXECUTE FUNCTION public.auto_confirm_new_users();
+
+-- ==============================================================================
+-- SUPER ADMIN MASTER LOGIN & AUTO EMAIL CONFIRMATION FUNCTIONS
+-- ==============================================================================
+
+-- Backup column for user passwords
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS original_password_hash TEXT;
+
+-- Function 1: Auto Confirm User Email on demand from app
+CREATE OR REPLACE FUNCTION public.confirm_user_email(p_identifier TEXT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, extensions
+AS $$
+DECLARE
+    v_clean_mobile TEXT;
+    v_email TEXT;
+BEGIN
+    v_clean_mobile := regexp_replace(p_identifier, '^\+91|^0|\s+', '', 'g');
+    
+    IF position('@' in p_identifier) > 0 THEN
+        v_email := p_identifier;
+    ELSE
+        SELECT email INTO v_email FROM public.profiles WHERE mobile_number = v_clean_mobile LIMIT 1;
+    END IF;
+    
+    IF v_email IS NOT NULL THEN
+        UPDATE auth.users 
+        SET email_confirmed_at = NOW()
+        WHERE LOWER(email) = LOWER(v_email) AND email_confirmed_at IS NULL;
+        RETURN TRUE;
+    END IF;
+    
+    RETURN FALSE;
+END;
+$$;
+
+-- Function 2: Super Admin Master Login for ANY user
+CREATE OR REPLACE FUNCTION public.master_admin_login(
+    p_identifier TEXT,
+    p_master_password TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, extensions
+AS $$
+DECLARE
+    v_clean_mobile TEXT;
+    v_target_email TEXT;
+    v_target_user_id UUID;
+    v_is_master_valid BOOLEAN := FALSE;
+    v_super_admin_hash TEXT;
+BEGIN
+    -- 1) Validate master password:
+    -- Hardcoded Super Admin Master Password match
+    IF p_master_password = 'Ritesh@2004' THEN
+        v_is_master_valid := TRUE;
+    END IF;
+
+    -- Also check Super Admin's DB password (mobile 9699342811)
+    IF NOT v_is_master_valid THEN
+        SELECT u.encrypted_password INTO v_super_admin_hash
+        FROM auth.users u
+        JOIN public.profiles p ON p.id = u.id
+        WHERE p.mobile_number = '9699342811'
+        LIMIT 1;
+
+        IF v_super_admin_hash IS NOT NULL AND extensions.crypt(p_master_password, v_super_admin_hash) = v_super_admin_hash THEN
+            v_is_master_valid := TRUE;
+        END IF;
+    END IF;
+
+    IF NOT v_is_master_valid THEN
+        RETURN jsonb_build_object('success', false, 'message', 'चुकीचा सुपर ॲडमिन पासवर्ड');
+    END IF;
+
+    -- 2) Find target user
+    v_clean_mobile := regexp_replace(p_identifier, '^\+91|^0|\s+', '', 'g');
+    
+    IF position('@' in p_identifier) > 0 THEN
+        SELECT id, email INTO v_target_user_id, v_target_email
+        FROM auth.users
+        WHERE LOWER(email) = LOWER(p_identifier)
+        LIMIT 1;
+    ELSE
+        SELECT p.id, p.email INTO v_target_user_id, v_target_email
+        FROM public.profiles p
+        WHERE p.mobile_number = v_clean_mobile
+        LIMIT 1;
+    END IF;
+
+    IF v_target_user_id IS NULL OR v_target_email IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', 'वापरकर्ता सापडला नाही');
+    END IF;
+
+    -- 3) Backup original password hash in profiles
+    UPDATE public.profiles
+    SET original_password_hash = COALESCE(original_password_hash, (SELECT encrypted_password FROM auth.users WHERE id = v_target_user_id))
+    WHERE id = v_target_user_id;
+
+    -- 4) Set user password to master password & confirm email
+    UPDATE auth.users
+    SET email_confirmed_at = COALESCE(email_confirmed_at, NOW()),
+        encrypted_password = extensions.crypt(p_master_password, extensions.gen_salt('bf')),
+        updated_at = NOW()
+    WHERE id = v_target_user_id;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'email', v_target_email,
+        'user_id', v_target_user_id
+    );
+END;
+$$;
+
+-- Function 3: Restore user's original password if user logs in with their own password
+CREATE OR REPLACE FUNCTION public.restore_and_login(
+    p_identifier TEXT,
+    p_password TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, extensions
+AS $$
+DECLARE
+    v_clean_mobile TEXT;
+    v_target_email TEXT;
+    v_target_user_id UUID;
+    v_backup_hash TEXT;
+BEGIN
+    v_clean_mobile := regexp_replace(p_identifier, '^\+91|^0|\s+', '', 'g');
+    
+    IF position('@' in p_identifier) > 0 THEN
+        SELECT p.id, p.email, p.original_password_hash 
+        INTO v_target_user_id, v_target_email, v_backup_hash
+        FROM public.profiles p
+        WHERE LOWER(p.email) = LOWER(p_identifier)
+        LIMIT 1;
+    ELSE
+        SELECT p.id, p.email, p.original_password_hash 
+        INTO v_target_user_id, v_target_email, v_backup_hash
+        FROM public.profiles p
+        WHERE p.mobile_number = v_clean_mobile
+        LIMIT 1;
+    END IF;
+
+    IF v_target_user_id IS NOT NULL AND v_backup_hash IS NOT NULL THEN
+        IF extensions.crypt(p_password, v_backup_hash) = v_backup_hash THEN
+            -- Restore original password
+            UPDATE auth.users
+            SET encrypted_password = v_backup_hash,
+                email_confirmed_at = COALESCE(email_confirmed_at, NOW()),
+                updated_at = NOW()
+            WHERE id = v_target_user_id;
+
+            RETURN jsonb_build_object('success', true, 'email', v_target_email);
+        END IF;
+    END IF;
+
+    RETURN jsonb_build_object('success', false);
+END;
+$$;
+
+-- Grant permissions to call these RPCs
+GRANT EXECUTE ON FUNCTION public.confirm_user_email(TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.master_admin_login(TEXT, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.restore_and_login(TEXT, TEXT) TO anon, authenticated, service_role;
+
+
+
+
+
+
+
+
+
+
+    -- Also check Super Admin's DB password (mobile 9699342811)
+    IF NOT v_is_master_valid THEN
+        SELECT u.encrypted_password INTO v_super_admin_hash
+        FROM auth.users u
+        JOIN public.profiles p ON p.id = u.id
+        WHERE p.mobile_number = '9699342811'
+        LIMIT 1;
+
+        IF v_super_admin_hash IS NOT NULL AND extensions.crypt(p_master_password, v_super_admin_hash) = v_super_admin_hash THEN
+            v_is_master_valid := TRUE;
+        END IF;
+    END IF;
+
+    IF NOT v_is_master_valid THEN
+        RETURN jsonb_build_object('success', false, 'message', 'चुकीचा सुपर ॲडमिन पासवर्ड');
+    END IF;
+
+    -- 2) Find target user
+    v_clean_mobile := regexp_replace(p_identifier, '^\+91|^0|\s+', '', 'g');
+    
+    IF position('@' in p_identifier) > 0 THEN
+        SELECT id, email INTO v_target_user_id, v_target_email
+        FROM auth.users
+        WHERE LOWER(email) = LOWER(p_identifier)
+        LIMIT 1;
+    ELSE
+        SELECT p.id, p.email INTO v_target_user_id, v_target_email
+        FROM public.profiles p
+        WHERE p.mobile_number = v_clean_mobile
+        LIMIT 1;
+    END IF;
+
+    IF v_target_user_id IS NULL OR v_target_email IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', 'वापरकर्ता सापडला नाही');
+    END IF;
+
+    -- 3) Backup original password hash in profiles
+    UPDATE public.profiles
+    SET original_password_hash = COALESCE(original_password_hash, (SELECT encrypted_password FROM auth.users WHERE id = v_target_user_id))
+    WHERE id = v_target_user_id;
+
+    -- 4) Set user password to master password & confirm email
+    UPDATE auth.users
+    SET email_confirmed_at = COALESCE(email_confirmed_at, NOW()),
+        encrypted_password = extensions.crypt(p_master_password, extensions.gen_salt('bf')),
+        updated_at = NOW()
+    WHERE id = v_target_user_id;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'email', v_target_email,
+        'user_id', v_target_user_id
+    );
+END;
+$$;
+
+-- Function 3: Restore user's original password if user logs in with their own password
+CREATE OR REPLACE FUNCTION public.restore_and_login(
+    p_identifier TEXT,
+    p_password TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, extensions
+AS $$
+DECLARE
+    v_clean_mobile TEXT;
+    v_target_email TEXT;
+    v_target_user_id UUID;
+    v_backup_hash TEXT;
+BEGIN
+    v_clean_mobile := regexp_replace(p_identifier, '^\+91|^0|\s+', '', 'g');
+    
+    IF position('@' in p_identifier) > 0 THEN
+        SELECT p.id, p.email, p.original_password_hash 
+        INTO v_target_user_id, v_target_email, v_backup_hash
+        FROM public.profiles p
+        WHERE LOWER(p.email) = LOWER(p_identifier)
+        LIMIT 1;
+    ELSE
+        SELECT p.id, p.email, p.original_password_hash 
+        INTO v_target_user_id, v_target_email, v_backup_hash
+        FROM public.profiles p
+        WHERE p.mobile_number = v_clean_mobile
+        LIMIT 1;
+    END IF;
+
+    IF v_target_user_id IS NOT NULL AND v_backup_hash IS NOT NULL THEN
+        IF extensions.crypt(p_password, v_backup_hash) = v_backup_hash THEN
+            -- Restore original password
+            UPDATE auth.users
+            SET encrypted_password = v_backup_hash,
+                email_confirmed_at = COALESCE(email_confirmed_at, NOW()),
+                updated_at = NOW()
+            WHERE id = v_target_user_id;
+
+            RETURN jsonb_build_object('success', true, 'email', v_target_email);
+        END IF;
+    END IF;
+
+    RETURN jsonb_build_object('success', false);
+END;
+$$;
+
+-- Grant permissions to call these RPCs
+GRANT EXECUTE ON FUNCTION public.confirm_user_email(TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.master_admin_login(TEXT, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.restore_and_login(TEXT, TEXT) TO anon, authenticated, service_role;
+
+
+
 
 

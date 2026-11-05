@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/form_label.dart';
@@ -119,6 +120,7 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = ref.watch(languageProvider);
     final familyState = ref.watch(familyProvider);
     final collectionState = ref.watch(collectionProvider);
     final mandal = ref.watch(mandalProvider).selectedMandal;
@@ -126,7 +128,7 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('वर्गणी जमा करा (Collect Vargani)'),
+        title: Text(lang.tr('वर्गणी जमा करा', 'Collect Vargani')),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -233,12 +235,12 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                       hintText: 'पेमेंट पद्धत निवडा',
                       prefixIcon: Icon(Icons.payment),
                     ),
-                    items: const [
-                      DropdownMenuItem(value: 'cash', child: Text('रोख (Cash)')),
-                      DropdownMenuItem(value: 'upi', child: Text('📱 ऑनलाइन / UPI QR (Scan & Pay)')),
-                      DropdownMenuItem(value: 'bank_transfer', child: Text('बँक ट्रान्सफर (NEFT/RTGS)')),
-                      DropdownMenuItem(value: 'cheque', child: Text('धनादेश (Cheque)')),
-                      DropdownMenuItem(value: 'other', child: Text('इतर (Other)')),
+                    items: [
+                      DropdownMenuItem(value: 'cash', child: Text(lang.tr('रोख', 'Cash'))),
+                      DropdownMenuItem(value: 'upi', child: Text(lang.tr('📱 ऑनलाइन / UPI QR', '📱 Online / UPI QR'))),
+                      DropdownMenuItem(value: 'bank_transfer', child: Text(lang.tr('बँक ट्रान्सफर', 'Bank Transfer (NEFT/RTGS)'))),
+                      DropdownMenuItem(value: 'cheque', child: Text(lang.tr('धनादेश / चेक', 'Cheque'))),
+                      DropdownMenuItem(value: 'other', child: Text(lang.tr('इतर', 'Other'))),
                     ],
                     onChanged: (val) => setState(() => _paymentMode = val ?? 'cash'),
                   ),
@@ -251,7 +253,7 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                   ],
 
                   // Collection Date Picker
-                  const FormLabel('संकलन दिनांक'),
+                  FormLabel(lang.tr('संकलन दिनांक', 'Collection Date')),
                   InkWell(
                     onTap: () async {
                       final picked = await showDatePicker(
@@ -272,12 +274,12 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                   const SizedBox(height: 16),
 
                   // Notes
-                  const FormLabel('काही विशेष नोंद (Notes)'),
+                  FormLabel(lang.tr('काही विशेष नोंद (ऐच्छिक)', 'Special Notes (Optional)')),
                   TextFormField(
                     controller: _notesController,
-                    decoration: const InputDecoration(
-                      hintText: 'उदा. विशेष देणगी / उर्वरित रक्कम नंतर देतील',
-                      prefixIcon: Icon(Icons.notes),
+                    decoration: InputDecoration(
+                      hintText: lang.tr('उदा. विशेष देणगी / उर्वरित रक्कम नंतर देतील', 'e.g. Special contribution / remaining balance later'),
+                      prefixIcon: const Icon(Icons.notes),
                     ),
                   ),
                   const SizedBox(height: 28),
@@ -298,8 +300,8 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                         : Icon(_paymentMode == 'upi' ? Icons.check_circle : Icons.receipt_long),
                     label: Text(
                       _paymentMode == 'upi'
-                          ? '✅ पेमेंट पूर्ण झाले - पावती तयार करा'
-                          : 'पावती तयार करा व जतन करा (Generate Receipt)',
+                          ? lang.tr('✅ पेमेंट पूर्ण झाले - पावती तयार करा', '✅ Payment Complete - Generate Receipt')
+                          : lang.tr('पावती तयार करा व जतन करा', 'Generate & Save Receipt'),
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                     ),
                   ),

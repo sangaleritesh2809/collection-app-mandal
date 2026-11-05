@@ -25,6 +25,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _obscurePassword = true;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(authProvider.notifier).clearError();
+    });
+  }
+
+  @override
   void dispose() {
     _fullNameController.dispose();
     _emailController.dispose();
@@ -72,7 +80,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         elevation: 0,
         leading: BackButton(
           color: AppColors.textPrimary,
-          onPressed: () => context.pushReplacement('/login'),
+          onPressed: () {
+            ref.read(authProvider.notifier).clearError();
+            context.pushReplacement('/login');
+          },
         ),
       ),
       body: SafeArea(
@@ -112,10 +123,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     const SizedBox(height: 14),
 
-                    const Center(
+                    Center(
                       child: Text(
-                        'नवीन खाते तयार करा',
-                        style: TextStyle(
+                        lang.tr('नवीन खाते तयार करा', 'Create New Account'),
+                        style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
                           color: AppColors.textPrimary,
@@ -124,11 +135,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     const SizedBox(height: 4),
 
-                    const Center(
+                    Center(
                       child: Text(
-                        'मंडळ हिशोब व वर्गणी व्यवस्थापनासाठी आपली माहिती भरा',
+                        lang.tr('मंडळ हिशोब व वर्गणी व्यवस्थापनासाठी आपली माहिती भरा', 'Fill in your details for mandal accounts and vargani management'),
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                        style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -160,11 +171,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     FormLabel(AppStrings.tr(BuildContextKey.fullName, lang), isRequired: true),
                     TextFormField(
                       controller: _fullNameController,
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.badge_outlined, color: AppColors.primaryPurple),
-                        hintText: 'उदा. राहुल सुरेश पाटील',
+                      onChanged: (_) {
+                        if (ref.read(authProvider).errorMessage != null) {
+                          ref.read(authProvider.notifier).clearError();
+                        }
+                      },
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.badge_outlined, color: AppColors.primaryPurple),
+                        hintText: lang.tr('उदा. राहुल सुरेश पाटील', 'e.g. Rahul Suresh Patil'),
                       ),
-                      validator: (val) => AppValidators.name(val, 'पूर्ण नाव'),
+                      validator: (val) => AppValidators.name(val, lang.tr('पूर्ण नाव', 'Full Name')),
                     ),
                     const SizedBox(height: 16),
 
@@ -173,6 +189,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
+                      onChanged: (_) {
+                        if (ref.read(authProvider).errorMessage != null) {
+                          ref.read(authProvider.notifier).clearError();
+                        }
+                      },
                       decoration: const InputDecoration(
                         prefixIcon: Icon(Icons.email_outlined, color: AppColors.primaryPurple),
                         hintText: 'rahul@example.com',
@@ -186,6 +207,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     TextFormField(
                       controller: _mobileController,
                       keyboardType: TextInputType.phone,
+                      onChanged: (_) {
+                        if (ref.read(authProvider).errorMessage != null) {
+                          ref.read(authProvider.notifier).clearError();
+                        }
+                      },
                       decoration: const InputDecoration(
                         prefixIcon: Icon(Icons.phone_android_rounded, color: AppColors.primaryPurple),
                         prefixText: '+91 ',
@@ -200,8 +226,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
+                      onChanged: (_) {
+                        if (ref.read(authProvider).errorMessage != null) {
+                          ref.read(authProvider.notifier).clearError();
+                        }
+                      },
                       decoration: InputDecoration(
-                        hintText: 'किमान ६ अक्षरांचा पासवर्ड',
+                        hintText: lang.tr('किमान ६ अक्षरांचा पासवर्ड', 'Minimum 6 character password'),
                         prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primaryPurple),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -220,9 +251,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     TextFormField(
                       controller: _confirmPasswordController,
                       obscureText: _obscurePassword,
-                      decoration: const InputDecoration(
-                        hintText: 'पासवर्ड पुन्हा टाका',
-                        prefixIcon: Icon(Icons.lock_reset_rounded, color: AppColors.primaryPurple),
+                      onChanged: (_) {
+                        if (ref.read(authProvider).errorMessage != null) {
+                          ref.read(authProvider.notifier).clearError();
+                        }
+                      },
+                      decoration: InputDecoration(
+                        hintText: lang.tr('पासवर्ड पुन्हा टाका', 'Re-enter password'),
+                        prefixIcon: const Icon(Icons.lock_reset_rounded, color: AppColors.primaryPurple),
                       ),
                       validator: (val) => AppValidators.confirmPassword(val, _passwordController.text),
                     ),
@@ -261,9 +297,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('आधीच खाते आहे? ', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                        Text(
+                          lang.tr('आधीच खाते आहे? ', 'Already have an account? '),
+                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                        ),
                         GestureDetector(
-                          onTap: () => context.pushReplacement('/login'),
+                          onTap: () {
+                            ref.read(authProvider.notifier).clearError();
+                            context.pushReplacement('/login');
+                          },
                           child: Text(
                             AppStrings.tr(BuildContextKey.login, lang),
                             style: const TextStyle(

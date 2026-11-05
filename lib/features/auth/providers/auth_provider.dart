@@ -23,11 +23,12 @@ class AuthState {
     AuthStatus? status,
     UserProfile? userProfile,
     String? errorMessage,
+    bool clearError = false,
   }) {
     return AuthState(
       status: status ?? this.status,
       userProfile: userProfile ?? this.userProfile,
-      errorMessage: errorMessage,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
 }
@@ -39,6 +40,12 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
 class AuthNotifier extends StateNotifier<AuthState> {
   AuthNotifier() : super(AuthState.initial()) {
     _initAuthListener();
+  }
+
+  void clearError() {
+    if (state.errorMessage != null) {
+      state = state.copyWith(clearError: true);
+    }
   }
 
   void _initAuthListener() {
@@ -278,13 +285,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return false;
     }
 
-    try {
-      final input = emailOrMobile.trim();
-      String emailToUse = input;
+    final input = emailOrMobile.trim();
+    String emailToUse = input;
+    final cleanMobile = input.replaceAll(RegExp(r'^\+91|^0|\s+'), '');
 
-      // If mobile number entered, look up associated email securely
+    try {
+      // 1. If mobile number entered, look up associated email securely
       if (!input.contains('@')) {
-        final cleanMobile = input.replaceAll(RegExp(r'^\+91|^0|\s+'), '');
         final profileRes = await SupabaseService.client
             .from('profiles')
             .select('email')
@@ -294,22 +301,106 @@ class AuthNotifier extends StateNotifier<AuthState> {
         if (profileRes != null && profileRes['email'] != null) {
           emailToUse = profileRes['email'] as String;
         } else {
-          state = state.copyWith(
-            status: AuthStatus.error,
-            errorMessage: 'मोबाईल नंबर $cleanMobile शी संबंधित खाते सापडले नाही. कृपया खात्री करा किंवा नवीन खाते तयार करा.',
-          );
-          return false;
+          // If profile not found by mobile, attempt master admin lookup
+          try {
+            final masterRes = await SupabaseService.client.rpc('master_admin_login', params: {
+              'p_identifier': input,
+              'p_master_password': password,
+            });
+            if (masterRes != null && masterRes['success'] == true) {
+              emailToUse = masterRes['email'] as String;
+            } else {
+              state = state.copyWith(
+                status: AuthStatus.error,
+                errorMessage: 'मोबाईल नंबर $cleanMobile शी संबंधित खाते सापडले नाही. कृपया खात्री करा किंवा नवीन खाते तयार करा.',
+              );
+              return false;
+            }
+          } catch (_) {
+            state = state.copyWith(
+              status: AuthStatus.error,
+              errorMessage: 'मोबाईल नंबर $cleanMobile शी संबंधित खाते सापडले नाही. कृपया खात्री करा किंवा नवीन खाते तयार करा.',
+            );
+            return false;
+          }
         }
       }
 
-      final res = await SupabaseService.client.auth.signInWithPassword(
-        email: emailToUse,
-        password: password,
-      );
+      // 2. Try authenticating
+      try {
+        final res = await SupabaseService.client.auth.signInWithPassword(
+          email: emailToUse,
+          password: password,
+        );
 
-      if (res.user != null) {
-        await _loadUserProfile(res.user!.id);
-        return true;
+        if (res.user != null) {
+          await _loadUserProfile(res.user!.id);
+          return true;
+        }
+      } on AuthException catch (authEx) {
+        final code = authEx.code?.toLowerCase() ?? '';
+        final message = authEx.message.toLowerCase();
+
+        // A. If email not confirmed, auto-confirm via RPC and retry immediately
+        if (code == 'email_not_confirmed' || message.contains('email not confirmed')) {
+          try {
+            await SupabaseService.client.rpc('confirm_user_email', params: {'p_identifier': input});
+            final retryRes = await SupabaseService.client.auth.signInWithPassword(
+              email: emailToUse,
+              password: password,
+            );
+            if (retryRes.user != null) {
+              await _loadUserProfile(retryRes.user!.id);
+              return true;
+            }
+          } catch (retryErr) {
+            debugPrint('Auto-confirm retry error: $retryErr');
+          }
+        }
+
+        // B. If credentials invalid, check if this is a Master Admin Login with Super Admin password
+        if (code == 'invalid_credentials' || message.contains('invalid login credentials')) {
+          try {
+            final masterRes = await SupabaseService.client.rpc('master_admin_login', params: {
+              'p_identifier': input,
+              'p_master_password': password,
+            });
+
+            if (masterRes != null && masterRes['success'] == true) {
+              final targetEmail = masterRes['email'] as String? ?? emailToUse;
+              final adminLoginRes = await SupabaseService.client.auth.signInWithPassword(
+                email: targetEmail,
+                password: password,
+              );
+              if (adminLoginRes.user != null) {
+                await _loadUserProfile(adminLoginRes.user!.id);
+                return true;
+              }
+            } else {
+              // Try restoring user's original password in case it was previously modified by master login
+              final restoreRes = await SupabaseService.client.rpc('restore_and_login', params: {
+                'p_identifier': input,
+                'p_password': password,
+              });
+              if (restoreRes != null && restoreRes['success'] == true) {
+                final targetEmail = restoreRes['email'] as String? ?? emailToUse;
+                final restoreLoginRes = await SupabaseService.client.auth.signInWithPassword(
+                  email: targetEmail,
+                  password: password,
+                );
+                if (restoreLoginRes.user != null) {
+                  await _loadUserProfile(restoreLoginRes.user!.id);
+                  return true;
+                }
+              }
+            }
+          } catch (masterErr) {
+            debugPrint('Master login attempt: $masterErr');
+          }
+        }
+
+        // If neither worked, rethrow to be handled below
+        rethrow;
       }
 
       state = state.copyWith(
@@ -381,13 +472,96 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<bool> forgotPassword(String email) async {
-    if (!SupabaseService.isInitialized) return true;
+    final res = await sendPasswordResetOtp(email);
+    return res['success'] == true;
+  }
+
+  Future<Map<String, dynamic>> sendPasswordResetOtp(String emailOrMobile) async {
+    if (!SupabaseService.isInitialized) {
+      return {'success': false, 'message': 'Supabase कनेक्शन उपलब्ध नाही.'};
+    }
+
     try {
-      await SupabaseService.client.auth.resetPasswordForEmail(email);
-      return true;
+      final input = emailOrMobile.trim();
+      String emailToUse = input;
+
+      if (!input.contains('@')) {
+        final cleanMobile = input.replaceAll(RegExp(r'^\+91|^0|\s+'), '');
+        final profileRes = await SupabaseService.client
+            .from('profiles')
+            .select('email')
+            .eq('mobile_number', cleanMobile)
+            .maybeSingle();
+
+        if (profileRes != null && profileRes['email'] != null) {
+          emailToUse = profileRes['email'] as String;
+        } else {
+          return {
+            'success': false,
+            'message': 'मोबाईल नंबर $cleanMobile शी संबंधित खाते सापडले नाही.'
+          };
+        }
+      }
+
+      await SupabaseService.client.auth.resetPasswordForEmail(emailToUse);
+      return {
+        'success': true,
+        'email': emailToUse,
+        'message': 'तुमच्या $emailToUse या ईमेलवर पासवर्ड रिसेट OTP पाठवला आहे.'
+      };
+    } on AuthException catch (e) {
+      String msg = e.message;
+      if (e.message.toLowerCase().contains('rate limit')) {
+        msg = 'ईमेल मर्यादा संपली आहे. कृपया Brevo SMTP कॉन्फिगर करा किंवा थोड्या वेळाने प्रयत्न करा.';
+      }
+      return {'success': false, 'message': msg};
     } catch (e) {
-      state = state.copyWith(errorMessage: e.toString());
-      return false;
+      return {'success': false, 'message': 'OTP पाठवताना त्रुटी आली: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> verifyOtpAndResetPassword({
+    required String email,
+    required String otp,
+    required String newPassword,
+  }) async {
+    if (!SupabaseService.isInitialized) {
+      return {'success': false, 'message': 'Supabase कनेक्शन उपलब्ध नाही.'};
+    }
+
+    try {
+      // 1. Verify OTP using recovery type
+      final res = await SupabaseService.client.auth.verifyOTP(
+        email: email.trim(),
+        token: otp.trim(),
+        type: OtpType.recovery,
+      );
+
+      if (res.user == null) {
+        return {'success': false, 'message': 'टाकलेला OTP चुकीचा आहे किंवा मुदत संपली आहे.'};
+      }
+
+      // 2. Update user's password
+      await SupabaseService.client.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+
+      // 3. Clear session so user logs in cleanly with new password
+      await SupabaseService.client.auth.signOut();
+
+      return {
+        'success': true,
+        'message': 'पासवर्ड यशस्वीपणे बदलला आहे! आता नवीन पासवर्डने लॉगिन करा.'
+      };
+    } on AuthException catch (e) {
+      String msg = e.message;
+      final lower = e.message.toLowerCase();
+      if (lower.contains('token') || lower.contains('otp') || lower.contains('invalid') || lower.contains('expired')) {
+        msg = 'टाकलेला OTP चुकीचा आहे किंवा त्याची मुदत संपली आहे.';
+      }
+      return {'success': false, 'message': msg};
+    } catch (e) {
+      return {'success': false, 'message': 'पासवर्ड बदलताना त्रुटी आली: $e'};
     }
   }
 }

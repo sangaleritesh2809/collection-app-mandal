@@ -22,6 +22,7 @@ class SettingsScreen extends ConsumerWidget {
   Future<void> _pickAndUploadAvatar(BuildContext context, WidgetRef ref, String? userId) async {
     if (userId == null) return;
 
+    final lang = ref.read(languageProvider);
     final picker = ImagePicker();
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
@@ -35,10 +36,10 @@ class SettingsScreen extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'प्रोफाइल फोटो निवडा',
+              Text(
+                lang.tr('प्रोफाइल फोटो निवडा', 'Choose Profile Photo'),
                 textAlign: TextAlign.center,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const SizedBox(height: 16),
               ListTile(
@@ -46,7 +47,7 @@ class SettingsScreen extends ConsumerWidget {
                   backgroundColor: AppColors.lightLavender,
                   child: Icon(Icons.photo_library, color: AppColors.primaryPurple),
                 ),
-                title: const Text('गॅलरीतून निवडा (Gallery)'),
+                title: Text(lang.tr('गॅलरीतून निवडा', 'Choose from Gallery')),
                 onTap: () => Navigator.pop(ctx, ImageSource.gallery),
               ),
               ListTile(
@@ -54,7 +55,7 @@ class SettingsScreen extends ConsumerWidget {
                   backgroundColor: AppColors.lightLavender,
                   child: Icon(Icons.camera_alt, color: AppColors.primaryPurple),
                 ),
-                title: const Text('कॅमेऱ्याने फोटो काढा (Camera)'),
+                title: Text(lang.tr('कॅमेऱ्याने फोटो काढा', 'Take Photo with Camera')),
                 onTap: () => Navigator.pop(ctx, ImageSource.camera),
               ),
             ],
@@ -129,7 +130,7 @@ class SettingsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('माझे खाते व सेटिंग्ज'),
+        title: Text(lang.tr('माझे खाते व सेटिंग्ज', 'My Profile & Settings')),
       ),
       bottomNavigationBar: const AppBottomNav(currentIndex: 4),
       body: SafeArea(
@@ -210,37 +211,32 @@ class SettingsScreen extends ConsumerWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Name and Role Badge in a Wrap so it never overflows
-                            Wrap(
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              spacing: 8,
-                              runSpacing: 4,
-                              children: [
-                                Text(
-                                  user?.fullName ?? 'वापरकर्ता',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 18,
-                                    color: AppColors.textPrimary,
-                                  ),
+                            Text(
+                              user?.fullName ?? 'वापरकर्ता',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 17,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryPurple.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppColors.primaryPurple.withOpacity(0.18)),
+                              ),
+                              child: Text(
+                                user?.isSuperAdmin == true ? '👑 Super Admin' : (activeMandal?.userRole ?? 'सदस्य'),
+                                style: const TextStyle(
+                                  color: AppColors.primaryPurple,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 10,
                                 ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primaryPurple.withOpacity(0.08),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: AppColors.primaryPurple.withOpacity(0.2)),
-                                  ),
-                                  child: Text(
-                                    user?.isSuperAdmin == true ? '👑 Super Admin' : (activeMandal?.userRole ?? 'सदस्य'),
-                                    style: const TextStyle(
-                                      color: AppColors.primaryPurple,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
                             const SizedBox(height: 6),
                             if (user?.mobileNumber != null)
@@ -294,16 +290,16 @@ class SettingsScreen extends ConsumerWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('सक्रिय मंडळ (Active Mandal)', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                            Text(lang.tr('सक्रिय मंडळ', 'Active Mandal'), style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
                                 color: AppColors.successLight,
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Text(
-                                'सक्रिय',
-                                style: TextStyle(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.bold),
+                              child: Text(
+                                lang.tr('सक्रिय', 'Active'),
+                                style: const TextStyle(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.bold),
                               ),
                             ),
                           ],
@@ -322,7 +318,7 @@ class SettingsScreen extends ConsumerWidget {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('मंडळ आमंत्रण कोड (Invite Code):', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                                Text(lang.tr('मंडळ आमंत्रण कोड:', 'Mandal Invite Code:'), style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                                 const SizedBox(height: 2),
                                 Text(
                                   activeMandal.invitationCode,
@@ -334,20 +330,20 @@ class SettingsScreen extends ConsumerWidget {
                               children: [
                                 IconButton(
                                   icon: const Icon(Icons.copy_rounded, size: 20, color: AppColors.primaryPurple),
-                                  tooltip: 'कोड कॉपी करा',
+                                  tooltip: lang.tr('कोड कॉपी करा', 'Copy Code'),
                                   onPressed: () {
                                     Clipboard.setData(ClipboardData(text: activeMandal.invitationCode));
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('आमंत्रण कोड कॉपी झाला!')),
+                                      SnackBar(content: Text(lang.tr('आमंत्रण कोड कॉपी झाला!', 'Invite code copied!'))),
                                     );
                                   },
                                 ),
                                 IconButton(
                                   icon: const Icon(Icons.share_rounded, size: 20, color: Color(0xFF25D366)),
-                                  tooltip: 'कोड शेअर करा',
+                                  tooltip: lang.tr('कोड शेअर करा', 'Share Code'),
                                   onPressed: () {
                                     Share.share(
-                                      '🚩 *${activeMandal.name}* 🚩\nमंडळात सामील होण्यासाठी हा आमंत्रण कोड वापरा: *${activeMandal.invitationCode}*\n\nVargani Collection ॲप डाउनलोड करा.',
+                                      '🚩 *${activeMandal.name}* 🚩\n${lang.tr("मंडळात सामील होण्यासाठी हा आमंत्रण कोड वापरा:", "Use this invite code to join the mandal:")} *${activeMandal.invitationCode}*\n\nVargani Collection App.',
                                     );
                                   },
                                 ),
@@ -366,11 +362,11 @@ class SettingsScreen extends ConsumerWidget {
                             ),
                             child: const Icon(Icons.tune_rounded, color: AppColors.primaryPurple, size: 20),
                           ),
-                          title: const Text('वर्गणी दर व नियम (Vargani Settings)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          title: Text(lang.tr('वर्गणी दर व नियम', 'Vargani Settings'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                           subtitle: Text(
                             configState.activeConfig != null
-                                ? '${configState.activeConfig!.name} • ${configState.activeConfig!.calculationType == "per_member" ? "${AppFormatters.formatCurrency(configState.activeConfig!.perMemberAmount)}/सदस्य" : "${AppFormatters.formatCurrency(configState.activeConfig!.fixedAmount)}/कुटुंब"}'
-                                : 'या मंडळाचे वर्गणी दर निश्चित करा',
+                                ? '${configState.activeConfig!.name} • ${configState.activeConfig!.calculationType == "per_member" ? "${AppFormatters.formatCurrency(configState.activeConfig!.perMemberAmount)}/${lang.tr('सदस्य', 'member')}" : "${AppFormatters.formatCurrency(configState.activeConfig!.fixedAmount)}/${lang.tr('कुटुंब', 'family')}"}'
+                                : lang.tr('या मंडळाचे वर्गणी दर निश्चित करा', 'Set vargani rates for this mandal'),
                             style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                           ),
                           trailing: const Icon(Icons.chevron_right, size: 20),
@@ -387,11 +383,11 @@ class SettingsScreen extends ConsumerWidget {
                             ),
                             child: const Icon(Icons.qr_code_2_rounded, color: AppColors.royalBlue, size: 20),
                           ),
-                          title: const Text('पेमेंट UPI व QR कोड (Payment QR)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          title: Text(lang.tr('पेमेंट UPI व QR कोड', 'Payment UPI & QR Code'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                           subtitle: Text(
                             activeMandal.upiId != null || activeMandal.qrCodeUrl != null
-                                ? '${activeMandal.upiId ?? "QR फोटो जोडला आहे"} • स्कॅनर सक्रिय'
-                                : 'मंडळाचा UPI QR कोड किंवा फोटो जोडा',
+                                ? '${activeMandal.upiId ?? lang.tr("QR फोटो जोडला आहे", "QR image attached")} • ${lang.tr("स्कॅनर सक्रिय", "Scanner Active")}'
+                                : lang.tr('मंडळाचा UPI QR कोड किंवा फोटो जोडा', 'Add Mandal UPI QR or image'),
                             style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                           ),
                           trailing: const Icon(Icons.chevron_right, size: 20),
@@ -415,16 +411,16 @@ class SettingsScreen extends ConsumerWidget {
                     children: [
                       ListTile(
                         leading: const Icon(Icons.swap_horiz_rounded, color: AppColors.primaryPurple),
-                        title: const Text('मंडळ बदला (Switch Mandal)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: const Text('दुसऱ्या मंडळात स्विच करा किंवा नवीन नोंदणी करा', style: TextStyle(fontSize: 12)),
+                        title: Text(lang.tr('मंडळ बदला', 'Switch Mandal'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        subtitle: Text(lang.tr('दुसऱ्या मंडळात स्विच करा किंवा नवीन नोंदणी करा', 'Switch to another mandal or register new'), style: const TextStyle(fontSize: 12)),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () => context.push('/mandal-selection'),
                       ),
                       const Divider(height: 1),
                       ListTile(
                         leading: const Icon(Icons.language_rounded, color: AppColors.royalBlue),
-                        title: const Text('भाषा बदला (Language)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: Text(lang == AppLanguage.marathi ? 'मराठी (सक्रिय)' : 'English', style: const TextStyle(fontSize: 12)),
+                        title: Text(lang.tr('भाषा बदला', 'Change Language'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        subtitle: Text(lang == AppLanguage.marathi ? 'मराठी' : 'English', style: const TextStyle(fontSize: 12)),
                         trailing: Switch(
                           activeColor: AppColors.primaryPurple,
                           value: lang == AppLanguage.marathi,
@@ -434,12 +430,12 @@ class SettingsScreen extends ConsumerWidget {
                       const Divider(height: 1),
                       ListTile(
                         leading: const Icon(Icons.speed_rounded, color: AppColors.success),
-                        title: const Text('सर्व्हर गती तपासा (Speed Test)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: const Text('क्लाउड डेटाबेस रिस्पॉन्स वेळ पडताळा', style: TextStyle(fontSize: 12)),
+                        title: Text(lang.tr('सर्व्हर गती तपासा', 'Speed Test'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        subtitle: Text(lang.tr('क्लाउड डेटाबेस रिस्पॉन्स वेळ पडताळा', 'Verify cloud database latency'), style: const TextStyle(fontSize: 12)),
                         trailing: const Icon(Icons.bolt, color: AppColors.success),
                         onTap: () async {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('सर्व्हर गती तपासत आहे...')),
+                            SnackBar(content: Text(lang.tr('सर्व्हर गती तपासत आहे...', 'Checking server latency...'))),
                           );
                           final ms = await SupabaseService.checkLatency();
                           if (context.mounted) {
@@ -447,16 +443,16 @@ class SettingsScreen extends ConsumerWidget {
                               context: context,
                               builder: (ctx) => AlertDialog(
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                title: const Row(
+                                title: Row(
                                   children: [
-                                    Icon(Icons.bolt, color: Colors.green),
-                                    SizedBox(width: 8),
-                                    Text('डेटाबेस गती निकाल'),
+                                    const Icon(Icons.bolt, color: Colors.green),
+                                    const SizedBox(width: 8),
+                                    Text(lang.tr('डेटाबेस गती निकाल', 'Database Latency Result')),
                                   ],
                                 ),
-                                content: Text('रिस्पॉन्स वेळ: $ms ms\n\n✅ सुरक्षित SSL/TLS एन्क्रिप्टेड, RLS सुरक्षित.'),
+                                content: Text('${lang.tr("रिस्पॉन्स वेळ:", "Response time:")} $ms ms\n\n✅ ${lang.tr("सुरक्षित SSL/TLS एन्क्रिप्टेड, RLS सुरक्षित.", "SSL/TLS encrypted, RLS secured.")}'),
                                 actions: [
-                                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('ठीक आहे')),
+                                  TextButton(onPressed: () => Navigator.pop(ctx), child: Text(lang.tr('ठीक आहे', 'OK'))),
                                 ],
                               ),
                             );
@@ -466,16 +462,16 @@ class SettingsScreen extends ConsumerWidget {
                       const Divider(height: 1),
                       ListTile(
                         leading: const Icon(Icons.support_agent_rounded, color: AppColors.accentOrange),
-                        title: const Text('समस्या नोंदवा / मदत (Report Issue)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: const Text('काही अडचण आल्यास थेट सुपर ॲडमिनला मेसेज करा', style: TextStyle(fontSize: 12)),
+                        title: Text(lang.tr('समस्या नोंदवा / मदत', 'Report Issue / Help'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        subtitle: Text(lang.tr('काही अडचण आल्यास थेट सुपर ॲडमिनला मेसेज करा', 'Directly message Super Admin if facing issues'), style: const TextStyle(fontSize: 12)),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () => context.push('/report-issue'),
                       ),
                       const Divider(height: 1),
                       ListTile(
                         leading: const Icon(Icons.mark_email_read_outlined, color: AppColors.primaryPurple),
-                        title: const Text('माझ्या तक्रारी व उत्तरे (My Issues)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: const Text('पाठवलेल्या अडचणींची स्थिती व ॲडमिनचे उत्तर पहा', style: TextStyle(fontSize: 12)),
+                        title: Text(lang.tr('माझ्या तक्रारी व उत्तरे', 'My Issues & Replies'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        subtitle: Text(lang.tr('पाठवलेल्या अडचणींची स्थिती व ॲडमिनचे उत्तर पहा', 'Check submitted issues status and replies'), style: const TextStyle(fontSize: 12)),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () => context.push('/my-tickets'),
                       ),
@@ -494,11 +490,11 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                     child: ListTile(
                       leading: const Icon(Icons.admin_panel_settings_rounded, color: AppColors.error, size: 28),
-                      title: const Text(
-                        'सुपर ॲडमिन: सर्व मंडळांचे मेसेज',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.error),
+                      title: Text(
+                        lang.tr('सुपर ॲडमिन: सर्व मंडळांचे मेसेज', 'Super Admin: All Mandal Tickets'),
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.error),
                       ),
-                      subtitle: const Text('सर्व मंडळांकडून आलेल्या अडचणी, संपर्क व उत्तर देणे', style: TextStyle(fontSize: 12)),
+                      subtitle: Text(lang.tr('सर्व मंडळांकडून आलेल्या अडचणी, संपर्क व उत्तर देणे', 'Manage reported issues from all mandals'), style: const TextStyle(fontSize: 12)),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.error),
                       onTap: () => context.push('/super-admin-tickets'),
                     ),
@@ -519,14 +515,14 @@ class SettingsScreen extends ConsumerWidget {
                       context: context,
                       builder: (ctx) => AlertDialog(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        title: const Text('बाहेर पडायचे आहे का? (Logout)'),
-                        content: const Text('तुम्ही चालू खात्यातून बाहेर पडू इच्छिता?'),
+                        title: Text(lang.tr('बाहेर पडायचे आहे का?', 'Do you want to logout?')),
+                        content: Text(lang.tr('तुम्ही चालू खात्यातून बाहेर पडू इच्छिता?', 'Are you sure you want to log out from this account?')),
                         actions: [
-                          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('नाही')),
+                          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(lang.tr('नाही', 'No'))),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
                             onPressed: () => Navigator.pop(ctx, true),
-                            child: const Text('बाहेर पडा'),
+                            child: Text(lang.tr('बाहेर पडा', 'Logout')),
                           ),
                         ],
                       ),

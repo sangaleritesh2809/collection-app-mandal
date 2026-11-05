@@ -39,7 +39,7 @@ class _CollectionsListScreenState extends ConsumerState<CollectionsListScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('वर्गणी संकलन (Collections)'),
+        title: Text(lang.tr('वर्गणी संकलन', 'Collections')),
         actions: [
           IconButton(
             icon: const Icon(Icons.file_download_outlined),

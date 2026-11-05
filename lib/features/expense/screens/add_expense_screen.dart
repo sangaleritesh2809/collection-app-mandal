@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/form_label.dart';
@@ -83,11 +84,12 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = ref.watch(languageProvider);
     final expenseState = ref.watch(expenseProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('नवीन खर्च नोंदवा (Add Expense)'),
+        title: Text(lang.tr('नवीन खर्च नोंदवा', 'Add Expense')),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -137,40 +139,40 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   const SizedBox(height: 16),
 
                   // Paid To & Paid By
-                  const FormLabel('रक्कम कोणाला दिली (Paid To)', isRequired: true),
+                  FormLabel(lang.tr('रक्कम कोणाला दिली', 'Paid To'), isRequired: true),
                   TextFormField(
                     controller: _paidToController,
-                    decoration: const InputDecoration(
-                      hintText: 'उदा. साई डेकोरेटर्स / अमोल शिंदे',
-                      prefixIcon: Icon(Icons.person),
+                    decoration: InputDecoration(
+                      hintText: lang.tr('उदा. साई डेकोरेटर्स / अमोल शिंदे', 'e.g. Sai Decorators / Amol Shinde'),
+                      prefixIcon: const Icon(Icons.person),
                     ),
-                    validator: (val) => AppValidators.name(val, 'स्वीकारणाऱ्याचे नाव'),
+                    validator: (val) => AppValidators.name(val, lang.tr('स्वीकारणाऱ्याचे नाव', 'Recipient Name')),
                   ),
                   const SizedBox(height: 16),
 
-                  const FormLabel('रक्कम कोणी दिली (Paid By)', isRequired: true),
+                  FormLabel(lang.tr('रक्कम कोणी दिली', 'Paid By'), isRequired: true),
                   TextFormField(
                     controller: _paidByController,
-                    decoration: const InputDecoration(
-                      hintText: 'उदा. खजिनदार सुरेश कदम',
-                      prefixIcon: Icon(Icons.account_balance_wallet_outlined),
+                    decoration: InputDecoration(
+                      hintText: lang.tr('उदा. खजिनदार सुरेश कदम', 'e.g. Treasurer Suresh Kadam'),
+                      prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
                     ),
-                    validator: (val) => AppValidators.name(val, 'रक्कम देणाऱ्याचे नाव'),
+                    validator: (val) => AppValidators.name(val, lang.tr('रक्कम देणाऱ्याचे नाव', 'Payer Name')),
                   ),
                   const SizedBox(height: 16),
 
                   // Payment Mode & Date
-                  const FormLabel('पेमेंट पद्धत', isRequired: true),
+                  FormLabel(lang.tr('पेमेंट पद्धत', 'Payment Mode'), isRequired: true),
                   DropdownButtonFormField<String>(
                     value: _paymentMode,
                     decoration: const InputDecoration(
                       prefixIcon: Icon(Icons.payment),
                     ),
-                    items: const [
-                      DropdownMenuItem(value: 'cash', child: Text('रोख (Cash)')),
-                      DropdownMenuItem(value: 'upi', child: Text('UPI ट्रान्सफर')),
-                      DropdownMenuItem(value: 'bank_transfer', child: Text('बँक चेक / NEFT')),
-                      DropdownMenuItem(value: 'other', child: Text('इतर')),
+                    items: [
+                      DropdownMenuItem(value: 'cash', child: Text(lang.tr('रोख', 'Cash'))),
+                      DropdownMenuItem(value: 'upi', child: Text(lang.tr('UPI ट्रान्सफर', 'UPI Transfer'))),
+                      DropdownMenuItem(value: 'bank_transfer', child: Text(lang.tr('बँक चेक / NEFT', 'Bank Cheque / NEFT'))),
+                      DropdownMenuItem(value: 'other', child: Text(lang.tr('इतर', 'Other'))),
                     ],
                     onChanged: (val) => setState(() => _paymentMode = val ?? 'cash'),
                   ),
@@ -221,7 +223,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                           )
-                        : const Text('खर्च जतन करा (Save Expense)'),
+                        : Text(lang.tr('खर्च जतन करा', 'Save Expense')),
                   ),
                 ],
               ),

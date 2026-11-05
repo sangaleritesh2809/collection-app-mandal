@@ -20,6 +20,7 @@ class ReportsScreen extends ConsumerStatefulWidget {
 
 class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   String _selectedYear = '२०२६-२०२७';
+  AppLanguage get lang => ref.watch(languageProvider);
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +36,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('आर्थिक अहवाल व ताळेबंद (Reports)'),
+        title: Text(lang.tr('आर्थिक अहवाल व ताळेबंद', 'Reports & Balance Sheet')),
         actions: [
           IconButton(
             icon: const Icon(Icons.file_download_outlined),
@@ -129,9 +130,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      const Text(
-                        'वार्षिक जमा-खर्च व ताळेबंद अहवाल (Financial Statement)',
-                        style: TextStyle(color: Colors.white70, fontSize: 12),
+                      Text(
+                        lang.tr('वार्षिक जमा-खर्च व ताळेबंद अहवाल', 'Annual Financial & Balance Sheet Statement'),
+                        style: const TextStyle(color: Colors.white70, fontSize: 12),
                       ),
                       const SizedBox(height: 16),
                       const Divider(color: Colors.white24, height: 1),
@@ -139,9 +140,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          _headStat('उपलब्ध शिल्लक', AppFormatters.formatCurrency(summary.availableBalance)),
-                          _headStat('गोळा वर्गणी', AppFormatters.formatCurrency(summary.totalCollected)),
-                          _headStat('मंजूर खर्च', AppFormatters.formatCurrency(summary.totalApprovedExpenses)),
+                          _headStat(lang.tr('उपलब्ध शिल्लक', 'Balance'), AppFormatters.formatCurrency(summary.availableBalance)),
+                          _headStat(lang.tr('गोळा वर्गणी', 'Collected'), AppFormatters.formatCurrency(summary.totalCollected)),
+                          _headStat(lang.tr('मंजूर खर्च', 'Expenses'), AppFormatters.formatCurrency(summary.totalApprovedExpenses)),
                         ],
                       ),
                     ],
@@ -200,11 +201,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 const SizedBox(height: 16),
 
                 // 7. PAYMENT MODE BREAKDOWN CARD
-                _buildPaymentModeBreakdownCard(summary),
+                _buildPaymentModeBreakdownCard(summary, lang),
                 const SizedBox(height: 16),
 
                 // 8. FINAL BALANCE SHEET FORMULA
-                _buildBalanceFormulaCard(summary),
+                _buildBalanceFormulaCard(summary, lang),
                 const SizedBox(height: 24),
               ],
             ),
@@ -233,14 +234,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'जमा विरूद्ध खर्च तुलना (Bar Chart)',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
+                lang.tr('जमा विरूद्ध खर्च तुलना', 'Income vs Expenses Comparison'),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
               ),
-              Icon(Icons.bar_chart_rounded, color: AppColors.primaryPurple, size: 22),
+              const Icon(Icons.bar_chart_rounded, color: AppColors.primaryPurple, size: 22),
             ],
           ),
           const SizedBox(height: 18),
@@ -334,23 +335,27 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.arrow_circle_down_rounded, color: AppColors.success, size: 22),
-              SizedBox(width: 8),
-              Text(
-                '१. जमा बाजू (Income & Collections)',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary),
+              const Icon(Icons.arrow_circle_down_rounded, color: AppColors.success, size: 22),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  lang.tr('१. जमा बाजू', '1. Income & Collections'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary),
+                ),
               ),
             ],
           ),
           const Divider(height: 22),
-          _statementRow('नोंदणीकृत कुटुंबे संख्या', '${summary.totalFamilies} कुटुंबे'),
-          _statementRow('अपेक्षित एकूण वर्गणी', AppFormatters.formatCurrency(summary.totalExpectedVargani)),
-          _statementRow('प्रत्यक्षात गोळा झालेली वर्गणी', AppFormatters.formatCurrency(summary.totalCollected), isHighlight: true, color: AppColors.royalBlue),
-          _statementRow('खजिनदाराकडे मंजूर जमा रक्कम', AppFormatters.formatCurrency(summary.totalDeposited)),
-          _statementRow('कार्यकर्त्यांकडे जमा बाकी रक्कम', AppFormatters.formatCurrency(summary.awaitingDeposit), color: AppColors.accentOrange),
-          _statementRow('येणे बाकी वर्गणी (Pending)', AppFormatters.formatCurrency(summary.totalPendingVargani), color: AppColors.error),
+          _statementRow(lang.tr('नोंदणीकृत कुटुंबे संख्या', 'Registered Families'), '${summary.totalFamilies} ${lang.tr("कुटुंबे", "families")}'),
+          _statementRow(lang.tr('अपेक्षित एकूण वर्गणी', 'Expected Total Vargani'), AppFormatters.formatCurrency(summary.totalExpectedVargani)),
+          _statementRow(lang.tr('प्रत्यक्षात गोळा झालेली वर्गणी', 'Actual Collected Vargani'), AppFormatters.formatCurrency(summary.totalCollected), isHighlight: true, color: AppColors.royalBlue),
+          _statementRow(lang.tr('खजिनदाराकडे मंजूर जमा रक्कम', 'Deposited with Treasurer'), AppFormatters.formatCurrency(summary.totalDeposited)),
+          _statementRow(lang.tr('कार्यकर्त्यांकडे जमा बाकी रक्कम', 'Pending with Collectors'), AppFormatters.formatCurrency(summary.awaitingDeposit), color: AppColors.accentOrange),
+          _statementRow(lang.tr('येणे बाकी वर्गणी', 'Pending Vargani'), AppFormatters.formatCurrency(summary.totalPendingVargani), color: AppColors.error),
         ],
       ),
     );
@@ -368,23 +373,27 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.arrow_circle_up_rounded, color: AppColors.error, size: 22),
-              SizedBox(width: 8),
-              Text(
-                '२. खर्च बाजू व कॅटेगरी विभागणी (Expenses)',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary),
+              const Icon(Icons.arrow_circle_up_rounded, color: AppColors.error, size: 22),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  lang.tr('२. खर्च बाजू व विभागणी', '2. Expenses Breakdown'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary),
+                ),
               ),
             ],
           ),
           const Divider(height: 22),
-          _statementRow('एकूण मंजूर झालेला खर्च', AppFormatters.formatCurrency(summary.totalApprovedExpenses), isHighlight: true, color: AppColors.error),
-          _statementRow('प्रलंबित खर्च (Approval Pending)', AppFormatters.formatCurrency(summary.totalPendingExpenses)),
+          _statementRow(lang.tr('एकूण मंजूर झालेला खर्च', 'Total Approved Expenses'), AppFormatters.formatCurrency(summary.totalApprovedExpenses), isHighlight: true, color: AppColors.error),
+          _statementRow(lang.tr('प्रलंबित खर्च', 'Approval Pending Expenses'), AppFormatters.formatCurrency(summary.totalPendingExpenses)),
           const SizedBox(height: 12),
-          const Text(
-            'कॅटेगरीनुसार खर्च विभागणी:',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+          Text(
+            lang.tr('कॅटेगरीनुसार खर्च विभागणी:', 'Expenses by Category:'),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 8),
 
@@ -426,7 +435,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
-  Widget _buildPaymentModeBreakdownCard(dynamic summary) {
+  Widget _buildPaymentModeBreakdownCard(dynamic summary, AppLanguage lang) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -438,19 +447,23 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.pie_chart_rounded, color: AppColors.primaryPurple, size: 22),
-              SizedBox(width: 8),
-              Text(
-                '३. पेमेंट पद्धतीनुसार विभागणी (Payment Modes)',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary),
+              const Icon(Icons.pie_chart_rounded, color: AppColors.primaryPurple, size: 22),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  lang.tr('३. पेमेंट पद्धतीनुसार विभागणी', '3. Collections by Payment Mode'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary),
+                ),
               ),
             ],
           ),
           const Divider(height: 22),
           if (summary.collectionsByMode.isEmpty)
-            const Text('अद्याप वर्गणी उपलब्ध नाही.', style: TextStyle(fontSize: 12, color: AppColors.textSecondary))
+            Text(lang.tr('अद्याप वर्गणी उपलब्ध नाही.', 'No collection records yet.'), style: const TextStyle(fontSize: 12, color: AppColors.textSecondary))
           else
             ...summary.collectionsByMode.entries.map((entry) {
               return Padding(
@@ -458,7 +471,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(_getModeLabel(entry.key), style: const TextStyle(fontSize: 13)),
+                    Text(_getModeLabel(entry.key, lang), style: const TextStyle(fontSize: 13)),
                     Text(
                       AppFormatters.formatCurrency(entry.value),
                       style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.royalBlue),
@@ -472,7 +485,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
-  Widget _buildBalanceFormulaCard(dynamic summary) {
+  Widget _buildBalanceFormulaCard(dynamic summary, AppLanguage lang) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -491,14 +504,25 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('४. अंतिम शिल्लक सूत्र (Financial Formula)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary)),
+          Text(
+            lang.tr('४. अंतिम शिल्लक सूत्र', '4. Net Balance Formula'),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
+          ),
           const SizedBox(height: 4),
-          const Text('उपलब्ध शिल्लक = खजिनदाराकडे जमा रक्कम - एकूण मंजूर खर्च', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          Text(
+            lang.tr('उपलब्ध शिल्लक = खजिनदाराकडे जमा रक्कम - एकूण मंजूर खर्च', 'Available Balance = Treasury Deposits - Approved Expenses'),
+            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('मंडळाची अंतिम शिल्लक रक्कम:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              Expanded(
+                child: Text(
+                  lang.tr('मंडळाची अंतिम शिल्लक रक्कम:', 'Final Mandal Balance:'),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+              ),
               Text(
                 AppFormatters.formatCurrency(summary.availableBalance),
                 style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: AppColors.success),
@@ -541,18 +565,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
-  String _getModeLabel(String mode) {
+  String _getModeLabel(String mode, AppLanguage lang) {
     switch (mode.toLowerCase()) {
       case 'cash':
-        return '💵 रोख (Cash)';
+        return lang.tr('💵 रोख', '💵 Cash');
       case 'upi':
-        return '📱 ऑनलाइन / UPI QR';
+        return lang.tr('📱 ऑनलाइन / UPI QR', '📱 Online / UPI QR');
       case 'bank_transfer':
-        return '🏦 बँक ट्रान्सफर';
+        return lang.tr('🏦 बँक ट्रान्सफर', '🏦 Bank Transfer');
       case 'cheque':
-        return '📝 चेक (Cheque)';
+        return lang.tr('📝 धनादेश / चेक', '📝 Cheque');
       default:
-        return 'इतर (Other)';
+        return lang.tr('इतर', 'Other');
     }
   }
 

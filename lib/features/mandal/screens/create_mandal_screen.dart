@@ -78,14 +78,14 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
-                    'मंडळाची माहिती भरा',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  Text(
+                    lang.tr('मंडळाची माहिती भरा', 'Enter Mandal Details'),
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
-                    'मंडळ तयार केल्यानंतर तुम्हाला एक अद्वितीय आमंत्रण कोड (Invite Code) मिळेल.',
-                    style: TextStyle(color: AppColors.textSecondaryLight, fontSize: 13),
+                  Text(
+                    lang.tr('मंडळ तयार केल्यानंतर तुम्हाला एक अद्वितीय आमंत्रण कोड मिळेल.', 'After creating mandal you will get a unique invite code.'),
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                   ),
                   const SizedBox(height: 20),
 
@@ -210,7 +210,7 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                           )
-                        : const Text('मंडळ नोंदणी पूर्ण करा (Create Mandal)'),
+                        : Text(lang.tr('मंडळ नोंदणी पूर्ण करा', 'Complete Mandal Registration')),
                   ),
                 ],
               ),

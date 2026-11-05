@@ -66,16 +66,16 @@ class _JoinMandalScreenState extends ConsumerState<JoinMandalScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Text(
-                  'आमंत्रण कोड (Invite Code) टाका',
+                Text(
+                  lang.tr('आमंत्रण कोड टाका', 'Enter Invite Code'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'मंडळाच्या अध्यक्षांनी किंवा खजिनदारांनी दिलेला ६ किंवा ७ अंकी कोड येथे टाका (उदा. VG2026A)',
+                Text(
+                  lang.tr('मंडळाच्या अध्यक्षांनी किंवा खजिनदारांनी दिलेला ६ किंवा ७ अंकी कोड येथे टाका (उदा. VG2026A)', 'Enter the 6 or 7 character code provided by the mandal admin (e.g. VG2026A)'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.textSecondaryLight, fontSize: 13),
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                 ),
                 const SizedBox(height: 28),
 
@@ -94,7 +94,7 @@ class _JoinMandalScreenState extends ConsumerState<JoinMandalScreen> {
                     ),
                   ),
 
-                const FormLabel('आमंत्रण कोड (Invite Code)', isRequired: true),
+                FormLabel(lang.tr('आमंत्रण कोड', 'Invite Code'), isRequired: true),
                 TextFormField(
                   controller: _codeController,
                   textCapitalization: TextCapitalization.characters,
@@ -120,7 +120,7 @@ class _JoinMandalScreenState extends ConsumerState<JoinMandalScreen> {
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text('मंडळात सामील व्हा (Join Mandal)'),
+                      : Text(lang.tr('मंडळात सामील व्हा', 'Join Mandal')),
                 ),
               ],
             ),

@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/form_label.dart';
+import '../../../core/widgets/responsive_container.dart';
 import '../../vargani_config/models/vargani_config.dart';
 import '../../vargani_config/providers/vargani_config_provider.dart';
 import '../providers/family_provider.dart';
@@ -18,19 +20,17 @@ class AddEditFamilyScreen extends ConsumerStatefulWidget {
 
 class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _familyNameController = TextEditingController();
   final _headNameController = TextEditingController();
   final _houseNumberController = TextEditingController();
   final _addressController = TextEditingController();
   final _villageController = TextEditingController();
   final _mobileController = TextEditingController();
-  final _membersCountController = TextEditingController(text: '4');
+  final _membersCountController = TextEditingController();
   final _customVarganiController = TextEditingController();
   bool _useCustomVargani = false;
 
   @override
   void dispose() {
-    _familyNameController.dispose();
     _headNameController.dispose();
     _houseNumberController.dispose();
     _addressController.dispose();
@@ -45,7 +45,9 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
     if (_useCustomVargani) {
       return double.tryParse(_customVarganiController.text.trim()) ?? 0.0;
     }
-    final members = int.tryParse(_membersCountController.text.trim()) ?? 1;
+    final membersText = _membersCountController.text.trim();
+    if (membersText.isEmpty) return 0.0;
+    final members = int.tryParse(membersText) ?? 0;
     if (config != null) {
       return config.calculateTotalForFamily(members);
     }
@@ -55,12 +57,14 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
   Future<void> _handleSave() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final lang = ref.read(languageProvider);
     final members = int.tryParse(_membersCountController.text.trim()) ?? 1;
     final customAmount = _useCustomVargani ? double.tryParse(_customVarganiController.text.trim()) : null;
+    final headName = _headNameController.text.trim();
 
     final success = await ref.read(familyProvider.notifier).addFamily(
-      familyName: _familyNameController.text.trim(),
-      familyHeadName: _headNameController.text.trim(),
+      familyName: headName,
+      familyHeadName: headName,
       houseNumber: _houseNumberController.text.trim(),
       address: _addressController.text.trim(),
       village: _villageController.text.trim(),
@@ -71,7 +75,10 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
 
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('कुटुंब यशस्वीपणे जोडले गेले!')),
+        SnackBar(
+          backgroundColor: AppColors.success,
+          content: Text(lang.tr('कुटुंब यशस्वीपणे जोडले गेले!', 'Family added successfully!')),
+        ),
       );
       context.pop();
     }
@@ -79,48 +86,39 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = ref.watch(languageProvider);
     final configState = ref.watch(varganiConfigProvider);
     final activeConfig = configState.activeConfig;
     final calculatedVargani = _getCalculatedVargani(activeConfig);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('नवीन कुटुंब जोडा (Add Family)'),
+        title: Text(lang.tr('नवीन कुटुंब जोडा', 'Add Family')),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: ResponsiveContainer(
+            maxWidth: 720,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Family Name
-                  const FormLabel('कुटुंबाचे आडनाव / नाव', isRequired: true),
-                  TextFormField(
-                    controller: _familyNameController,
-                    decoration: const InputDecoration(
-                      hintText: 'उदा. पाटील परिवार / देशमुख',
-                      prefixIcon: Icon(Icons.people),
-                    ),
-                    validator: (val) => AppValidators.name(val, 'कुटुंबाचे नाव'),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Family Head Name
-                  const FormLabel('कुटुंब प्रमुखाचे नाव', isRequired: true),
+                  // Family Head Name (Primary Name of the Family)
+                  FormLabel(lang.tr('कुटुंब प्रमुखाचे नाव', 'Head of Family Name'), isRequired: true),
                   TextFormField(
                     controller: _headNameController,
-                    decoration: const InputDecoration(
-                      hintText: 'उदा. श्री. रविंद्र गणपत पाटील',
-                      prefixIcon: Icon(Icons.person),
+                    decoration: InputDecoration(
+                      hintText: lang.tr('उदा. श्री. रविंद्र गणपत पाटील', 'e.g. Shri. Ravindra Ganpat Patil'),
+                      prefixIcon: const Icon(Icons.person),
                     ),
-                    validator: (val) => AppValidators.name(val, 'कुटुंब प्रमुखाचे नाव'),
+                    validator: (val) => AppValidators.name(val, lang.tr('कुटुंब प्रमुखाचे नाव', 'Head of Family Name')),
                   ),
                   const SizedBox(height: 14),
 
-                  // Mobile Number
-                  const FormLabel('मोबाईल नंबर'),
+                  // Mobile Number (Mandatory)
+                  FormLabel(lang.tr('मोबाईल नंबर', 'Mobile Number'), isRequired: true),
                   TextFormField(
                     controller: _mobileController,
                     keyboardType: TextInputType.phone,
@@ -129,7 +127,7 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                       prefixIcon: Icon(Icons.phone),
                       prefixText: '+91 ',
                     ),
-                    validator: (val) => AppValidators.mobile(val, isRequired: false),
+                    validator: (val) => AppValidators.mobile(val, isRequired: true),
                   ),
                   const SizedBox(height: 14),
 
@@ -142,12 +140,12 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const FormLabel('घर नंबर'),
+                            FormLabel(lang.tr('घर नंबर', 'House No.')),
                             TextFormField(
                               controller: _houseNumberController,
-                              decoration: const InputDecoration(
-                                hintText: 'उदा. १२/अ',
-                                prefixIcon: Icon(Icons.home),
+                              decoration: InputDecoration(
+                                hintText: lang.tr('उदा. १२/अ', 'e.g. 12/A'),
+                                prefixIcon: const Icon(Icons.home),
                               ),
                             ),
                           ],
@@ -159,12 +157,12 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const FormLabel('गाव / वस्ती'),
+                            FormLabel(lang.tr('गाव / वस्ती', 'Village / Area')),
                             TextFormField(
                               controller: _villageController,
-                              decoration: const InputDecoration(
-                                hintText: 'उदा. वडगाव',
-                                prefixIcon: Icon(Icons.location_city),
+                              decoration: InputDecoration(
+                                hintText: lang.tr('उदा. वडगाव', 'e.g. Wadgaon'),
+                                prefixIcon: const Icon(Icons.location_city),
                               ),
                             ),
                           ],
@@ -175,12 +173,12 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                   const SizedBox(height: 14),
 
                   // Address
-                  const FormLabel('संपूर्ण पत्ता / गल्ली'),
+                  FormLabel(lang.tr('संपूर्ण पत्ता / गल्ली', 'Full Address / Street')),
                   TextFormField(
                     controller: _addressController,
-                    decoration: const InputDecoration(
-                      hintText: 'उदा. मुख्य रस्ता, मारुती मंदिराजवळ',
-                      prefixIcon: Icon(Icons.place_outlined),
+                    decoration: InputDecoration(
+                      hintText: lang.tr('उदा. मुख्य रस्ता, मारुती मंदिराजवळ', 'e.g. Main Road, near temple'),
+                      prefixIcon: const Icon(Icons.place_outlined),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -198,72 +196,59 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'वर्गणी आकारणी गणित (Vargani Calculation)',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primaryDark),
+                          Text(
+                            lang.tr('वर्गणी आकारणी गणित', 'Vargani Calculation'),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primaryPurple),
                           ),
                           const SizedBox(height: 12),
-                          const FormLabel('एकूण सदस्य संख्या', isRequired: true),
+                          FormLabel(lang.tr('एकूण सदस्य संख्या', 'Total Members'), isRequired: true),
                           TextFormField(
                             controller: _membersCountController,
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              hintText: '४',
-                              prefixIcon: Icon(Icons.people_alt_outlined),
+                            decoration: InputDecoration(
+                              hintText: lang.tr('उदा. ४', 'e.g. 4'),
+                              prefixIcon: const Icon(Icons.people_alt_outlined),
                             ),
                             onChanged: (_) => setState(() {}),
                             validator: AppValidators.memberCount,
                           ),
                           const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  activeConfig?.calculationType == 'per_member'
-                                      ? 'मंडळाचा दर: ${AppFormatters.formatCurrency(activeConfig?.perMemberAmount ?? 500.0)} प्रति व्यक्ती'
-                                      : 'मंडळाचा दर: ${AppFormatters.formatCurrency(activeConfig?.fixedAmount ?? 2000.0)} प्रति कुटुंब (ठराविक)',
-                                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryLight),
-                                ),
-                              ),
-                              InkWell(
-                                onTap: () => context.push('/vargani-config'),
-                                child: const Text(
-                                  'दर बदला ⚙️',
-                                  style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ],
+                          Text(
+                            activeConfig?.calculationType == 'per_member'
+                                ? '${lang.tr("मंडळाचा दर:", "Rate:")} ${AppFormatters.formatCurrency(activeConfig?.perMemberAmount ?? 500.0)} ${lang.tr("प्रति व्यक्ती", "per person")}'
+                                : '${lang.tr("मंडळाचा दर:", "Rate:")} ${AppFormatters.formatCurrency(activeConfig?.fixedAmount ?? 2000.0)} ${lang.tr("प्रति कुटुंब (ठराविक)", "per family (fixed)")}',
+                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 8),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('एकूण ठरलेली वर्गणी:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                              Text(lang.tr('एकूण ठरलेली वर्गणी:', 'Total Expected Vargani:'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                               Text(
                                 AppFormatters.formatCurrency(calculatedVargani),
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.primary),
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primaryPurple),
                               ),
                             ],
                           ),
                           const SizedBox(height: 8),
                           CheckboxListTile(
                             contentPadding: EdgeInsets.zero,
-                            title: const Text('स्वतंत्र / सवलतीची वर्गणी रक्कम ठरवा', style: TextStyle(fontSize: 13)),
+                            title: Text(lang.tr('स्वतंत्र / सवलतीची वर्गणी रक्कम ठरवा', 'Set custom / discounted vargani amount'), style: const TextStyle(fontSize: 13)),
                             value: _useCustomVargani,
+                            activeColor: AppColors.primaryPurple,
                             onChanged: (val) => setState(() => _useCustomVargani = val ?? false),
                           ),
                           if (_useCustomVargani) ...[
                             const SizedBox(height: 6),
-                            const FormLabel('निश्चित केलेली वर्गणी रक्कम (₹)'),
+                            FormLabel(lang.tr('निश्चित केलेली वर्गणी रक्कम (₹)', 'Custom Vargani Amount (₹)')),
                             TextFormField(
                               controller: _customVarganiController,
                               keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                hintText: 'उदा. १५००',
-                                prefixIcon: Icon(Icons.currency_rupee),
+                              decoration: InputDecoration(
+                                hintText: lang.tr('उदा. १५००', 'e.g. 1500'),
+                                prefixIcon: const Icon(Icons.currency_rupee),
                               ),
-                              validator: (val) => _useCustomVargani ? AppValidators.amount(val, fieldName: 'निश्चित केलेली वर्गणी रक्कम') : null,
+                              validator: (val) => _useCustomVargani ? AppValidators.amount(val, fieldName: lang.tr('निश्चित केलेली वर्गणी रक्कम', 'Custom Amount')) : null,
                               onChanged: (_) => setState(() {}),
                             ),
                           ],
@@ -276,9 +261,15 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                   // Submit Button
                   ElevatedButton(
                     onPressed: _handleSave,
-                    style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-                    child: const Text('कुटुंब जतन करा (Save Family)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryPurple,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: Text(lang.tr('कुटुंब जतन करा', 'Save Family'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                   ),
+                  const SizedBox(height: 30),
                 ],
               ),
             ),
