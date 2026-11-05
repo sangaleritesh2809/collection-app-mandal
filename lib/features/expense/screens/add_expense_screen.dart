@@ -1,0 +1,235 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/formatters.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../providers/expense_provider.dart';
+
+class AddExpenseScreen extends ConsumerStatefulWidget {
+  const AddExpenseScreen({super.key});
+
+  @override
+  ConsumerState<AddExpenseScreen> createState() => _AddExpenseScreenState();
+}
+
+class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _amountController = TextEditingController();
+  final _paidByController = TextEditingController();
+  final _paidToController = TextEditingController();
+  final _descController = TextEditingController();
+
+  String _category = 'Decoration';
+  String _paymentMode = 'cash';
+  DateTime _expenseDate = DateTime.now();
+
+  final List<String> _categories = [
+    'Decoration',
+    'Sound System',
+    'Lighting',
+    'Food',
+    'Transport',
+    'Electricity',
+    'Event Management',
+    'Pooja Sahitya',
+    'Prize & Gifts',
+    'Other',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    final user = ref.read(authProvider).userProfile;
+    _paidByController.text = user?.fullName ?? 'मंडळ खजिनदार';
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _amountController.dispose();
+    _paidByController.dispose();
+    _paidToController.dispose();
+    _descController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSubmit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
+
+    final success = await ref.read(expenseProvider.notifier).addExpense(
+      title: _titleController.text.trim(),
+      category: _category,
+      amount: amount,
+      expenseDate: _expenseDate,
+      paidBy: _paidByController.text.trim(),
+      paidTo: _paidToController.text.trim(),
+      paymentMode: _paymentMode,
+      description: _descController.text.trim().isNotEmpty ? _descController.text.trim() : null,
+    );
+
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('खर्च यशस्वीपणे नोंदवला गेला!')),
+      );
+      context.pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final expenseState = ref.watch(expenseProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('नवीन खर्च नोंदवा (Add Expense)'),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Title
+                TextFormField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'खर्च शीर्षक *',
+                    hintText: 'उदा. स्टेज व मंडप डेकोरेशन',
+                    prefixIcon: Icon(Icons.title),
+                  ),
+                  validator: (val) => val == null || val.trim().isEmpty ? 'खर्च शीर्षक आवश्यक आहे' : null,
+                ),
+                const SizedBox(height: 16),
+
+                // Category
+                DropdownButtonFormField<String>(
+                  value: _category,
+                  decoration: const InputDecoration(
+                    labelText: 'खर्च कॅटेगरी *',
+                    prefixIcon: Icon(Icons.category),
+                  ),
+                  items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                  onChanged: (val) => setState(() => _category = val ?? 'Decoration'),
+                ),
+                const SizedBox(height: 16),
+
+                // Amount
+                TextFormField(
+                  controller: _amountController,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.error),
+                  decoration: const InputDecoration(
+                    labelText: 'खर्च रक्कम (₹) *',
+                    prefixIcon: Icon(Icons.currency_rupee, size: 28),
+                    hintText: 'उदा. ३५००',
+                  ),
+                  validator: (val) {
+                    if (val == null || val.trim().isEmpty) return 'रक्कम आवश्यक आहे';
+                    final n = double.tryParse(val.trim());
+                    if (n == null || n <= 0) return 'वैध रक्कम टाका';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Paid To & Paid By
+                TextFormField(
+                  controller: _paidToController,
+                  decoration: const InputDecoration(
+                    labelText: 'रक्कम कोणाला दिली (Paid To) *',
+                    hintText: 'उदा. साई डेकोरेटर्स / अमोल शिंदे',
+                    prefixIcon: Icon(Icons.person),
+                  ),
+                  validator: (val) => val == null || val.trim().isEmpty ? 'स्वीकारणाऱ्याचे नाव आवश्यक आहे' : null,
+                ),
+                const SizedBox(height: 16),
+
+                TextFormField(
+                  controller: _paidByController,
+                  decoration: const InputDecoration(
+                    labelText: 'रक्कम कोणी दिली (Paid By) *',
+                    hintText: 'उदा. खजिनदार सुरेश कदम',
+                    prefixIcon: Icon(Icons.account_balance_wallet_outlined),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Payment Mode & Date
+                DropdownButtonFormField<String>(
+                  value: _paymentMode,
+                  decoration: const InputDecoration(
+                    labelText: 'पेमेंट पद्धत *',
+                    prefixIcon: Icon(Icons.payment),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'cash', child: Text('रोख (Cash)')),
+                    DropdownMenuItem(value: 'upi', child: Text('UPI ट्रान्सफर')),
+                    DropdownMenuItem(value: 'bank_transfer', child: Text('बँक चेक / NEFT')),
+                    DropdownMenuItem(value: 'other', child: Text('इतर')),
+                  ],
+                  onChanged: (val) => setState(() => _paymentMode = val ?? 'cash'),
+                ),
+                const SizedBox(height: 16),
+
+                InkWell(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _expenseDate,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2030),
+                    );
+                    if (picked != null) setState(() => _expenseDate = picked);
+                  },
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'खर्च दिनांक',
+                      prefixIcon: Icon(Icons.calendar_today),
+                    ),
+                    child: Text(AppFormatters.formatDate(_expenseDate)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Description
+                TextFormField(
+                  controller: _descController,
+                  maxLines: 2,
+                  decoration: const InputDecoration(
+                    labelText: 'तपशील / बिल संदर्भ',
+                    hintText: 'उदा. बिल क्र. ४५ / ५०% ॲडव्हान्स दिला',
+                    prefixIcon: Icon(Icons.notes),
+                  ),
+                ),
+                const SizedBox(height: 28),
+
+                // Submit
+                ElevatedButton(
+                  onPressed: expenseState.isLoading ? null : _handleSubmit,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: AppColors.error,
+                  ),
+                  child: expenseState.isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('खर्च जतन करा (Save Expense)'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
