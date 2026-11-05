@@ -21,6 +21,7 @@ import '../../features/expense/screens/add_expense_screen.dart';
 import '../../features/reports/screens/reports_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/vargani_config/screens/vargani_config_screen.dart';
+import '../../features/mandal/screens/mandal_payment_settings_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -114,6 +115,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/vargani-config',
       builder: (context, state) => const VarganiConfigScreen(),
+    ),
+    GoRoute(
+      path: '/mandal-payment-settings',
+      builder: (context, state) => const MandalPaymentSettingsScreen(),
     ),
   ],
 );

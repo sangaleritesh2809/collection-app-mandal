@@ -11,6 +11,7 @@ class CollectionRecord {
   final DateTime collectionDate;
   final String? notes;
   final String? receiptUrl;
+  final String? utrNumber;
   final bool isDeposited;
   final String? depositRequestId;
   final String? familyName;
@@ -31,6 +32,7 @@ class CollectionRecord {
     required this.collectionDate,
     this.notes,
     this.receiptUrl,
+    this.utrNumber,
     this.isDeposited = false,
     this.depositRequestId,
     this.familyName,
@@ -55,6 +57,7 @@ class CollectionRecord {
           : DateTime.now(),
       notes: json['notes'] as String?,
       receiptUrl: json['receipt_url'] as String?,
+      utrNumber: json['utr_number'] as String?,
       isDeposited: json['is_deposited'] as bool? ?? false,
       depositRequestId: json['deposit_request_id'] as String?,
       familyName: json['family']?['family_name'] as String? ?? json['family_name'] as String?,
@@ -80,6 +83,7 @@ class CollectionRecord {
       'collection_date': collectionDate.toIso8601String().substring(0, 10),
       'notes': notes,
       'receipt_url': receiptUrl,
+      'utr_number': utrNumber,
       'is_deposited': isDeposited,
       'deposit_request_id': depositRequestId,
     };

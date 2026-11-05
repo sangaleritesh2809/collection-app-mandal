@@ -475,3 +475,4 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
     );
   }
 }
+

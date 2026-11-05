@@ -57,6 +57,15 @@ class CollectionNotifier extends StateNotifier<CollectionState> {
 
   Future<void> loadCollections() async {
     if (mandalId == null) return;
+
+    // RBAC: Check module permission
+    final canView = ref.read(mandalProvider).hasModulePermission('collection');
+    if (!canView) {
+      debugPrint('RBAC: No collection module permission. Skipping API call.');
+      state = state.copyWith(collections: [], isLoading: false);
+      return;
+    }
+
     state = state.copyWith(isLoading: true, error: null);
 
     if (!SupabaseService.isInitialized) {
@@ -90,6 +99,7 @@ class CollectionNotifier extends StateNotifier<CollectionState> {
     required String paymentMode,
     required DateTime collectionDate,
     String? notes,
+    String? utrNumber,
     required String familyName,
     required String familyHeadName,
     String? houseNumber,
@@ -125,6 +135,7 @@ class CollectionNotifier extends StateNotifier<CollectionState> {
       totalVargani: totalVargani,
       pendingAmount: (totalVargani - (previousPaid + amount)).clamp(0.0, double.infinity),
       paymentMode: paymentMode,
+      utrNumber: utrNumber,
       collectorName: collectorName,
       notes: notes,
     );
@@ -146,6 +157,7 @@ class CollectionNotifier extends StateNotifier<CollectionState> {
         'receipt_number': rctNumber,
         'amount': amount,
         'payment_mode': paymentMode,
+        'utr_number': utrNumber,
         'collection_date': collectionDate.toIso8601String().substring(0, 10),
         'notes': notes,
         'is_deposited': false,

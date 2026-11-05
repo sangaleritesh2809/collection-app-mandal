@@ -15,6 +15,9 @@ class Mandal {
   final String invitationCode;
   final bool isActive;
   final String? userRole; // Role of current logged-in user in this mandal
+  final String? qrCodeUrl; // Photo of official payment QR code
+  final String? upiId; // Mandal's UPI ID (e.g. mandal@upi)
+  final String? upiPayeeName; // Beneficiary name on UPI
   final DateTime createdAt;
 
   Mandal({
@@ -34,6 +37,9 @@ class Mandal {
     required this.invitationCode,
     this.isActive = true,
     this.userRole,
+    this.qrCodeUrl,
+    this.upiId,
+    this.upiPayeeName,
     required this.createdAt,
   });
 
@@ -57,6 +63,9 @@ class Mandal {
       invitationCode: json['invitation_code'] as String? ?? 'VG2026A',
       isActive: json['is_active'] as bool? ?? true,
       userRole: role ?? json['role'] as String?,
+      qrCodeUrl: json['qr_code_url'] as String?,
+      upiId: json['upi_id'] as String?,
+      upiPayeeName: json['upi_payee_name'] as String?,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),
@@ -80,6 +89,9 @@ class Mandal {
       'establishment_date': establishmentDate?.toIso8601String(),
       'invitation_code': invitationCode,
       'is_active': isActive,
+      'qr_code_url': qrCodeUrl,
+      'upi_id': upiId,
+      'upi_payee_name': upiPayeeName,
     };
   }
 
@@ -95,6 +107,9 @@ class Mandal {
     String? email,
     bool? isActive,
     String? userRole,
+    String? qrCodeUrl,
+    String? upiId,
+    String? upiPayeeName,
   }) {
     return Mandal(
       id: id,
@@ -113,6 +128,9 @@ class Mandal {
       invitationCode: invitationCode,
       isActive: isActive ?? this.isActive,
       userRole: userRole ?? this.userRole,
+      qrCodeUrl: qrCodeUrl ?? this.qrCodeUrl,
+      upiId: upiId ?? this.upiId,
+      upiPayeeName: upiPayeeName ?? this.upiPayeeName,
       createdAt: createdAt,
     );
   }

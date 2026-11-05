@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../mandal/providers/mandal_provider.dart';
 import '../../family/providers/family_provider.dart';
 import '../../collection/providers/collection_provider.dart';
 import '../../deposit/providers/deposit_provider.dart';
@@ -6,10 +7,18 @@ import '../../expense/providers/expense_provider.dart';
 import '../models/dashboard_summary.dart';
 
 final dashboardProvider = Provider<DashboardSummary>((ref) {
-  final familyState = ref.watch(familyProvider);
-  final collectionState = ref.watch(collectionProvider);
-  final depositState = ref.watch(depositProvider);
-  final expenseState = ref.watch(expenseProvider);
+  final mandalState = ref.watch(mandalProvider);
+
+  final canViewFamily = mandalState.hasModulePermission('family');
+  final canViewCollection = mandalState.hasModulePermission('collection');
+  final canViewDeposit = mandalState.hasModulePermission('deposit');
+  final canViewExpense = mandalState.hasModulePermission('expense');
+
+  // RBAC Permission Gate: Only watch and trigger API calls for permitted modules!
+  final familyState = canViewFamily ? ref.watch(familyProvider) : const FamilyState();
+  final collectionState = canViewCollection ? ref.watch(collectionProvider) : const CollectionState();
+  final depositState = canViewDeposit ? ref.watch(depositProvider) : const DepositState();
+  final expenseState = canViewExpense ? ref.watch(expenseProvider) : const ExpenseState();
 
   // 1. Families calculations
   final totalFamilies = familyState.families.length;

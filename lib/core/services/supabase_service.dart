@@ -54,4 +54,18 @@ class SupabaseService {
 
   static User? get currentUser => _isInitialized ? client.auth.currentUser : null;
   static String? get currentUserId => currentUser?.id;
+
+  /// Measures live network round-trip time (latency) in milliseconds
+  static Future<int> checkLatency() async {
+    if (!_isInitialized) return -1;
+    final stopwatch = Stopwatch()..start();
+    try {
+      await client.from('mandals').select('id').limit(1);
+      stopwatch.stop();
+      return stopwatch.elapsedMilliseconds;
+    } catch (_) {
+      stopwatch.stop();
+      return stopwatch.elapsedMilliseconds;
+    }
+  }
 }

@@ -20,6 +20,7 @@ class PdfReceiptData {
   final double totalVargani;
   final double pendingAmount;
   final String paymentMode;
+  final String? utrNumber;
   final String collectorName;
   final String? notes;
 
@@ -39,6 +40,7 @@ class PdfReceiptData {
     required this.totalVargani,
     required this.pendingAmount,
     required this.paymentMode,
+    this.utrNumber,
     required this.collectorName,
     this.notes,
   });
@@ -180,7 +182,7 @@ class PdfService {
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text('पद्धत: ${data.paymentMode.toUpperCase()}', style: pw.TextStyle(font: font, fontSize: 8)),
+                    pw.Text('पद्धत: ${data.paymentMode == "upi" ? "ऑनलाइन (UPI)" : data.paymentMode.toUpperCase()}${data.utrNumber != null && data.utrNumber!.isNotEmpty ? " (UTR: ${data.utrNumber})" : ""}', style: pw.TextStyle(font: font, fontSize: 8)),
                     pw.Text('व्यवहार क्र: ${data.transactionNumber}', style: pw.TextStyle(font: font, fontSize: 8)),
                   ],
                 ),

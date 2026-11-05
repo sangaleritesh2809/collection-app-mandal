@@ -61,6 +61,15 @@ class ExpenseNotifier extends StateNotifier<ExpenseState> {
 
   Future<void> loadExpenses() async {
     if (mandalId == null) return;
+
+    // RBAC: Only call API if user has module permission
+    final canView = ref.read(mandalProvider).hasModulePermission('expense');
+    if (!canView) {
+      debugPrint('RBAC: No expense module permission. Skipping API call.');
+      state = state.copyWith(expenses: [], isLoading: false);
+      return;
+    }
+
     state = state.copyWith(isLoading: true, error: null);
 
     if (!SupabaseService.isInitialized) {

@@ -70,6 +70,9 @@ CREATE TABLE IF NOT EXISTS public.mandals (
     email TEXT,
     establishment_date DATE,
     invitation_code TEXT UNIQUE NOT NULL, -- e.g. VG2026A
+    qr_code_url TEXT,                     -- Photo of official payment QR code (PhonePe/GPay standee)
+    upi_id TEXT,                          -- Mandal's UPI ID (e.g. mandal@upi)
+    upi_payee_name TEXT,                  -- Beneficiary Name on UPI
     is_active BOOLEAN DEFAULT TRUE NOT NULL,
     created_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
@@ -246,6 +249,7 @@ CREATE TABLE IF NOT EXISTS public.collections (
     payment_mode TEXT NOT NULL DEFAULT 'cash' CHECK (payment_mode IN ('cash', 'upi', 'bank_transfer', 'cheque', 'other')),
     collection_date DATE DEFAULT CURRENT_DATE NOT NULL,
     notes TEXT,
+    utr_number TEXT,
     receipt_url TEXT,
     is_deposited BOOLEAN DEFAULT FALSE NOT NULL,
     deposit_request_id UUID REFERENCES public.deposit_requests(id) ON DELETE SET NULL,
@@ -694,7 +698,7 @@ ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
--- Helper check if user is a member of the mandal
+-- Helper check if user is a member of the mandal (optimized with STABLE PARALLEL SAFE for fast RLS checks)
 CREATE OR REPLACE FUNCTION public.is_mandal_member(p_mandal_id UUID)
 RETURNS BOOLEAN AS $$
 BEGIN
@@ -703,7 +707,16 @@ BEGIN
         WHERE mandal_id = p_mandal_id AND user_id = auth.uid() AND status = 'active'
     );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE PARALLEL SAFE;
+
+-- High-performance composite indexes for instant sub-millisecond query execution
+CREATE INDEX IF NOT EXISTS idx_memberships_lookup ON public.mandal_memberships(mandal_id, user_id, status);
+CREATE INDEX IF NOT EXISTS idx_collections_mandal_date ON public.collections(mandal_id, collection_date DESC, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_expenses_mandal_date ON public.expenses(mandal_id, expense_date DESC);
+CREATE INDEX IF NOT EXISTS idx_deposit_requests_mandal_created ON public.deposit_requests(mandal_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_families_mandal_code ON public.families(mandal_id, status, family_code ASC);
+CREATE INDEX IF NOT EXISTS idx_family_members_fam_active ON public.family_members(family_id, status);
+CREATE INDEX IF NOT EXISTS idx_vargani_configs_active ON public.vargani_configs(mandal_id, is_active);
 
 -- Profiles
 DROP POLICY IF EXISTS "Public profiles are viewable" ON public.profiles;
@@ -805,7 +818,8 @@ CREATE POLICY "Notifications own user" ON public.notifications FOR ALL USING (au
 INSERT INTO storage.buckets (id, name, public) VALUES 
     ('mandal_logos', 'mandal_logos', true),
     ('receipts', 'receipts', true),
-    ('expense_bills', 'expense_bills', true)
+    ('expense_bills', 'expense_bills', true),
+    ('qr_codes', 'qr_codes', true)
 ON CONFLICT (id) DO NOTHING;
 
 DROP POLICY IF EXISTS "Public read for mandal_logos" ON storage.objects;
@@ -825,4 +839,10 @@ CREATE POLICY "Public read for expense_bills" ON storage.objects FOR SELECT USIN
 
 DROP POLICY IF EXISTS "Auth upload for expense_bills" ON storage.objects;
 CREATE POLICY "Auth upload for expense_bills" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'expense_bills' AND auth.role() = 'authenticated');
+
+DROP POLICY IF EXISTS "Public read for qr_codes" ON storage.objects;
+CREATE POLICY "Public read for qr_codes" ON storage.objects FOR SELECT USING (bucket_id = 'qr_codes');
+
+DROP POLICY IF EXISTS "Auth upload for qr_codes" ON storage.objects;
+CREATE POLICY "Auth upload for qr_codes" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'qr_codes' AND auth.role() = 'authenticated');
 

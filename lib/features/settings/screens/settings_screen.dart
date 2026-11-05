@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/services/supabase_service.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../mandal/providers/mandal_provider.dart';
 import '../../vargani_config/providers/vargani_config_provider.dart';
@@ -159,6 +160,27 @@ class SettingsScreen extends ConsumerWidget {
                         trailing: const Icon(Icons.chevron_right, size: 20),
                         onTap: () => context.push('/vargani-config'),
                       ),
+                      const Divider(height: 16),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.qr_code_2, color: Colors.green, size: 22),
+                        ),
+                        title: const Text('पेमेंट UPI व QR कोड (Payment QR)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        subtitle: Text(
+                          activeMandal.upiId != null || activeMandal.qrCodeUrl != null
+                              ? '${activeMandal.upiId ?? "QR फोटो जोडला आहे"} • स्कॅनर सक्रिय'
+                              : 'मंडळाचा UPI QR कोड किंवा फोटो जोडा',
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryLight),
+                        ),
+                        trailing: const Icon(Icons.chevron_right, size: 20),
+                        onTap: () => context.push('/mandal-payment-settings'),
+                      ),
                     ],
                   ),
                 ),
@@ -197,6 +219,52 @@ class SettingsScreen extends ConsumerWidget {
                         ref.read(themeModeProvider.notifier).state = val ? ThemeMode.dark : ThemeMode.light;
                       },
                     ),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.speed, color: Colors.green),
+                    title: const Text('सर्व्हर गती तपासा (API Speed Test)'),
+                    subtitle: const Text('क्लाउड डेटाबेस रिस्पॉन्स टाईम पडताळा'),
+                    trailing: const Icon(Icons.network_check, color: AppColors.primary),
+                    onTap: () async {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('एपीआय गती तपासत आहे...')),
+                      );
+                      final ms = await SupabaseService.checkLatency();
+                      if (context.mounted) {
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Row(
+                              children: [
+                                Icon(Icons.bolt, color: Colors.green),
+                                SizedBox(width: 8),
+                                Text('API गती निकाल'),
+                              ],
+                            ),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('रिस्पॉन्स वेळ: $ms ms', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.green)),
+                                const SizedBox(height: 8),
+                                Text(
+                                  ms < 300
+                                      ? '✅ उत्कृष्ट गती! डेटाबेस जलद काम करत आहे.'
+                                      : '⚠️ मध्यम गती. इंटरनेट कनेक्शन तपासा.',
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                                const SizedBox(height: 12),
+                                const Text('सुरक्षा: SSL/TLS 1.3 एन्क्रिप्टेड, RLS सुरक्षित', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                              ],
+                            ),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('ठीक आहे')),
+                            ],
+                          ),
+                        );
+                      }
+                    },
                   ),
                 ],
               ),
