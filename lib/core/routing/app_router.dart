@@ -73,7 +73,10 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/add-family',
-      builder: (context, state) => const AddEditFamilyScreen(),
+      builder: (context, state) {
+        final family = state.extra as Family?;
+        return AddEditFamilyScreen(family: family);
+      },
     ),
     GoRoute(
       path: '/family-details/:id',

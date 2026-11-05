@@ -14,6 +14,7 @@ class Family {
   final double paidAmount;
   final double pendingAmount;
   final String status;
+  final bool isCustomVargani;
   final DateTime createdAt;
 
   Family({
@@ -32,6 +33,7 @@ class Family {
     this.paidAmount = 0.0,
     this.pendingAmount = 0.0,
     this.status = 'active',
+    this.isCustomVargani = false,
     required this.createdAt,
   });
 
@@ -52,6 +54,7 @@ class Family {
       paidAmount: (json['paid_amount'] as num?)?.toDouble() ?? 0.0,
       pendingAmount: (json['pending_amount'] as num?)?.toDouble() ?? 0.0,
       status: json['status'] as String? ?? 'active',
+      isCustomVargani: json['is_custom_vargani'] == true,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),
@@ -75,7 +78,48 @@ class Family {
       'paid_amount': paidAmount,
       'pending_amount': pendingAmount,
       'status': status,
+      'is_custom_vargani': isCustomVargani,
     };
+  }
+
+  Family copyWith({
+    String? id,
+    String? mandalId,
+    String? familyCode,
+    String? familyName,
+    String? familyHeadName,
+    String? houseNumber,
+    String? address,
+    String? village,
+    String? mobileNumber,
+    int? totalMembers,
+    String? varganiConfigId,
+    double? totalVargani,
+    double? paidAmount,
+    double? pendingAmount,
+    String? status,
+    bool? isCustomVargani,
+    DateTime? createdAt,
+  }) {
+    return Family(
+      id: id ?? this.id,
+      mandalId: mandalId ?? this.mandalId,
+      familyCode: familyCode ?? this.familyCode,
+      familyName: familyName ?? this.familyName,
+      familyHeadName: familyHeadName ?? this.familyHeadName,
+      houseNumber: houseNumber ?? this.houseNumber,
+      address: address ?? this.address,
+      village: village ?? this.village,
+      mobileNumber: mobileNumber ?? this.mobileNumber,
+      totalMembers: totalMembers ?? this.totalMembers,
+      varganiConfigId: varganiConfigId ?? this.varganiConfigId,
+      totalVargani: totalVargani ?? this.totalVargani,
+      paidAmount: paidAmount ?? this.paidAmount,
+      pendingAmount: pendingAmount ?? this.pendingAmount,
+      status: status ?? this.status,
+      isCustomVargani: isCustomVargani ?? this.isCustomVargani,
+      createdAt: createdAt ?? this.createdAt,
+    );
   }
 
   bool get isFullyPaid => pendingAmount <= 0 && totalVargani > 0;

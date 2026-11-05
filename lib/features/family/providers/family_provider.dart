@@ -213,6 +213,7 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
         'paid_amount': 0.0,
         'pending_amount': expectedVargani,
         'status': 'active',
+        'is_custom_vargani': customTotalVargani != null,
       }).select().single();
 
       final familyId = res['id'] as String;
@@ -226,10 +227,125 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
         'status': 'active',
       });
 
+      // Defensive overwrite: If custom amount was set, ensure trigger didn't overwrite it
+      if (customTotalVargani != null) {
+        await SupabaseService.client.from('families').update({
+          'is_custom_vargani': true,
+          'total_vargani': customTotalVargani,
+          'pending_amount': customTotalVargani,
+        }).eq('id', familyId);
+      }
+
       await loadFamilies();
       return true;
     } catch (e) {
       debugPrint('Error adding family: $e');
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> updateFamily({
+    required String familyId,
+    required String familyName,
+    required String familyHeadName,
+    String? houseNumber,
+    String? address,
+    String? village,
+    String? mobileNumber,
+    required int totalMembers,
+    double? customTotalVargani,
+    bool? isCustomVargani,
+  }) async {
+    if (mandalId == null) return false;
+    state = state.copyWith(isLoading: true, error: null);
+
+    if (!SupabaseService.isInitialized) {
+      state = state.copyWith(isLoading: false, error: 'डेटाबेस कनेक्शन उपलब्ध नाही');
+      return false;
+    }
+
+    try {
+      final existing = state.families.firstWhere(
+        (f) => f.id == familyId,
+        orElse: () => Family(
+          id: familyId,
+          mandalId: mandalId!,
+          familyCode: 'FAM',
+          familyName: familyName,
+          familyHeadName: familyHeadName,
+          createdAt: DateTime.now(),
+        ),
+      );
+
+      final double newTotal;
+      final bool customFlag;
+
+      if (customTotalVargani != null) {
+        newTotal = customTotalVargani;
+        customFlag = true;
+      } else if (isCustomVargani == false) {
+        customFlag = false;
+        newTotal = activeConfig != null ? activeConfig!.calculateTotalForFamily(totalMembers) : totalMembers * 500.0;
+      } else if (existing.isCustomVargani) {
+        customFlag = true;
+        newTotal = existing.totalVargani;
+      } else {
+        customFlag = false;
+        newTotal = activeConfig != null ? activeConfig!.calculateTotalForFamily(totalMembers) : totalMembers * 500.0;
+      }
+
+      final newPending = (newTotal - existing.paidAmount).clamp(0.0, double.infinity);
+
+      await SupabaseService.client.from('families').update({
+        'family_name': familyName,
+        'family_head_name': familyHeadName,
+        'house_number': houseNumber,
+        'address': address,
+        'village': village,
+        'mobile_number': mobileNumber,
+        'total_members': totalMembers,
+        'is_custom_vargani': customFlag,
+        'total_vargani': newTotal,
+        'pending_amount': newPending,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', familyId);
+
+      await loadFamilies();
+      return true;
+    } catch (e) {
+      debugPrint('Error updating family: $e');
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> deleteFamily(String familyId) async {
+    if (mandalId == null) return false;
+    state = state.copyWith(isLoading: true, error: null);
+
+    if (!SupabaseService.isInitialized) {
+      state = state.copyWith(isLoading: false, error: 'डेटाबेस कनेक्शन उपलब्ध नाही');
+      return false;
+    }
+
+    try {
+      // Archive family so it is safely soft-deleted from active lists
+      await SupabaseService.client.from('families').update({
+        'status': 'archived',
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', familyId);
+
+      // Archive family members as well
+      await SupabaseService.client.from('family_members').update({
+        'status': 'archived',
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('family_id', familyId);
+
+      await loadFamilies();
+      return true;
+    } catch (e) {
+      debugPrint('Error deleting family: $e');
       state = state.copyWith(isLoading: false, error: e.toString());
       return false;
     }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' hide Family;
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
@@ -72,9 +73,16 @@ class _FamilyDetailsScreenState extends ConsumerState<FamilyDetailsScreen> {
                 TextField(
                   controller: mobileCtrl,
                   keyboardType: TextInputType.phone,
+                  maxLength: 10,
+                  buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                  ],
                   decoration: InputDecoration(
                     labelText: lang.tr('मोबाईल नंबर', 'Mobile Number'),
                     prefixIcon: const Icon(Icons.phone),
+                    prefixText: '+91 ',
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -161,6 +169,18 @@ class _FamilyDetailsScreenState extends ConsumerState<FamilyDetailsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(family.familyName),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: lang.tr('संपादित करा', 'Edit'),
+            onPressed: () => context.push('/add-family', extra: family),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: AppColors.error),
+            tooltip: lang.tr('डिलीट करा', 'Delete'),
+            onPressed: () => _showDeleteFamilyDialog(context, ref, family, lang),
+          ),
+        ],
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
@@ -424,6 +444,60 @@ class _FamilyDetailsScreenState extends ConsumerState<FamilyDetailsScreen> {
         const SizedBox(height: 2),
         Text(val, style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: color)),
       ],
+    );
+  }
+
+  void _showDeleteFamilyDialog(BuildContext context, WidgetRef ref, dynamic family, AppLanguage lang) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: AppColors.error),
+            const SizedBox(width: 8),
+            Text(lang.tr('कुटुंब डिलीट करा', 'Delete Family')),
+          ],
+        ),
+        content: Text(
+          lang.tr(
+            'तुम्हाला "${family.familyName}" हे कुटुंब आणि त्यांच्या नोंदी यादीतून डिलीट करायच्या आहेत का?',
+            'Are you sure you want to delete "${family.familyName}" and remove from active list?',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(lang.tr('रद्द करा', 'Cancel')),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              final success = await ref.read(familyProvider.notifier).deleteFamily(family.id);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    backgroundColor: success ? AppColors.success : AppColors.error,
+                    content: Text(
+                      success
+                          ? lang.tr('कुटुंब यशस्वीपणे डिलीट केले!', 'Family deleted successfully!')
+                          : lang.tr('कुटुंब डिलीट करताना त्रुटी आली.', 'Failed to delete family.'),
+                    ),
+                  ),
+                );
+                if (success) {
+                  context.pop();
+                }
+              }
+            },
+            child: Text(lang.tr('होय, डिलीट करा', 'Yes, Delete')),
+          ),
+        ],
+      ),
     );
   }
 }

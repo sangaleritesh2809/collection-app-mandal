@@ -328,6 +328,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           }
         }
       }
+    }
 
       // 2. Try authenticating
       try {

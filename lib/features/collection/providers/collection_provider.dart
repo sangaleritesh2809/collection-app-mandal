@@ -163,18 +163,22 @@ class CollectionNotifier extends StateNotifier<CollectionState> {
         'is_deposited': false,
       });
 
-      // Insert audit log
-      await SupabaseService.client.from('audit_logs').insert({
-        'mandal_id': mandalId,
-        'user_id': userId,
-        'action': 'COLLECTION_ADDED',
-        'module': 'collection',
-        'details': {
-          'receipt_number': rctNumber,
-          'amount': amount,
-          'family_id': familyId,
-        },
-      });
+      // Insert audit log (non-critical so wrapped safely)
+      try {
+        await SupabaseService.client.from('audit_logs').insert({
+          'mandal_id': mandalId,
+          'user_id': userId,
+          'action': 'COLLECTION_ADDED',
+          'module': 'collection',
+          'details': {
+            'receipt_number': rctNumber,
+            'amount': amount,
+            'family_id': familyId,
+          },
+        });
+      } catch (logErr) {
+        debugPrint('Non-critical audit log insert failed: $logErr');
+      }
 
       await loadCollections();
       ref.read(familyProvider.notifier).loadFamilies();

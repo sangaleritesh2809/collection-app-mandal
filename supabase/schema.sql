@@ -201,6 +201,7 @@ CREATE TABLE IF NOT EXISTS public.families (
     total_vargani NUMERIC(12,2) DEFAULT 0.00 NOT NULL,
     paid_amount NUMERIC(12,2) DEFAULT 0.00 NOT NULL,
     pending_amount NUMERIC(12,2) DEFAULT 0.00 NOT NULL,
+    is_custom_vargani BOOLEAN DEFAULT FALSE NOT NULL,
     status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'archived')),
     created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
@@ -358,6 +359,8 @@ DECLARE
     v_config RECORD;
     v_total_vargani NUMERIC(12,2) := 0;
     v_total_paid NUMERIC(12,2) := 0;
+    v_is_custom BOOLEAN := FALSE;
+    v_existing_total NUMERIC(12,2) := 0;
 BEGIN
     IF TG_OP = 'DELETE' THEN
         v_family_id := OLD.family_id;
@@ -369,6 +372,12 @@ BEGIN
     SELECT COUNT(*) INTO v_active_count
     FROM public.family_members
     WHERE family_id = v_family_id AND status = 'active';
+
+    -- Check if family has custom vargani amount set
+    SELECT COALESCE(is_custom_vargani, FALSE), COALESCE(total_vargani, 0)
+    INTO v_is_custom, v_existing_total
+    FROM public.families
+    WHERE id = v_family_id;
 
     -- Fetch family's current vargani config (strictly matching family's mandal_id)
     SELECT c.* INTO v_config
@@ -382,13 +391,17 @@ BEGIN
     ORDER BY c.is_active DESC, c.created_at DESC
     LIMIT 1;
 
-    -- Calculate total vargani
-    IF v_config.id IS NOT NULL THEN
+    -- Calculate total vargani (preserve custom amount if set)
+    IF v_is_custom = TRUE AND v_existing_total > 0 THEN
+        v_total_vargani := v_existing_total;
+    ELSIF v_config.id IS NOT NULL THEN
         IF v_config.calculation_type = 'per_member' THEN
             v_total_vargani := (v_active_count * v_config.per_member_amount) - COALESCE(v_config.discount, 0) + COALESCE(v_config.special_contribution, 0);
         ELSIF v_config.calculation_type = 'fixed' OR v_config.calculation_type = 'per_family' THEN
             v_total_vargani := v_config.fixed_amount - COALESCE(v_config.discount, 0) + COALESCE(v_config.special_contribution, 0);
         END IF;
+    ELSE
+        v_total_vargani := v_existing_total;
     END IF;
 
     -- Calculate total already paid
@@ -445,7 +458,8 @@ BEGIN
                 END) - f.paid_amount, 0
             ),
             updated_at = NOW()
-        WHERE f.mandal_id = NEW.mandal_id;
+        WHERE f.mandal_id = NEW.mandal_id
+          AND (f.is_custom_vargani IS NOT TRUE);
     END IF;
 
     RETURN NEW;
@@ -721,6 +735,21 @@ ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 CREATE OR REPLACE FUNCTION public.is_mandal_member(p_mandal_id UUID)
 RETURNS BOOLEAN AS $$
 BEGIN
+    -- Super admins and mandal creators have full access
+    IF EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND (role = 'super_admin' OR is_super_admin = TRUE)
+    ) THEN
+        RETURN TRUE;
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM public.mandals
+        WHERE id = p_mandal_id AND created_by = auth.uid()
+    ) THEN
+        RETURN TRUE;
+    END IF;
+
     RETURN EXISTS (
         SELECT 1 FROM public.mandal_memberships
         WHERE mandal_id = p_mandal_id AND user_id = auth.uid() AND status = 'active'

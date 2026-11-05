@@ -28,7 +28,7 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
   String _calculationType = 'per_member';
   DateTime? _dueDate;
   bool _isInitialized = false;
-  bool _isEditing = false;
+  String? _editingSection; // null, 'campaign', 'calculation', 'discount'
 
   @override
   void initState() {
@@ -50,17 +50,17 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
       if (active != null) {
         _nameController.text = active.name;
         _financialYearController.text = active.financialYear;
-        _calculationType = active.calculationType;
+        _calculationType = (active.calculationType == 'per_family') ? 'fixed' : active.calculationType;
         _perMemberAmountController.text = active.perMemberAmount.toStringAsFixed(0);
         _fixedAmountController.text = active.fixedAmount.toStringAsFixed(0);
         _discountController.text = active.discount.toStringAsFixed(0);
         _specialContributionController.text = active.specialContribution.toStringAsFixed(0);
         _dueDate = active.dueDate;
-        _isEditing = false;
+        _editingSection = null;
       } else {
         final mandalName = ref.read(mandalProvider).selectedMandal?.name ?? 'मंडळ';
         _nameController.text = '$mandalName वर्गणी ${DateTime.now().year}';
-        _isEditing = true;
+        _editingSection = 'calculation';
       }
       _isInitialized = true;
     }
@@ -75,6 +75,20 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
     _discountController.dispose();
     _specialContributionController.dispose();
     super.dispose();
+  }
+
+  void _resetValuesFromConfig() {
+    final active = ref.read(varganiConfigProvider).activeConfig;
+    if (active != null) {
+      _nameController.text = active.name;
+      _financialYearController.text = active.financialYear;
+      _calculationType = (active.calculationType == 'per_family') ? 'fixed' : active.calculationType;
+      _perMemberAmountController.text = active.perMemberAmount.toStringAsFixed(0);
+      _fixedAmountController.text = active.fixedAmount.toStringAsFixed(0);
+      _discountController.text = active.discount.toStringAsFixed(0);
+      _specialContributionController.text = active.specialContribution.toStringAsFixed(0);
+      _dueDate = active.dueDate;
+    }
   }
 
   double _getCalculatedSample(int members) {
@@ -122,13 +136,12 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
         SnackBar(
           backgroundColor: AppColors.success,
           content: Text(lang.tr(
-            '🚩 $mandalName चे वर्गणी दर यशस्वीपणे सेव्ह झाले आणि कुटुंबांना लागू झाले!',
-            '🚩 Vargani rates for $mandalName saved and applied to families successfully!',
+            '🚩 $mandalName चे वर्गणी दर यशस्वीपणे सेव्ह झाले!',
+            '🚩 Vargani rates for $mandalName saved successfully!',
           )),
         ),
       );
-      setState(() => _isEditing = false);
-      Navigator.of(context).pop();
+      setState(() => _editingSection = null);
     }
   }
 
@@ -140,26 +153,13 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
     final activeMandal = mandalState.selectedMandal;
     final hasExistingConfig = configState.activeConfig != null;
 
+    final isCampaignEditing = _editingSection == 'campaign' || !hasExistingConfig;
+    final isCalculationEditing = _editingSection == 'calculation' || !hasExistingConfig;
+    final isDiscountEditing = _editingSection == 'discount' || !hasExistingConfig;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(lang.tr('वर्गणी दर व नियम', 'Vargani Settings')),
-        actions: [
-          if (hasExistingConfig)
-            if (!_isEditing)
-              IconButton(
-                icon: const Icon(Icons.edit_note_rounded, size: 28),
-                tooltip: lang.tr('संपादित करा', 'Edit'),
-                onPressed: () => setState(() => _isEditing = true),
-              )
-            else
-              TextButton(
-                onPressed: () => setState(() => _isEditing = false),
-                child: Text(
-                  lang.tr('रद्द करा', 'Cancel'),
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryPurple),
-                ),
-              ),
-        ],
       ),
       body: SafeArea(
         child: configState.isLoading
@@ -173,7 +173,7 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Active Mandal Multi-Tenant Security Banner
+                        // Active Mandal Banner
                         Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
@@ -181,57 +181,42 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(color: AppColors.primaryPurple.withOpacity(0.2)),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
                             children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.shield_outlined, color: AppColors.primaryPurple, size: 24),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      activeMandal != null ? '🚩 ${activeMandal.name}' : lang.tr('सक्रिय मंडळ', 'Active Mandal'),
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primaryPurple),
-                                    ),
-                                  ),
-                                  if (hasExistingConfig && !_isEditing)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.successLight,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        lang.tr('सक्रिय दर', 'Active Rate'),
-                                        style: const TextStyle(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                lang.tr('बहु-मंडळ सुरक्षितता:', 'Mandal Isolation:'),
-                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: AppColors.textPrimary),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                lang.tr(
-                                  'तुम्ही येथे निश्चित केलेले वर्गणीचे दर फक्त आणि फक्त या मंडळाच्या कुटुंबांसाठीच लागू होतील. इतर कोणत्याही मंडळावर याचा परिणाम होणार नाही.',
-                                  'Rates configured here will only apply to this mandal\'s families without affecting any other mandal.',
+                              const Icon(Icons.shield_outlined, color: AppColors.primaryPurple, size: 24),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  activeMandal != null ? '🚩 ${activeMandal.name}' : lang.tr('सक्रिय मंडळ', 'Active Mandal'),
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primaryPurple),
                                 ),
-                                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                               ),
+                              if (hasExistingConfig && _editingSection == null)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.success.withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    lang.tr('सक्रिय', 'Active'),
+                                    style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.bold, fontSize: 12),
+                                  ),
+                                ),
                             ],
                           ),
                         ),
                         const SizedBox(height: 16),
 
-                        // Basic Details Card
+                        // Section 1: Campaign Details Card
                         Card(
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(color: Colors.grey.shade300),
+                            side: BorderSide(
+                              color: isCampaignEditing ? AppColors.primaryPurple : Colors.grey.shade300,
+                              width: isCampaignEditing ? 1.5 : 1,
+                            ),
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(16),
@@ -245,31 +230,53 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                       lang.tr('वर्गणी मोहीम तपशील', 'Vargani Campaign Details'),
                                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                                     ),
-                                    if (hasExistingConfig && !_isEditing)
-                                      TextButton.icon(
-                                        onPressed: () => setState(() => _isEditing = true),
-                                        icon: const Icon(Icons.edit, size: 15, color: AppColors.primaryPurple),
-                                        label: Text(
-                                          lang.tr('बदला', 'Edit'),
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryPurple),
+                                    if (hasExistingConfig) ...[
+                                      if (!isCampaignEditing)
+                                        TextButton.icon(
+                                          onPressed: () {
+                                            _resetValuesFromConfig();
+                                            setState(() => _editingSection = 'campaign');
+                                          },
+                                          icon: const Icon(Icons.edit, size: 15, color: AppColors.primaryPurple),
+                                          label: Text(
+                                            lang.tr('बदला', 'Edit'),
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryPurple),
+                                          ),
+                                        )
+                                      else
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            TextButton(
+                                              onPressed: () {
+                                                _resetValuesFromConfig();
+                                                setState(() => _editingSection = null);
+                                              },
+                                              child: Text(lang.tr('रद्द करा', 'Cancel'), style: const TextStyle(color: AppColors.textSecondary)),
+                                            ),
+                                            ElevatedButton(
+                                              onPressed: _handleSave,
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: AppColors.primaryPurple,
+                                                foregroundColor: Colors.white,
+                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                              ),
+                                              child: Text(lang.tr('जतन करा', 'Save')),
+                                            ),
+                                          ],
                                         ),
-                                        style: TextButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                          minimumSize: Size.zero,
-                                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                      ),
+                                    ],
                                   ],
                                 ),
                                 const SizedBox(height: 12),
                                 FormLabel(lang.tr('वर्गणीचे नाव', 'Vargani Campaign Name'), isRequired: true),
                                 TextFormField(
                                   controller: _nameController,
-                                  enabled: _isEditing,
+                                  enabled: isCampaignEditing,
                                   decoration: InputDecoration(
                                     hintText: lang.tr('उदा. श्री गणेशोत्सव वर्गणी २०२६', 'e.g. Ganeshotsav Vargani 2026'),
                                     prefixIcon: const Icon(Icons.event_note),
-                                    suffixIcon: _isEditing && _nameController.text.isNotEmpty
+                                    suffixIcon: isCampaignEditing && _nameController.text.isNotEmpty
                                         ? IconButton(
                                             icon: const Icon(Icons.clear, size: 18),
                                             tooltip: lang.tr('साफ करा', 'Clear'),
@@ -284,7 +291,7 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                 FormLabel(lang.tr('आर्थिक वर्ष', 'Financial Year'), isRequired: true),
                                 TextFormField(
                                   controller: _financialYearController,
-                                  enabled: _isEditing,
+                                  enabled: isCampaignEditing,
                                   decoration: const InputDecoration(
                                     hintText: '2026-2027',
                                     prefixIcon: Icon(Icons.calendar_month),
@@ -297,12 +304,15 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Calculation Method Selection Card
+                        // Section 2: Calculation Method Selection Card
                         Card(
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(color: Colors.grey.shade300),
+                            side: BorderSide(
+                              color: isCalculationEditing ? AppColors.primaryPurple : Colors.grey.shade300,
+                              width: isCalculationEditing ? 1.5 : 1,
+                            ),
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(16),
@@ -316,12 +326,42 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                       lang.tr('वर्गणी आकारणी पद्धत', 'Calculation Type'),
                                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                                     ),
-                                    if (hasExistingConfig && !_isEditing)
-                                      IconButton(
-                                        icon: const Icon(Icons.edit, size: 18, color: AppColors.primaryPurple),
-                                        tooltip: lang.tr('पद्धत बदला', 'Change Method'),
-                                        onPressed: () => setState(() => _isEditing = true),
-                                      ),
+                                    if (hasExistingConfig) ...[
+                                      if (!isCalculationEditing)
+                                        TextButton.icon(
+                                          onPressed: () {
+                                            _resetValuesFromConfig();
+                                            setState(() => _editingSection = 'calculation');
+                                          },
+                                          icon: const Icon(Icons.edit, size: 15, color: AppColors.primaryPurple),
+                                          label: Text(
+                                            lang.tr('बदला', 'Edit'),
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryPurple),
+                                          ),
+                                        )
+                                      else
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            TextButton(
+                                              onPressed: () {
+                                                _resetValuesFromConfig();
+                                                setState(() => _editingSection = null);
+                                              },
+                                              child: Text(lang.tr('रद्द करा', 'Cancel'), style: const TextStyle(color: AppColors.textSecondary)),
+                                            ),
+                                            ElevatedButton(
+                                              onPressed: _handleSave,
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: AppColors.primaryPurple,
+                                                foregroundColor: Colors.white,
+                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                              ),
+                                              child: Text(lang.tr('जतन करा', 'Save')),
+                                            ),
+                                          ],
+                                        ),
+                                    ],
                                   ],
                                 ),
                                 const SizedBox(height: 12),
@@ -332,27 +372,17 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                   title: lang.tr('प्रत्येक सदस्यानुसार', 'Per Member'),
                                   subtitle: lang.tr('कुटुंबातील व्यक्तींच्या संख्येनुसार वर्गणी (उदा. ४ व्यक्ती × दर)', 'Based on family members count (e.g. 4 members × rate)'),
                                   icon: Icons.people_outline,
-                                  enabled: _isEditing,
+                                  enabled: isCalculationEditing,
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 10),
 
-                                // Option 2: Per Family
-                                _buildCalculationOption(
-                                  type: 'per_family',
-                                  title: lang.tr('प्रत्येक कुटुंबास ठराविक', 'Per Family (Fixed)'),
-                                  subtitle: lang.tr('कुटुंबातील व्यक्तींची संख्या कितीही असली तरी समान निश्चित रक्कम', 'Fixed flat rate regardless of family size'),
-                                  icon: Icons.home_outlined,
-                                  enabled: _isEditing,
-                                ),
-                                const SizedBox(height: 8),
-
-                                // Option 3: Fixed
+                                // Option 2: Per Family / Fixed Flat Rate (Duplicate removed!)
                                 _buildCalculationOption(
                                   type: 'fixed',
-                                  title: lang.tr('समान निश्चित वर्गणी', 'Fixed Amount'),
-                                  subtitle: lang.tr('सर्व कुटुंबांसाठी एकसमान निश्चित दर', 'Uniform fixed rate for all families'),
-                                  icon: Icons.payments_outlined,
-                                  enabled: _isEditing,
+                                  title: lang.tr('प्रत्येक कुटुंबास ठराविक (निश्चित रक्कम)', 'Per Family (Fixed Amount)'),
+                                  subtitle: lang.tr('कुटुंबातील व्यक्तींची संख्या कितीही असली तरी समान निश्चित रक्कम', 'Fixed flat rate regardless of family size'),
+                                  icon: Icons.home_outlined,
+                                  enabled: isCalculationEditing,
                                 ),
                                 const SizedBox(height: 16),
 
@@ -365,7 +395,7 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                   ),
                                   TextFormField(
                                     controller: _perMemberAmountController,
-                                    enabled: _isEditing,
+                                    enabled: isCalculationEditing,
                                     keyboardType: TextInputType.number,
                                     decoration: const InputDecoration(
                                       hintText: '500',
@@ -382,7 +412,7 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                   ),
                                   TextFormField(
                                     controller: _fixedAmountController,
-                                    enabled: _isEditing,
+                                    enabled: isCalculationEditing,
                                     keyboardType: TextInputType.number,
                                     decoration: const InputDecoration(
                                       hintText: '2000',
@@ -398,21 +428,65 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Optional Discount & Contribution
+                        // Section 3: Optional Discount & Contribution Card
                         Card(
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(color: Colors.grey.shade300),
+                            side: BorderSide(
+                              color: isDiscountEditing ? AppColors.primaryPurple : Colors.grey.shade300,
+                              width: isDiscountEditing ? 1.5 : 1,
+                            ),
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(16),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  lang.tr('सवलत किंवा देणगी (ऐच्छिक)', 'Discount or Donation (Optional)'),
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      lang.tr('सवलत किंवा देणगी (ऐच्छिक)', 'Discount or Donation (Optional)'),
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                    ),
+                                    if (hasExistingConfig) ...[
+                                      if (!isDiscountEditing)
+                                        TextButton.icon(
+                                          onPressed: () {
+                                            _resetValuesFromConfig();
+                                            setState(() => _editingSection = 'discount');
+                                          },
+                                          icon: const Icon(Icons.edit, size: 15, color: AppColors.primaryPurple),
+                                          label: Text(
+                                            lang.tr('बदला', 'Edit'),
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryPurple),
+                                          ),
+                                        )
+                                      else
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            TextButton(
+                                              onPressed: () {
+                                                _resetValuesFromConfig();
+                                                setState(() => _editingSection = null);
+                                              },
+                                              child: Text(lang.tr('रद्द करा', 'Cancel'), style: const TextStyle(color: AppColors.textSecondary)),
+                                            ),
+                                            ElevatedButton(
+                                              onPressed: _handleSave,
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: AppColors.primaryPurple,
+                                                foregroundColor: Colors.white,
+                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                              ),
+                                              child: Text(lang.tr('जतन करा', 'Save')),
+                                            ),
+                                          ],
+                                        ),
+                                    ],
+                                  ],
                                 ),
                                 const SizedBox(height: 12),
                                 Row(
@@ -425,7 +499,7 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                           FormLabel(lang.tr('सवलत (₹)', 'Discount (₹)')),
                                           TextFormField(
                                             controller: _discountController,
-                                            enabled: _isEditing,
+                                            enabled: isDiscountEditing,
                                             keyboardType: TextInputType.number,
                                             decoration: const InputDecoration(
                                               hintText: '0',
@@ -450,7 +524,7 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                           FormLabel(lang.tr('विशेष देणगी (₹)', 'Special Contribution (₹)')),
                                           TextFormField(
                                             controller: _specialContributionController,
-                                            enabled: _isEditing,
+                                            enabled: isDiscountEditing,
                                             keyboardType: TextInputType.number,
                                             decoration: const InputDecoration(
                                               hintText: '0',
@@ -475,7 +549,7 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Live Calculation Preview Box
+                        // Live Calculation Preview Card
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -529,69 +603,18 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                         ),
                         const SizedBox(height: 24),
 
-                        // Buttons Section (Edit Button vs Save Button)
-                        if (hasExistingConfig && !_isEditing) ...[
+                        // Initial setup submit button (only shown when setting up for the first time)
+                        if (!hasExistingConfig) ...[
                           ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primaryPurple,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                              elevation: 2,
                             ),
-                            onPressed: () => setState(() => _isEditing = true),
-                            icon: const Icon(Icons.edit_rounded, size: 20),
-                            label: Text(
-                              lang.tr('दर व नियम बदला (संपादित करा)', 'Edit Rates & Settings'),
-                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ] else ...[
-                          Row(
-                            children: [
-                              if (hasExistingConfig) ...[
-                                Expanded(
-                                  child: OutlinedButton(
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(vertical: 15),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    ),
-                                    onPressed: () {
-                                      final active = configState.activeConfig;
-                                      if (active != null) {
-                                        _nameController.text = active.name;
-                                        _financialYearController.text = active.financialYear;
-                                        _calculationType = active.calculationType;
-                                        _perMemberAmountController.text = active.perMemberAmount.toStringAsFixed(0);
-                                        _fixedAmountController.text = active.fixedAmount.toStringAsFixed(0);
-                                        _discountController.text = active.discount.toStringAsFixed(0);
-                                        _specialContributionController.text = active.specialContribution.toStringAsFixed(0);
-                                      }
-                                      setState(() => _isEditing = false);
-                                    },
-                                    child: Text(lang.tr('रद्द करा', 'Cancel')),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                              ],
-                              Expanded(
-                                flex: 2,
-                                child: ElevatedButton.icon(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primaryPurple,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  ),
-                                  onPressed: _handleSave,
-                                  icon: const Icon(Icons.save_rounded),
-                                  label: Text(
-                                    lang.tr('दर सेव्ह करा व लागू करा', 'Save & Apply Rates'),
-                                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                              ),
-                            ],
+                            onPressed: _handleSave,
+                            icon: const Icon(Icons.check_circle, color: Colors.white),
+                            label: Text(lang.tr('दर व नियम लागू करा', 'Save & Apply')),
                           ),
                         ],
                         const SizedBox(height: 30),

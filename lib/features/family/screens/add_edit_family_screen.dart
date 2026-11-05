@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' hide Family;
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
@@ -9,10 +10,13 @@ import '../../../core/widgets/form_label.dart';
 import '../../../core/widgets/responsive_container.dart';
 import '../../vargani_config/models/vargani_config.dart';
 import '../../vargani_config/providers/vargani_config_provider.dart';
+import '../models/family.dart';
 import '../providers/family_provider.dart';
 
 class AddEditFamilyScreen extends ConsumerStatefulWidget {
-  const AddEditFamilyScreen({super.key});
+  final Family? family;
+
+  const AddEditFamilyScreen({super.key, this.family});
 
   @override
   ConsumerState<AddEditFamilyScreen> createState() => _AddEditFamilyScreenState();
@@ -20,14 +24,32 @@ class AddEditFamilyScreen extends ConsumerStatefulWidget {
 
 class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _headNameController = TextEditingController();
-  final _houseNumberController = TextEditingController();
-  final _addressController = TextEditingController();
-  final _villageController = TextEditingController();
-  final _mobileController = TextEditingController();
-  final _membersCountController = TextEditingController();
-  final _customVarganiController = TextEditingController();
+  late final TextEditingController _headNameController;
+  late final TextEditingController _houseNumberController;
+  late final TextEditingController _addressController;
+  late final TextEditingController _villageController;
+  late final TextEditingController _mobileController;
+  late final TextEditingController _membersCountController;
+  late final TextEditingController _customVarganiController;
   bool _useCustomVargani = false;
+
+  bool get isEditing => widget.family != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final f = widget.family;
+    _headNameController = TextEditingController(text: f?.familyHeadName ?? '');
+    _houseNumberController = TextEditingController(text: f?.houseNumber ?? '');
+    _addressController = TextEditingController(text: f?.address ?? '');
+    _villageController = TextEditingController(text: f?.village ?? '');
+    _mobileController = TextEditingController(text: f?.mobileNumber ?? '');
+    _membersCountController = TextEditingController(text: (f?.totalMembers ?? 1).toString());
+    _useCustomVargani = f?.isCustomVargani ?? false;
+    _customVarganiController = TextEditingController(
+      text: f != null && f.isCustomVargani ? f.totalVargani.toInt().toString() : '',
+    );
+  }
 
   @override
   void dispose() {
@@ -62,25 +84,50 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
     final customAmount = _useCustomVargani ? double.tryParse(_customVarganiController.text.trim()) : null;
     final headName = _headNameController.text.trim();
 
-    final success = await ref.read(familyProvider.notifier).addFamily(
-      familyName: headName,
-      familyHeadName: headName,
-      houseNumber: _houseNumberController.text.trim(),
-      address: _addressController.text.trim(),
-      village: _villageController.text.trim(),
-      mobileNumber: _mobileController.text.trim(),
-      initialMembersCount: members,
-      customTotalVargani: customAmount,
-    );
-
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: AppColors.success,
-          content: Text(lang.tr('कुटुंब यशस्वीपणे जोडले गेले!', 'Family added successfully!')),
-        ),
+    if (isEditing) {
+      final success = await ref.read(familyProvider.notifier).updateFamily(
+        familyId: widget.family!.id,
+        familyName: headName,
+        familyHeadName: headName,
+        houseNumber: _houseNumberController.text.trim(),
+        address: _addressController.text.trim(),
+        village: _villageController.text.trim(),
+        mobileNumber: _mobileController.text.trim(),
+        totalMembers: members,
+        customTotalVargani: customAmount,
+        isCustomVargani: _useCustomVargani,
       );
-      context.pop();
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.success,
+            content: Text(lang.tr('कुटुंब माहिती यशस्वीपणे बदलली!', 'Family details updated successfully!')),
+          ),
+        );
+        context.pop();
+      }
+    } else {
+      final success = await ref.read(familyProvider.notifier).addFamily(
+        familyName: headName,
+        familyHeadName: headName,
+        houseNumber: _houseNumberController.text.trim(),
+        address: _addressController.text.trim(),
+        village: _villageController.text.trim(),
+        mobileNumber: _mobileController.text.trim(),
+        initialMembersCount: members,
+        customTotalVargani: customAmount,
+      );
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.success,
+            content: Text(lang.tr('कुटुंब यशस्वीपणे जोडले गेले!', 'Family added successfully!')),
+          ),
+        );
+        context.pop();
+      }
     }
   }
 
@@ -93,7 +140,7 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(lang.tr('नवीन कुटुंब जोडा', 'Add Family')),
+        title: Text(isEditing ? lang.tr('कुटुंब माहिती बदला', 'Edit Family') : lang.tr('नवीन कुटुंब जोडा', 'Add Family')),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -117,11 +164,18 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                   ),
                   const SizedBox(height: 14),
 
-                  // Mobile Number (Mandatory)
+                  // Mobile Number (Mandatory 10 digits)
                   FormLabel(lang.tr('मोबाईल नंबर', 'Mobile Number'), isRequired: true),
                   TextFormField(
                     controller: _mobileController,
                     keyboardType: TextInputType.phone,
+                    maxLength: 10,
+                    buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(10),
+                    ],
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
                     decoration: const InputDecoration(
                       hintText: '9876543210',
                       prefixIcon: Icon(Icons.phone),
@@ -205,6 +259,10 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                           TextFormField(
                             controller: _membersCountController,
                             keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(3),
+                            ],
                             decoration: InputDecoration(
                               hintText: lang.tr('उदा. ४', 'e.g. 4'),
                               prefixIcon: const Icon(Icons.people_alt_outlined),
@@ -244,6 +302,7 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                             TextFormField(
                               controller: _customVarganiController,
                               keyboardType: TextInputType.number,
+                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                               decoration: InputDecoration(
                                 hintText: lang.tr('उदा. १५००', 'e.g. 1500'),
                                 prefixIcon: const Icon(Icons.currency_rupee),
@@ -267,7 +326,10 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
-                    child: Text(lang.tr('कुटुंब जतन करा', 'Save Family'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                    child: Text(
+                      isEditing ? lang.tr('बदल जतन करा', 'Save Changes') : lang.tr('कुटुंब जतन करा', 'Save Family'),
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
                   ),
                   const SizedBox(height: 30),
                 ],

@@ -161,6 +161,39 @@ class FamiliesListScreen extends ConsumerWidget {
                                                 ),
                                               ),
                                               _buildStatusBadge(family, lang),
+                                              PopupMenuButton<String>(
+                                                icon: const Icon(Icons.more_vert, color: AppColors.textSecondary, size: 20),
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                onSelected: (val) {
+                                                  if (val == 'edit') {
+                                                    context.push('/add-family', extra: family);
+                                                  } else if (val == 'delete') {
+                                                    _showDeleteConfirmationDialog(context, ref, family, lang);
+                                                  }
+                                                },
+                                                itemBuilder: (ctx) => [
+                                                  PopupMenuItem(
+                                                    value: 'edit',
+                                                    child: Row(
+                                                      children: [
+                                                        const Icon(Icons.edit_outlined, size: 18, color: AppColors.primaryPurple),
+                                                        const SizedBox(width: 8),
+                                                        Text(lang.tr('संपादित करा', 'Edit')),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  PopupMenuItem(
+                                                    value: 'delete',
+                                                    child: Row(
+                                                      children: [
+                                                        const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                                                        const SizedBox(width: 8),
+                                                        Text(lang.tr('डिलीट करा', 'Delete'), style: const TextStyle(color: AppColors.error)),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                             ],
                                           ),
                                           const SizedBox(height: 12),
@@ -280,6 +313,57 @@ class FamiliesListScreen extends ConsumerWidget {
         const SizedBox(height: 2),
         Text(val, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: color ?? AppColors.textPrimary)),
       ],
+    );
+  }
+
+  void _showDeleteConfirmationDialog(BuildContext context, WidgetRef ref, dynamic family, AppLanguage lang) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: AppColors.error),
+            const SizedBox(width: 8),
+            Text(lang.tr('कुटुंब डिलीट करा', 'Delete Family')),
+          ],
+        ),
+        content: Text(
+          lang.tr(
+            'तुम्हाला "${family.familyName}" हे कुटुंब आणि त्यांच्या नोंदी यादीतून डिलीट करायच्या आहेत का?',
+            'Are you sure you want to delete "${family.familyName}" and remove from active list?',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(lang.tr('रद्द करा', 'Cancel')),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              final success = await ref.read(familyProvider.notifier).deleteFamily(family.id);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    backgroundColor: success ? AppColors.success : AppColors.error,
+                    content: Text(
+                      success
+                          ? lang.tr('कुटुंब यशस्वीपणे डिलीट केले!', 'Family deleted successfully!')
+                          : lang.tr('कुटुंब डिलीट करताना त्रुटी आली.', 'Failed to delete family.'),
+                    ),
+                  ),
+                );
+              }
+            },
+            child: Text(lang.tr('होय, डिलीट करा', 'Yes, Delete')),
+          ),
+        ],
+      ),
     );
   }
 }

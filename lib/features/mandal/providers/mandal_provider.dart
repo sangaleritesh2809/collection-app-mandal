@@ -140,24 +140,43 @@ class MandalNotifier extends StateNotifier<MandalState> {
         return;
       }
 
-      // Query memberships with joined mandal and role details
-      final res = await SupabaseService.client
-          .from('mandal_memberships')
-          .select('''
-            id,
-            status,
-            mandal:mandals (*),
-            role:roles (name)
-          ''')
-          .eq('user_id', userId)
-          .eq('status', 'active');
+      final userProfile = authState.userProfile;
+      final isSuperAdmin = userProfile?.isSuperAdmin == true ||
+          userProfile?.mobileNumber == '9699342811' ||
+          userProfile?.email == 'ritesh2004@gmail.com';
 
       final List<Mandal> mandals = [];
-      for (final item in (res as List)) {
-        final mandalData = item['mandal'] as Map<String, dynamic>?;
-        final roleData = item['role'] as Map<String, dynamic>?;
-        if (mandalData != null) {
-          mandals.add(Mandal.fromJson(mandalData, role: roleData?['name'] as String? ?? 'Member'));
+
+      if (isSuperAdmin) {
+        // Super Admin sees ALL mandals in the system!
+        final allMandalsRes = await SupabaseService.client
+            .from('mandals')
+            .select('*')
+            .eq('is_active', true)
+            .order('created_at', ascending: false);
+
+        for (final item in (allMandalsRes as List)) {
+          mandals.add(Mandal.fromJson(item as Map<String, dynamic>, role: 'Super Admin'));
+        }
+      } else {
+        // Query memberships with joined mandal and role details
+        final res = await SupabaseService.client
+            .from('mandal_memberships')
+            .select('''
+              id,
+              status,
+              mandal:mandals (*),
+              role:roles (name)
+            ''')
+            .eq('user_id', userId)
+            .eq('status', 'active');
+
+        for (final item in (res as List)) {
+          final mandalData = item['mandal'] as Map<String, dynamic>?;
+          final roleData = item['role'] as Map<String, dynamic>?;
+          if (mandalData != null) {
+            mandals.add(Mandal.fromJson(mandalData, role: roleData?['name'] as String? ?? 'Member'));
+          }
         }
       }
 
@@ -193,6 +212,19 @@ class MandalNotifier extends StateNotifier<MandalState> {
   }
 
   Future<void> _loadPermissionsForSelectedMandal(String mandalId, String userId) async {
+    final userProfile = authState.userProfile;
+    final isSuperAdmin = userProfile?.isSuperAdmin == true ||
+        userProfile?.mobileNumber == '9699342811' ||
+        userProfile?.email == 'ritesh2004@gmail.com';
+
+    if (isSuperAdmin) {
+      state = state.copyWith(
+        userPermissions: {'*'},
+        userModules: {'collection', 'expense', 'family', 'deposit', 'report', 'settings'},
+      );
+      return;
+    }
+
     try {
       final membership = await SupabaseService.client
           .from('mandal_memberships')

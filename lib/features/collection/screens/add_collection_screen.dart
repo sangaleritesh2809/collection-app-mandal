@@ -76,8 +76,19 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
       previousPaid: _selectedFamily!.paidAmount,
     );
 
-    if (receipt != null && mounted) {
+    if (!mounted) return;
+
+    if (receipt != null) {
       context.pushReplacement('/receipt-preview', extra: receipt);
+    } else {
+      final err = ref.read(collectionProvider).error;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.error,
+          content: Text(err != null ? 'त्रुटी: $err' : 'पावती तयार करताना त्रुटी आली. कृपया पुन्हा प्रयत्न करा.'),
+          duration: const Duration(seconds: 4),
+        ),
+      );
     }
   }
 
@@ -256,11 +267,12 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                   FormLabel(lang.tr('संकलन दिनांक', 'Collection Date')),
                   InkWell(
                     onTap: () async {
+                      final now = DateTime.now();
                       final picked = await showDatePicker(
                         context: context,
-                        initialDate: _collectionDate,
+                        initialDate: _collectionDate.isAfter(now) ? now : _collectionDate,
                         firstDate: DateTime(2020),
-                        lastDate: DateTime(2030),
+                        lastDate: now,
                       );
                       if (picked != null) setState(() => _collectionDate = picked);
                     },

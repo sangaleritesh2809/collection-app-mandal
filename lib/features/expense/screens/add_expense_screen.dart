@@ -181,11 +181,12 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   const FormLabel('खर्च दिनांक'),
                   InkWell(
                     onTap: () async {
+                      final now = DateTime.now();
                       final picked = await showDatePicker(
                         context: context,
-                        initialDate: _expenseDate,
+                        initialDate: _expenseDate.isAfter(now) ? now : _expenseDate,
                         firstDate: DateTime(2020),
-                        lastDate: DateTime(2030),
+                        lastDate: now,
                       );
                       if (picked != null) setState(() => _expenseDate = picked);
                     },
