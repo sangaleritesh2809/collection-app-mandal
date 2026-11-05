@@ -347,11 +347,17 @@ BEGIN
     FROM public.family_members
     WHERE family_id = v_family_id AND status = 'active';
 
-    -- Fetch family's current vargani config
+    -- Fetch family's current vargani config (strictly matching family's mandal_id)
     SELECT c.* INTO v_config
     FROM public.families f
-    LEFT JOIN public.vargani_configs c ON f.vargani_config_id = c.id
-    WHERE f.id = v_family_id;
+    JOIN public.vargani_configs c ON (
+        (f.vargani_config_id IS NOT NULL AND c.id = f.vargani_config_id AND c.mandal_id = f.mandal_id)
+        OR
+        (f.vargani_config_id IS NULL AND c.mandal_id = f.mandal_id AND c.is_active = TRUE)
+    )
+    WHERE f.id = v_family_id
+    ORDER BY c.is_active DESC, c.created_at DESC
+    LIMIT 1;
 
     -- Calculate total vargani
     IF v_config.id IS NOT NULL THEN
@@ -369,7 +375,8 @@ BEGIN
 
     -- Update family record
     UPDATE public.families
-    SET total_members = GREATEST(v_active_count, 1),
+    SET vargani_config_id = COALESCE(vargani_config_id, v_config.id),
+        total_members = GREATEST(v_active_count, 1),
         total_vargani = GREATEST(v_total_vargani, 0),
         paid_amount = v_total_paid,
         pending_amount = GREATEST(v_total_vargani - v_total_paid, 0),
@@ -384,6 +391,50 @@ DROP TRIGGER IF EXISTS trg_family_members_recalc ON public.family_members;
 CREATE TRIGGER trg_family_members_recalc
     AFTER INSERT OR UPDATE OR DELETE ON public.family_members
     FOR EACH ROW EXECUTE FUNCTION public.recalculate_family_totals();
+
+-- B. Auto-apply Mandal Vargani Config changes strictly to families of that specific Mandal ONLY
+CREATE OR REPLACE FUNCTION public.apply_vargani_config_to_mandal_families()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.is_active = TRUE THEN
+        -- Deactivate older configs for THIS specific mandal only
+        UPDATE public.vargani_configs
+        SET is_active = FALSE
+        WHERE mandal_id = NEW.mandal_id 
+          AND id <> NEW.id 
+          AND is_active = TRUE;
+
+        -- Recalculate families belonging ONLY to this specific mandal
+        UPDATE public.families f
+        SET vargani_config_id = NEW.id,
+            total_vargani = CASE 
+                WHEN NEW.calculation_type = 'per_member' THEN 
+                    (GREATEST(f.total_members, 1) * NEW.per_member_amount) - COALESCE(NEW.discount, 0) + COALESCE(NEW.special_contribution, 0)
+                ELSE 
+                    NEW.fixed_amount - COALESCE(NEW.discount, 0) + COALESCE(NEW.special_contribution, 0)
+            END,
+            pending_amount = GREATEST(
+                (CASE 
+                    WHEN NEW.calculation_type = 'per_member' THEN 
+                        (GREATEST(f.total_members, 1) * NEW.per_member_amount) - COALESCE(NEW.discount, 0) + COALESCE(NEW.special_contribution, 0)
+                    ELSE 
+                        NEW.fixed_amount - COALESCE(NEW.discount, 0) + COALESCE(NEW.special_contribution, 0)
+                END) - f.paid_amount, 0
+            ),
+            updated_at = NOW()
+        WHERE f.mandal_id = NEW.mandal_id;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_vargani_config_apply ON public.vargani_configs;
+CREATE TRIGGER trg_vargani_config_apply
+    AFTER INSERT OR UPDATE OF per_member_amount, fixed_amount, calculation_type, discount, special_contribution, is_active
+    ON public.vargani_configs
+    FOR EACH ROW
+    EXECUTE FUNCTION public.apply_vargani_config_to_mandal_families();
 
 -- B. Auto update family paid and pending amounts upon collection insertion/update/deletion
 CREATE OR REPLACE FUNCTION public.recalculate_family_collections()

@@ -34,38 +34,28 @@ class VarganiConfigState {
 
 final varganiConfigProvider = StateNotifierProvider<VarganiConfigNotifier, VarganiConfigState>((ref) {
   final mandalState = ref.watch(mandalProvider);
-  return VarganiConfigNotifier(mandalState.selectedMandal?.id);
+  return VarganiConfigNotifier(ref, mandalState.selectedMandal?.id);
 });
 
 class VarganiConfigNotifier extends StateNotifier<VarganiConfigState> {
+  final Ref ref;
   final String? mandalId;
 
-  VarganiConfigNotifier(this.mandalId) : super(const VarganiConfigState()) {
+  VarganiConfigNotifier(this.ref, this.mandalId) : super(const VarganiConfigState()) {
     if (mandalId != null) {
       loadConfigs();
     }
   }
 
   Future<void> loadConfigs() async {
-    if (mandalId == null) return;
+    if (mandalId == null) {
+      state = const VarganiConfigState();
+      return;
+    }
     state = state.copyWith(isLoading: true, error: null);
 
     if (!SupabaseService.isInitialized) {
-      final demoConfig = VarganiConfig(
-        id: 'demo-config-1',
-        mandalId: mandalId!,
-        name: 'गणेशोत्सव २०२६ वर्गणी',
-        financialYear: '2026-2027',
-        calculationType: 'per_member',
-        perMemberAmount: 500.0,
-        fixedAmount: 2000.0,
-        isActive: true,
-      );
-      state = state.copyWith(
-        configs: [demoConfig],
-        activeConfig: demoConfig,
-        isLoading: false,
-      );
+      state = state.copyWith(configs: [], activeConfig: null, isLoading: false);
       return;
     }
 
@@ -76,8 +66,28 @@ class VarganiConfigNotifier extends StateNotifier<VarganiConfigState> {
           .eq('mandal_id', mandalId!)
           .order('created_at', ascending: false);
 
-      final list = (res as List).map((e) => VarganiConfig.fromJson(e)).toList();
-      final active = list.firstWhere((c) => c.isActive, orElse: () => list.isNotEmpty ? list.first : null as dynamic);
+      List<VarganiConfig> list = (res as List).map((e) => VarganiConfig.fromJson(e)).toList();
+
+      // If this mandal does not have any vargani config yet, create a default one for this mandal
+      if (list.isEmpty) {
+        final inserted = await SupabaseService.client.from('vargani_configs').insert({
+          'mandal_id': mandalId!,
+          'name': 'गणेशोत्सव वर्गणी ${DateTime.now().year}',
+          'financial_year': '${DateTime.now().year}-${DateTime.now().year + 1}',
+          'calculation_type': 'per_member',
+          'per_member_amount': 500.00,
+          'fixed_amount': 2000.00,
+          'is_active': true,
+        }).select().single();
+
+        final defConfig = VarganiConfig.fromJson(inserted);
+        list = [defConfig];
+      }
+
+      final active = list.firstWhere(
+        (c) => c.isActive,
+        orElse: () => list.first,
+      );
 
       state = state.copyWith(
         configs: list,
@@ -107,32 +117,19 @@ class VarganiConfigNotifier extends StateNotifier<VarganiConfigState> {
     state = state.copyWith(isLoading: true, error: null);
 
     if (!SupabaseService.isInitialized) {
-      final newConfig = VarganiConfig(
-        id: id ?? 'demo-config-${DateTime.now().millisecondsSinceEpoch}',
-        mandalId: mandalId!,
-        name: name,
-        financialYear: financialYear,
-        calculationType: calculationType,
-        perMemberAmount: perMemberAmount,
-        fixedAmount: fixedAmount,
-        startDate: startDate,
-        endDate: endDate,
-        dueDate: dueDate,
-        discount: discount,
-        specialContribution: specialContribution,
-        isActive: true,
-      );
-      state = state.copyWith(
-        configs: [newConfig, ...state.configs.where((c) => c.id != newConfig.id)],
-        activeConfig: newConfig,
-        isLoading: false,
-      );
-      return true;
+      state = state.copyWith(isLoading: false, error: 'डेटाबेस कनेक्शन उपलब्ध नाही');
+      return false;
     }
 
     try {
+      // 1. Deactivate other configs strictly for this mandal
+      await SupabaseService.client
+          .from('vargani_configs')
+          .update({'is_active': false})
+          .eq('mandal_id', mandalId!);
+
       final payload = {
-        'mandal_id': mandalId,
+        'mandal_id': mandalId!,
         'name': name,
         'financial_year': financialYear,
         'calculation_type': calculationType,
@@ -146,11 +143,32 @@ class VarganiConfigNotifier extends StateNotifier<VarganiConfigState> {
         'is_active': true,
       };
 
-      if (id != null) {
-        await SupabaseService.client.from('vargani_configs').update(payload).eq('id', id);
+      String savedId = id ?? '';
+      if (id != null && id.isNotEmpty) {
+        await SupabaseService.client
+            .from('vargani_configs')
+            .update(payload)
+            .eq('id', id)
+            .eq('mandal_id', mandalId!);
+        savedId = id;
       } else {
-        await SupabaseService.client.from('vargani_configs').insert(payload);
+        final inserted = await SupabaseService.client
+            .from('vargani_configs')
+            .insert(payload)
+            .select()
+            .single();
+        savedId = inserted['id'] as String;
       }
+
+      // 2. Synchronize all families belonging ONLY to this mandal
+      await _syncFamiliesForMandal(
+        savedConfigId: savedId,
+        calculationType: calculationType,
+        perMemberAmount: perMemberAmount,
+        fixedAmount: fixedAmount,
+        discount: discount,
+        specialContribution: specialContribution,
+      );
 
       await loadConfigs();
       return true;
@@ -160,5 +178,44 @@ class VarganiConfigNotifier extends StateNotifier<VarganiConfigState> {
       return false;
     }
   }
-}
 
+  Future<void> _syncFamiliesForMandal({
+    required String savedConfigId,
+    required String calculationType,
+    required double perMemberAmount,
+    required double fixedAmount,
+    required double discount,
+    required double specialContribution,
+  }) async {
+    try {
+      final families = await SupabaseService.client
+          .from('families')
+          .select('id, total_members, paid_amount')
+          .eq('mandal_id', mandalId!);
+
+      for (final f in (families as List)) {
+        final fid = f['id'] as String;
+        final members = (f['total_members'] as num?)?.toInt() ?? 1;
+        final paid = (f['paid_amount'] as num?)?.toDouble() ?? 0.0;
+
+        double total = 0.0;
+        if (calculationType == 'per_member') {
+          total = (members * perMemberAmount) - discount + specialContribution;
+        } else {
+          total = fixedAmount - discount + specialContribution;
+        }
+        if (total < 0) total = 0.0;
+        final pending = (total - paid).clamp(0.0, double.infinity);
+
+        await SupabaseService.client.from('families').update({
+          'vargani_config_id': savedConfigId,
+          'total_vargani': total,
+          'pending_amount': pending,
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', fid).eq('mandal_id', mandalId!);
+      }
+    } catch (e) {
+      debugPrint('Error syncing mandal families with config: $e');
+    }
+  }
+}

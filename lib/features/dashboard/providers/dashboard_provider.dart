@@ -3,7 +3,6 @@ import '../../family/providers/family_provider.dart';
 import '../../collection/providers/collection_provider.dart';
 import '../../deposit/providers/deposit_provider.dart';
 import '../../expense/providers/expense_provider.dart';
-import '../../mandal/providers/mandal_provider.dart';
 import '../models/dashboard_summary.dart';
 
 final dashboardProvider = Provider<DashboardSummary>((ref) {
@@ -40,7 +39,7 @@ final dashboardProvider = Provider<DashboardSummary>((ref) {
   final totalMembers = familyState.families.fold(0, (sum, f) => sum + f.totalMembers);
 
   return DashboardSummary.calculate(
-    totalMembers: totalMembers > 0 ? totalMembers : 25,
+    totalMembers: totalMembers,
     totalFamilies: totalFamilies,
     expectedVargani: totalExpected,
     totalCollected: totalCollected,

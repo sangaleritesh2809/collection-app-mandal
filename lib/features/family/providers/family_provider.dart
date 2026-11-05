@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart' hide Family;
 import '../../../core/services/supabase_service.dart';
 import '../../mandal/providers/mandal_provider.dart';
 import '../../vargani_config/providers/vargani_config_provider.dart';
+import '../../vargani_config/models/vargani_config.dart';
 import '../models/family.dart';
 import '../models/family_member.dart';
 
@@ -49,15 +50,17 @@ class FamilyState {
 final familyProvider = StateNotifierProvider<FamilyNotifier, FamilyState>((ref) {
   final mandalState = ref.watch(mandalProvider);
   final configState = ref.watch(varganiConfigProvider);
-  return FamilyNotifier(mandalState.selectedMandal?.id, configState.activeConfig?.id, configState.activeConfig?.perMemberAmount ?? 500.0);
+  return FamilyNotifier(
+    mandalState.selectedMandal?.id,
+    configState.activeConfig,
+  );
 });
 
 class FamilyNotifier extends StateNotifier<FamilyState> {
   final String? mandalId;
-  final String? activeConfigId;
-  final double perMemberRate;
+  final VarganiConfig? activeConfig;
 
-  FamilyNotifier(this.mandalId, this.activeConfigId, this.perMemberRate) : super(const FamilyState()) {
+  FamilyNotifier(this.mandalId, this.activeConfig) : super(const FamilyState()) {
     if (mandalId != null) {
       loadFamilies();
     }
@@ -104,66 +107,7 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
     state = state.copyWith(isLoading: true, error: null);
 
     if (!SupabaseService.isInitialized) {
-      // Demo fallback families for instant preview
-      final demoFamilies = [
-        Family(
-          id: 'fam-1',
-          mandalId: mandalId!,
-          familyCode: 'FAM-001',
-          familyName: 'पाटील परिवार',
-          familyHeadName: 'रविंद्र गणपत पाटील',
-          houseNumber: '१२/अ',
-          address: 'शिवाजी चौक',
-          village: 'वडगाव',
-          mobileNumber: '9822012345',
-          totalMembers: 4,
-          totalVargani: 2000.0,
-          paidAmount: 2000.0,
-          pendingAmount: 0.0,
-          status: 'active',
-          createdAt: DateTime.now().subtract(const Duration(days: 20)),
-        ),
-        Family(
-          id: 'fam-2',
-          mandalId: mandalId!,
-          familyCode: 'FAM-002',
-          familyName: 'देशमुख परिवार',
-          familyHeadName: 'आनंदराव बापूसाहेब देशमुख',
-          houseNumber: '४५',
-          address: 'गणेश गल्ली',
-          village: 'वडगाव',
-          mobileNumber: '9822054321',
-          totalMembers: 5,
-          totalVargani: 2500.0,
-          paidAmount: 1000.0,
-          pendingAmount: 1500.0,
-          status: 'active',
-          createdAt: DateTime.now().subtract(const Duration(days: 18)),
-        ),
-        Family(
-          id: 'fam-3',
-          mandalId: mandalId!,
-          familyCode: 'FAM-003',
-          familyName: 'शिंदे परिवार',
-          familyHeadName: 'तानाजी विठोबा शिंदे',
-          houseNumber: '७८',
-          address: 'मारुती मंदिराजवळ',
-          village: 'वडगाव',
-          mobileNumber: '9422098765',
-          totalMembers: 3,
-          totalVargani: 1500.0,
-          paidAmount: 0.0,
-          pendingAmount: 1500.0,
-          status: 'active',
-          createdAt: DateTime.now().subtract(const Duration(days: 15)),
-        ),
-      ];
-
-      state = state.copyWith(
-        families: demoFamilies,
-        filteredFamilies: demoFamilies,
-        isLoading: false,
-      );
+      state = state.copyWith(families: [], filteredFamilies: [], isLoading: false);
       return;
     }
 
@@ -190,32 +134,7 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
     }
 
     if (!SupabaseService.isInitialized) {
-      final demoMembers = [
-        FamilyMember(
-          id: 'mem-1',
-          familyId: familyId,
-          mandalId: mandalId ?? '',
-          memberName: 'कुटुंब प्रमुख (Head)',
-          age: 48,
-          gender: 'Male',
-          status: 'active',
-          createdAt: DateTime.now(),
-        ),
-        FamilyMember(
-          id: 'mem-2',
-          familyId: familyId,
-          mandalId: mandalId ?? '',
-          memberName: 'सौ. पत्नी',
-          age: 44,
-          gender: 'Female',
-          status: 'active',
-          createdAt: DateTime.now(),
-        ),
-      ];
-      final newCache = Map<String, List<FamilyMember>>.from(state.membersCache);
-      newCache[familyId] = demoMembers;
-      state = state.copyWith(membersCache: newCache);
-      return demoMembers;
+      return [];
     }
 
     try {
@@ -250,33 +169,33 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
     if (mandalId == null) return false;
     state = state.copyWith(isLoading: true, error: null);
 
-    final expectedVargani = customTotalVargani ?? (initialMembersCount * perMemberRate);
+    final double expectedVargani;
+    if (customTotalVargani != null) {
+      expectedVargani = customTotalVargani;
+    } else if (activeConfig != null) {
+      expectedVargani = activeConfig!.calculateTotalForFamily(initialMembersCount);
+    } else {
+      expectedVargani = initialMembersCount * 500.0;
+    }
 
     if (!SupabaseService.isInitialized) {
-      final newFamily = Family(
-        id: 'fam-${DateTime.now().millisecondsSinceEpoch}',
-        mandalId: mandalId!,
-        familyCode: 'FAM-${(state.families.length + 1).toString().padLeft(3, '0')}',
-        familyName: familyName,
-        familyHeadName: familyHeadName,
-        houseNumber: houseNumber,
-        address: address,
-        village: village,
-        mobileNumber: mobileNumber,
-        totalMembers: initialMembersCount,
-        totalVargani: expectedVargani,
-        paidAmount: 0.0,
-        pendingAmount: expectedVargani,
-        status: 'active',
-        createdAt: DateTime.now(),
-      );
-      final updatedList = [...state.families, newFamily];
-      state = state.copyWith(families: updatedList, isLoading: false);
-      _applyFilter();
-      return true;
+      state = state.copyWith(isLoading: false, error: 'डेटाबेस कनेक्शन उपलब्ध नाही');
+      return false;
     }
 
     try {
+      String? configId = activeConfig?.id;
+      if (configId == null) {
+        final cfgRes = await SupabaseService.client
+            .from('vargani_configs')
+            .select('id')
+            .eq('mandal_id', mandalId!)
+            .eq('is_active', true)
+            .limit(1)
+            .maybeSingle();
+        configId = cfgRes?['id'] as String?;
+      }
+
       final code = 'FAM-${(state.families.length + 1).toString().padLeft(3, '0')}';
 
       final res = await SupabaseService.client.from('families').insert({
@@ -289,7 +208,7 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
         'village': village,
         'mobile_number': mobileNumber,
         'total_members': initialMembersCount,
-        'vargani_config_id': activeConfigId,
+        'vargani_config_id': configId,
         'total_vargani': expectedVargani,
         'paid_amount': 0.0,
         'pending_amount': expectedVargani,
@@ -325,24 +244,7 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
   }) async {
     if (mandalId == null) return false;
 
-    if (!SupabaseService.isInitialized) {
-      final newMember = FamilyMember(
-        id: 'mem-${DateTime.now().millisecondsSinceEpoch}',
-        familyId: familyId,
-        mandalId: mandalId!,
-        memberName: memberName,
-        mobileNumber: mobileNumber,
-        age: age,
-        gender: gender,
-        status: 'active',
-        createdAt: DateTime.now(),
-      );
-      final currentList = state.membersCache[familyId] ?? [];
-      final newCache = Map<String, List<FamilyMember>>.from(state.membersCache);
-      newCache[familyId] = [...currentList, newMember];
-      state = state.copyWith(membersCache: newCache);
-      return true;
-    }
+    if (!SupabaseService.isInitialized) return false;
 
     try {
       await SupabaseService.client.from('family_members').insert({

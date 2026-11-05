@@ -60,42 +60,7 @@ class CollectionNotifier extends StateNotifier<CollectionState> {
     state = state.copyWith(isLoading: true, error: null);
 
     if (!SupabaseService.isInitialized) {
-      final demoCollections = [
-        CollectionRecord(
-          id: 'coll-1',
-          mandalId: mandalId!,
-          familyId: 'fam-1',
-          collectorId: currentUserId ?? 'user-1',
-          transactionNumber: 'TXN-2026-000101',
-          receiptNumber: 'RCT-2026-000101',
-          amount: 2000.0,
-          paymentMode: 'cash',
-          collectionDate: DateTime.now().subtract(const Duration(days: 3)),
-          familyName: 'पाटील परिवार',
-          familyHeadName: 'रविंद्र गणपत पाटील',
-          collectorName: 'मुरलीधर पाटील (कार्यकर्ता)',
-          isDeposited: true,
-          createdAt: DateTime.now().subtract(const Duration(days: 3)),
-        ),
-        CollectionRecord(
-          id: 'coll-2',
-          mandalId: mandalId!,
-          familyId: 'fam-2',
-          collectorId: currentUserId ?? 'user-1',
-          transactionNumber: 'TXN-2026-000102',
-          receiptNumber: 'RCT-2026-000102',
-          amount: 1000.0,
-          paymentMode: 'upi',
-          collectionDate: DateTime.now().subtract(const Duration(days: 1)),
-          familyName: 'देशमुख परिवार',
-          familyHeadName: 'आनंदराव बापूसाहेब देशमुख',
-          collectorName: 'मुरलीधर पाटील (कार्यकर्ता)',
-          isDeposited: false,
-          createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        ),
-      ];
-
-      state = state.copyWith(collections: demoCollections, isLoading: false);
+      state = state.copyWith(collections: [], isLoading: false);
       return;
     }
 
@@ -165,34 +130,8 @@ class CollectionNotifier extends StateNotifier<CollectionState> {
     );
 
     if (!SupabaseService.isInitialized) {
-      final newRecord = CollectionRecord(
-        id: 'coll-${DateTime.now().millisecondsSinceEpoch}',
-        mandalId: mandalId!,
-        familyId: familyId,
-        collectorId: currentUserId ?? 'demo-user',
-        transactionNumber: txnNumber,
-        receiptNumber: rctNumber,
-        amount: amount,
-        paymentMode: paymentMode,
-        collectionDate: collectionDate,
-        notes: notes,
-        familyName: familyName,
-        familyHeadName: familyHeadName,
-        collectorName: collectorName,
-        isDeposited: false,
-        createdAt: DateTime.now(),
-      );
-
-      final updated = [newRecord, ...state.collections];
-      state = state.copyWith(
-        collections: updated,
-        isLoading: false,
-        lastGeneratedReceipt: receiptData,
-      );
-
-      // Refresh families
-      ref.read(familyProvider.notifier).loadFamilies();
-      return receiptData;
+      state = state.copyWith(isLoading: false, error: 'डेटाबेस कनेक्शन उपलब्ध नाही');
+      return null;
     }
 
     try {

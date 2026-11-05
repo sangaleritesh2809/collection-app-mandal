@@ -51,43 +51,7 @@ class MandalNotifier extends StateNotifier<MandalState> {
     state = state.copyWith(isLoading: true, error: null);
 
     if (!SupabaseService.isInitialized) {
-      // Demo mock mandals for initial testing
-      final demoMandal1 = Mandal(
-        id: 'demo-mandal-1',
-        mandalId: 'MD-2026-001',
-        name: 'श्री गणेश उत्सव मित्र मंडळ',
-        description: 'स्थापना वर्ष २००५ • सुवर्ण महोत्सवी वाटचाल',
-        address: 'शिवाजी चौक, मुख्य रस्ता',
-        village: 'वडगाव',
-        taluka: 'हवेली',
-        district: 'पुणे',
-        contactNumber: '9876543210',
-        invitationCode: 'VG2026A',
-        userRole: 'Mandal Admin',
-        createdAt: DateTime.now().subtract(const Duration(days: 90)),
-      );
-
-      final demoMandal2 = Mandal(
-        id: 'demo-mandal-2',
-        mandalId: 'MD-2026-002',
-        name: 'जय भवानी नवरात्र उत्सव मंडळ',
-        description: 'भवानी पेठ नवरात्रौत्सव मंडळ',
-        address: 'भवानी पेठ',
-        village: 'पुणे',
-        taluka: 'पुणे शहर',
-        district: 'पुणे',
-        contactNumber: '9123456789',
-        invitationCode: 'JB2026B',
-        userRole: 'Treasurer',
-        createdAt: DateTime.now().subtract(const Duration(days: 30)),
-      );
-
-      final mandals = [demoMandal1, demoMandal2];
-      state = state.copyWith(
-        userMandals: mandals,
-        selectedMandal: mandals.first,
-        isLoading: false,
-      );
+      state = state.copyWith(userMandals: [], selectedMandal: null, isLoading: false);
       return;
     }
 
@@ -167,28 +131,8 @@ class MandalNotifier extends StateNotifier<MandalState> {
     state = state.copyWith(isLoading: true, error: null);
 
     if (!SupabaseService.isInitialized) {
-      final newMandal = Mandal(
-        id: 'demo-mandal-${DateTime.now().millisecondsSinceEpoch}',
-        mandalId: 'MD-2026-${(state.userMandals.length + 1).toString().padLeft(3, '0')}',
-        name: name,
-        description: description,
-        address: address,
-        village: village,
-        taluka: taluka,
-        district: district,
-        contactNumber: contactNumber,
-        email: email,
-        invitationCode: 'VG${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}',
-        userRole: 'Mandal Admin',
-        createdAt: DateTime.now(),
-      );
-      final updatedList = [...state.userMandals, newMandal];
-      state = state.copyWith(
-        userMandals: updatedList,
-        selectedMandal: newMandal,
-        isLoading: false,
-      );
-      return true;
+      state = state.copyWith(isLoading: false, error: 'Supabase कनेक्शन उपलब्ध नाही.');
+      return false;
     }
 
     try {

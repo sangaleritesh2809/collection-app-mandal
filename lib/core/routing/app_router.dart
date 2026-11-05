@@ -20,6 +20,7 @@ import '../../features/expense/screens/expenses_list_screen.dart';
 import '../../features/expense/screens/add_expense_screen.dart';
 import '../../features/reports/screens/reports_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
+import '../../features/vargani_config/screens/vargani_config_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -109,6 +110,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/settings',
       builder: (context, state) => const SettingsScreen(),
+    ),
+    GoRoute(
+      path: '/vargani-config',
+      builder: (context, state) => const VarganiConfigScreen(),
     ),
   ],
 );

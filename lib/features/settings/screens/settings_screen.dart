@@ -7,6 +7,8 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../mandal/providers/mandal_provider.dart';
+import '../../vargani_config/providers/vargani_config_provider.dart';
+import '../../../core/utils/formatters.dart';
 
 final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.light);
 
@@ -18,6 +20,7 @@ class SettingsScreen extends ConsumerWidget {
     final lang = ref.watch(languageProvider);
     final authState = ref.watch(authProvider);
     final mandalState = ref.watch(mandalProvider);
+    final configState = ref.watch(varganiConfigProvider);
     final themeMode = ref.watch(themeModeProvider);
     final activeMandal = mandalState.selectedMandal;
     final user = authState.userProfile;
@@ -134,6 +137,27 @@ class SettingsScreen extends ConsumerWidget {
                             ],
                           ),
                         ],
+                      ),
+                      const Divider(height: 24),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.tune, color: AppColors.primary, size: 22),
+                        ),
+                        title: const Text('वर्गणी दर व नियम (Vargani Settings)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        subtitle: Text(
+                          configState.activeConfig != null
+                              ? '${configState.activeConfig!.name} • ${configState.activeConfig!.calculationType == "per_member" ? "${AppFormatters.formatCurrency(configState.activeConfig!.perMemberAmount)}/सदस्य" : "${AppFormatters.formatCurrency(configState.activeConfig!.fixedAmount)}/कुटुंब"}'
+                              : 'या मंडळाचे वर्गणी दर निश्चित करा',
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryLight),
+                        ),
+                        trailing: const Icon(Icons.chevron_right, size: 20),
+                        onTap: () => context.push('/vargani-config'),
                       ),
                     ],
                   ),

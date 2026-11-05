@@ -8,6 +8,7 @@ import '../../mandal/providers/mandal_provider.dart';
 import '../../collection/providers/collection_provider.dart';
 import '../../deposit/providers/deposit_provider.dart';
 import '../../expense/providers/expense_provider.dart';
+import '../../vargani_config/providers/vargani_config_provider.dart';
 import '../providers/dashboard_provider.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -20,6 +21,7 @@ class DashboardScreen extends ConsumerWidget {
     final summary = ref.watch(dashboardProvider);
     final collectionState = ref.watch(collectionProvider);
     final expenseState = ref.watch(expenseProvider);
+    final configState = ref.watch(varganiConfigProvider);
     final activeMandal = mandalState.selectedMandal;
 
     return Scaffold(
@@ -213,6 +215,14 @@ class DashboardScreen extends ConsumerWidget {
                     const SizedBox(width: 10),
                     _buildActionButton(
                       context,
+                      icon: Icons.tune,
+                      color: Colors.deepOrange,
+                      label: 'वर्गणी दर',
+                      route: '/vargani-config',
+                    ),
+                    const SizedBox(width: 10),
+                    _buildActionButton(
+                      context,
                       icon: Icons.assessment,
                       color: Colors.teal,
                       label: 'अहवाल',
@@ -221,7 +231,40 @@ class DashboardScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
+
+              // Mandal Vargani Rate Summary Banner
+              InkWell(
+                onTap: () => context.push('/vargani-config'),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.tune, color: AppColors.primary, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          configState.activeConfig != null
+                              ? 'मंडळाचा दर: ${configState.activeConfig!.calculationType == "per_member" ? "${AppFormatters.formatCurrency(configState.activeConfig!.perMemberAmount)} प्रति सदस्य" : "${AppFormatters.formatCurrency(configState.activeConfig!.fixedAmount)} प्रति कुटुंब"}'
+                              : 'या मंडळाचे वर्गणी दर निश्चित करा',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryDark),
+                        ),
+                      ),
+                      const Text(
+                        'बदला ⚙️',
+                        style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
 
               // Grid KPI Cards
               Row(

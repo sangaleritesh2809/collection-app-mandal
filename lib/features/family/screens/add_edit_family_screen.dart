@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/formatters.dart';
+import '../../vargani_config/models/vargani_config.dart';
 import '../../vargani_config/providers/vargani_config_provider.dart';
 import '../providers/family_provider.dart';
 
@@ -38,12 +39,15 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
     super.dispose();
   }
 
-  double _getCalculatedVargani(double perMemberRate) {
+  double _getCalculatedVargani(VarganiConfig? config) {
     if (_useCustomVargani) {
       return double.tryParse(_customVarganiController.text.trim()) ?? 0.0;
     }
     final members = int.tryParse(_membersCountController.text.trim()) ?? 1;
-    return members * perMemberRate;
+    if (config != null) {
+      return config.calculateTotalForFamily(members);
+    }
+    return members * 500.0;
   }
 
   Future<void> _handleSave() async {
@@ -74,8 +78,8 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
   @override
   Widget build(BuildContext context) {
     final configState = ref.watch(varganiConfigProvider);
-    final perMemberRate = configState.activeConfig?.perMemberAmount ?? 500.0;
-    final calculatedVargani = _getCalculatedVargani(perMemberRate);
+    final activeConfig = configState.activeConfig;
+    final calculatedVargani = _getCalculatedVargani(activeConfig);
 
     return Scaffold(
       appBar: AppBar(
@@ -210,13 +214,31 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'दर: ${AppFormatters.formatCurrency(perMemberRate)} प्रति सदस्य',
-                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryLight),
+                            Expanded(
+                              child: Text(
+                                activeConfig?.calculationType == 'per_member'
+                                    ? 'मंडळाचा दर: ${AppFormatters.formatCurrency(activeConfig?.perMemberAmount ?? 500.0)} प्रति व्यक्ती'
+                                    : 'मंडळाचा दर: ${AppFormatters.formatCurrency(activeConfig?.fixedAmount ?? 2000.0)} प्रति कुटुंब (ठराविक)',
+                                style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryLight),
+                              ),
                             ),
+                            InkWell(
+                              onTap: () => context.push('/vargani-config'),
+                              child: const Text(
+                                'दर बदला ⚙️',
+                                style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('एकूण ठरलेली वर्गणी:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                             Text(
-                              'एकूण ठरलेली वर्गणी: ${AppFormatters.formatCurrency(calculatedVargani)}',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primary),
+                              AppFormatters.formatCurrency(calculatedVargani),
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.primary),
                             ),
                           ],
                         ),

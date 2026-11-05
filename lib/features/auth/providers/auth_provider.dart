@@ -93,12 +93,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
     } catch (e) {
       debugPrint('Error loading user profile: $e');
+      final user = SupabaseService.client.auth.currentUser;
       state = state.copyWith(
         status: AuthStatus.authenticated,
         userProfile: UserProfile(
           id: userId,
-          fullName: 'Mandal Admin',
-          email: SupabaseService.client.auth.currentUser?.email,
+          fullName: user?.userMetadata?['full_name'] ?? user?.email?.split('@').first ?? 'User',
+          email: user?.email,
           createdAt: DateTime.now(),
         ),
       );
@@ -114,19 +115,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
 
     if (!SupabaseService.isInitialized) {
-      // Demo / offline fallback mode for immediate testing
       state = state.copyWith(
-        status: AuthStatus.authenticated,
-        userProfile: UserProfile(
-          id: 'demo-user-id',
-          fullName: fullName,
-          email: email,
-          mobileNumber: mobileNumber,
-          isSuperAdmin: false,
-          createdAt: DateTime.now(),
-        ),
+        status: AuthStatus.error,
+        errorMessage: 'Supabase कनेक्शन उपलब्ध नाही. कृपया .env तपासा.',
       );
-      return true;
+      return false;
     }
 
     try {
@@ -176,19 +169,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
 
     if (!SupabaseService.isInitialized) {
-      // Demo fallback mode for preview testing
       state = state.copyWith(
-        status: AuthStatus.authenticated,
-        userProfile: UserProfile(
-          id: 'demo-user-id',
-          fullName: 'मुरलीधर पाटील (Admin)',
-          email: emailOrMobile.contains('@') ? emailOrMobile : 'admin@vargani.com',
-          mobileNumber: emailOrMobile.contains('@') ? '9876543210' : emailOrMobile,
-          isSuperAdmin: true,
-          createdAt: DateTime.now(),
-        ),
+        status: AuthStatus.error,
+        errorMessage: 'Supabase कनेक्शन उपलब्ध नाही. कृपया .env तपासा.',
       );
-      return true;
+      return false;
     }
 
     try {

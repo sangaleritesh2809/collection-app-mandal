@@ -64,37 +64,7 @@ class ExpenseNotifier extends StateNotifier<ExpenseState> {
     state = state.copyWith(isLoading: true, error: null);
 
     if (!SupabaseService.isInitialized) {
-      final demoExpenses = [
-        Expense(
-          id: 'exp-1',
-          mandalId: mandalId!,
-          title: 'मंडप व स्टेज डेकोरेशन ॲडव्हान्स',
-          category: 'Decoration',
-          amount: 5000.0,
-          expenseDate: DateTime.now().subtract(const Duration(days: 4)),
-          paidBy: 'सुरेश कदम (खजिनदार)',
-          paidTo: 'साई डेकोरेटर्स',
-          paymentMode: 'bank_transfer',
-          description: 'मुख्य स्टेज व मंडप उभारणीसाठी पहिली उचल.',
-          approvalStatus: 'approved',
-          createdAt: DateTime.now().subtract(const Duration(days: 4)),
-        ),
-        Expense(
-          id: 'exp-2',
-          mandalId: mandalId!,
-          title: 'लाईट व ध्वनिक्षेपक बुकिंग',
-          category: 'Sound System',
-          amount: 2500.0,
-          expenseDate: DateTime.now().subtract(const Duration(days: 2)),
-          paidBy: 'सुरेश कदम (खजिनदार)',
-          paidTo: 'गणेश साऊंड सिस्टिम',
-          paymentMode: 'cash',
-          description: 'आगमन मिरवणुकीसाठी साऊंड सिस्टिम डिपॉझिट.',
-          approvalStatus: 'approved',
-          createdAt: DateTime.now().subtract(const Duration(days: 2)),
-        ),
-      ];
-      state = state.copyWith(expenses: demoExpenses, isLoading: false);
+      state = state.copyWith(expenses: [], isLoading: false);
       return;
     }
 
@@ -128,24 +98,8 @@ class ExpenseNotifier extends StateNotifier<ExpenseState> {
     state = state.copyWith(isLoading: true, error: null);
 
     if (!SupabaseService.isInitialized) {
-      final newExp = Expense(
-        id: 'exp-${DateTime.now().millisecondsSinceEpoch}',
-        mandalId: mandalId!,
-        title: title,
-        category: category,
-        amount: amount,
-        expenseDate: expenseDate,
-        paidBy: paidBy,
-        paidTo: paidTo,
-        paymentMode: paymentMode,
-        description: description,
-        billImageUrl: billImageUrl,
-        approvalStatus: 'approved',
-        createdAt: DateTime.now(),
-      );
-      final updated = [newExp, ...state.expenses];
-      state = state.copyWith(expenses: updated, isLoading: false);
-      return true;
+      state = state.copyWith(isLoading: false, error: 'डेटाबेस कनेक्शन उपलब्ध नाही');
+      return false;
     }
 
     try {
