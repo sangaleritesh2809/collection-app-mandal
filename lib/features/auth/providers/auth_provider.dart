@@ -357,6 +357,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> updateAvatar(String avatarUrl) async {
+    final current = state.userProfile;
+    if (current != null) {
+      state = state.copyWith(userProfile: current.copyWith(avatarUrl: avatarUrl));
+    }
+  }
+
+  Future<void> reloadProfile() async {
+    final userId = SupabaseService.client.auth.currentUser?.id;
+    if (userId != null) {
+      await _loadUserProfile(userId);
+    }
+  }
+
   Future<void> logout() async {
     if (SupabaseService.isInitialized) {
       try {

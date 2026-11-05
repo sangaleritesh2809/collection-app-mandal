@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
@@ -18,6 +19,103 @@ final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.light);
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
+  Future<void> _pickAndUploadAvatar(BuildContext context, WidgetRef ref, String? userId) async {
+    if (userId == null) return;
+
+    final picker = ImagePicker();
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'प्रोफाइल फोटो निवडा',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: AppColors.lightLavender,
+                  child: Icon(Icons.photo_library, color: AppColors.primaryPurple),
+                ),
+                title: const Text('गॅलरीतून निवडा (Gallery)'),
+                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              ),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: AppColors.lightLavender,
+                  child: Icon(Icons.camera_alt, color: AppColors.primaryPurple),
+                ),
+                title: const Text('कॅमेऱ्याने फोटो काढा (Camera)'),
+                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    try {
+      final XFile? pickedFile = await picker.pickImage(
+        source: source,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85,
+      );
+
+      if (pickedFile == null) return;
+
+      final bytes = await pickedFile.readAsBytes();
+      final fileName = 'avatar_${userId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      // Upload to Supabase storage
+      await SupabaseService.client.storage
+          .from('support_attachments')
+          .uploadBinary(fileName, bytes);
+
+      final publicUrl = SupabaseService.client.storage
+          .from('support_attachments')
+          .getPublicUrl(fileName);
+
+      // Update in public.profiles table
+      await SupabaseService.client
+          .from('profiles')
+          .update({'avatar_url': publicUrl})
+          .eq('id', userId);
+
+      // Update riverpod state
+      await ref.read(authProvider.notifier).updateAvatar(publicUrl);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ प्रोफाइल फोटो यशस्वीरित्या अपडेट झाला!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('फोटो अपलोड अयशस्वी: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final lang = ref.watch(languageProvider);
@@ -31,7 +129,7 @@ class SettingsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('माझे खाते व सेटिंग्ज (Profile & Settings)'),
+        title: const Text('माझे खाते व सेटिंग्ज'),
       ),
       bottomNavigationBar: const AppBottomNav(currentIndex: 4),
       body: SafeArea(
@@ -52,48 +150,127 @@ class SettingsScreen extends ConsumerWidget {
                     boxShadow: AppShadows.soft,
                   ),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Container(
-                        width: 58,
-                        height: 58,
-                        decoration: BoxDecoration(
-                          gradient: AppColors.primaryGradient,
-                          shape: BoxShape.circle,
-                          boxShadow: AppShadows.soft,
-                        ),
-                        child: Center(
-                          child: Text(
-                            (user?.fullName.isNotEmpty == true) ? user!.fullName[0].toUpperCase() : 'U',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.white),
-                          ),
+                      // Clickable Avatar with Camera badge
+                      GestureDetector(
+                        onTap: () => _pickAndUploadAvatar(context, ref, user?.id),
+                        child: Stack(
+                          children: [
+                            Container(
+                              width: 64,
+                              height: 64,
+                              decoration: BoxDecoration(
+                                gradient: AppColors.primaryGradient,
+                                shape: BoxShape.circle,
+                                boxShadow: AppShadows.soft,
+                              ),
+                              child: ClipOval(
+                                child: (user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty)
+                                    ? Image.network(
+                                        user.avatarUrl!,
+                                        fit: BoxFit.cover,
+                                        width: 64,
+                                        height: 64,
+                                        errorBuilder: (_, __, ___) => Center(
+                                          child: Text(
+                                            (user.fullName.isNotEmpty == true) ? user.fullName[0].toUpperCase() : 'U',
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 26, color: Colors.white),
+                                          ),
+                                        ),
+                                      )
+                                    : Center(
+                                        child: Text(
+                                          (user?.fullName.isNotEmpty == true) ? user!.fullName[0].toUpperCase() : 'U',
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 26, color: Colors.white),
+                                        ),
+                                      ),
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(5),
+                                decoration: BoxDecoration(
+                                  color: AppColors.accentOrange,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 2),
+                                  boxShadow: AppShadows.soft,
+                                ),
+                                child: const Icon(Icons.camera_alt_rounded, size: 12, color: Colors.white),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 14),
+                      // User Details with Role Badge nicely placed with Name
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              user?.fullName ?? 'वापरकर्ता',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: AppColors.textPrimary),
+                            // Name and Role Badge in a Wrap so it never overflows
+                            Wrap(
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 8,
+                              runSpacing: 4,
+                              children: [
+                                Text(
+                                  user?.fullName ?? 'वापरकर्ता',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 18,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryPurple.withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: AppColors.primaryPurple.withOpacity(0.2)),
+                                  ),
+                                  child: Text(
+                                    user?.isSuperAdmin == true ? '👑 Super Admin' : (activeMandal?.userRole ?? 'सदस्य'),
+                                    style: const TextStyle(
+                                      color: AppColors.primaryPurple,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 3),
+                            const SizedBox(height: 6),
                             if (user?.mobileNumber != null)
-                              Text('📞 +91 ${user!.mobileNumber!}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                              Row(
+                                children: [
+                                  const Icon(Icons.phone_android_rounded, size: 14, color: AppColors.textSecondary),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '+91 ${user!.mobileNumber!}',
+                                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                            const SizedBox(height: 2),
                             if (user?.email != null)
-                              Text('✉️ ${user!.email!}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                              Row(
+                                children: [
+                                  const Icon(Icons.email_outlined, size: 14, color: AppColors.textSecondary),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      user!.email!,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                                    ),
+                                  ),
+                                ],
+                              ),
                           ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.lightLavender,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          activeMandal?.userRole ?? 'सदस्य',
-                          style: const TextStyle(color: AppColors.primaryPurple, fontWeight: FontWeight.bold, fontSize: 11),
                         ),
                       ),
                     ],

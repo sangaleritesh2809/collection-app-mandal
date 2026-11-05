@@ -284,20 +284,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
-                children: [
-                  Icon(Icons.account_balance_wallet_rounded, color: Colors.white70, size: 18),
-                  SizedBox(width: 6),
-                  Text(
-                    'उपलब्ध शिल्लक रक्कम (Balance)',
-                    style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
-                  ),
-                ],
+              const Icon(Icons.account_balance_wallet_rounded, color: Colors.white70, size: 18),
+              const SizedBox(width: 6),
+              const Expanded(
+                child: Text(
+                  'उपलब्ध शिल्लक (Balance)',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.18),
                   borderRadius: BorderRadius.circular(20),
@@ -305,7 +305,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.fiber_manual_record, size: 10, color: Color(0xFF4ADE80)),
+                    Icon(Icons.fiber_manual_record, size: 8, color: Color(0xFF4ADE80)),
                     SizedBox(width: 4),
                     Text(
                       'लाईव्ह हिशोब',
@@ -330,11 +330,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           const Divider(color: Colors.white24, height: 1),
           const SizedBox(height: 14),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildSubStat('खजिनदाराकडे जमा', AppFormatters.formatCurrency(summary.totalDeposited)),
-              _buildSubStat('एकूण मंजूर खर्च', AppFormatters.formatCurrency(summary.totalApprovedExpenses)),
-              _buildSubStat('संकलकांकडे बाकी', AppFormatters.formatCurrency(summary.awaitingDeposit), isWarning: summary.awaitingDeposit > 0),
+              Expanded(child: _buildSubStat('खजिनदाराकडे', AppFormatters.formatCurrency(summary.totalDeposited))),
+              Expanded(child: _buildSubStat('मंजूर खर्च', AppFormatters.formatCurrency(summary.totalApprovedExpenses))),
+              Expanded(child: _buildSubStat('संकलक बाकी', AppFormatters.formatCurrency(summary.awaitingDeposit), isWarning: summary.awaitingDeposit > 0)),
             ],
           ),
         ],
@@ -492,21 +491,28 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
-                children: [
-                  Icon(Icons.pie_chart_outline_rounded, size: 18, color: AppColors.primaryPurple),
-                  SizedBox(width: 8),
-                  Text(
-                    'वर्गणी संकलन प्रगती (Collection Progress)',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary),
-                  ),
-                ],
+              const Icon(Icons.pie_chart_outline_rounded, size: 18, color: AppColors.primaryPurple),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'वर्गणी संकलन प्रगती',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary),
+                ),
               ),
-              Text(
-                '$percent% पूर्ण',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryPurple),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryPurple.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$percent% पूर्ण',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryPurple),
+                ),
               ),
             ],
           ),
@@ -554,9 +560,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
             icon: const Icon(Icons.flash_on_rounded, size: 24, color: AppColors.accentOrange),
-            label: const Text(
-              '⚡ थेट वर्गणी जमा करा (फास्ट पावती)',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+            label: const FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                'थेट वर्गणी जमा करा (फास्ट पावती)',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+              ),
             ),
           ),
         ),
@@ -758,13 +767,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'अलीकडील व्यवहार (Recent Transactions)',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+            const Expanded(
+              child: Text(
+                'अलीकडील व्यवहार',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+              ),
             ),
             TextButton(
               onPressed: () => context.push(_transactionTab == 0 ? '/collections' : '/expenses'),
-              child: const Text('सर्व पहा', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryPurple)),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('सर्व पहा', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryPurple)),
+                  SizedBox(width: 3),
+                  Icon(Icons.arrow_forward_ios_rounded, size: 11, color: AppColors.primaryPurple),
+                ],
+              ),
             ),
           ],
         ),
