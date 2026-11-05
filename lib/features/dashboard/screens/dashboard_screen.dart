@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/form_label.dart';
 import '../../mandal/providers/mandal_provider.dart';
 import '../../collection/providers/collection_provider.dart';
 import '../../deposit/providers/deposit_provider.dart';
@@ -210,72 +212,141 @@ class DashboardScreen extends ConsumerWidget {
                   ],
                 ),
               ),
+              const SizedBox(height: 14),
+
+              // Mandal Invite Code Strip (1-tap Share)
+              if (activeMandal != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.vpn_key_outlined, size: 20, color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('मंडळ आमंत्रण कोड (Invite Code):', style: TextStyle(fontSize: 10, color: AppColors.textSecondaryLight)),
+                            Text(
+                              activeMandal.invitationCode,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1.5, color: AppColors.primary),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.share, color: Colors.green, size: 20),
+                        tooltip: 'WhatsApp वर कोड शेअर करा',
+                        onPressed: () {
+                          Share.share(
+                            '🚩 *${activeMandal.name}* 🚩\nमंडळात सहभागी होण्यासाठी आमंत्रण कोड: *${activeMandal.invitationCode}*\n\nवर्गणी ॲप डाउनलोड करा.',
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 16),
 
-              // Quick Action Buttons
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _buildActionButton(
-                      context,
-                      icon: Icons.add_circle,
-                      color: AppColors.success,
-                      label: 'वर्गणी जमा करा',
-                      route: '/add-collection',
-                    ),
-                    const SizedBox(width: 10),
-                    _buildActionButton(
-                      context,
-                      icon: Icons.account_balance_wallet,
-                      color: Colors.blue,
-                      label: 'ठेव विनंती करा',
-                      route: '/create-deposit',
-                    ),
-                    const SizedBox(width: 10),
-                    _buildActionButton(
-                      context,
-                      icon: Icons.money_off,
-                      color: Colors.red,
-                      label: 'खर्च नोंदवा',
-                      route: '/add-expense',
-                    ),
-                    const SizedBox(width: 10),
-                    _buildActionButton(
-                      context,
-                      icon: Icons.group_add,
-                      color: Colors.deepPurple,
-                      label: 'कुटुंब जोडा',
-                      route: '/add-family',
-                    ),
-                    const SizedBox(width: 10),
-                    _buildActionButton(
-                      context,
-                      icon: Icons.tune,
-                      color: Colors.deepOrange,
-                      label: 'वर्गणी दर',
-                      route: '/vargani-config',
-                    ),
-                    const SizedBox(width: 10),
-                    _buildActionButton(
-                      context,
-                      icon: Icons.assessment,
-                      color: Colors.teal,
-                      label: 'अहवाल',
-                      route: '/reports',
-                    ),
-                    const SizedBox(width: 10),
-                    _buildActionButton(
-                      context,
-                      icon: Icons.support_agent,
-                      color: Colors.deepOrange,
-                      label: 'मदत / समस्या',
-                      route: '/report-issue',
-                    ),
-                  ],
-                ),
+              // Quick Action Services Section Header
+              const Row(
+                children: [
+                  Icon(Icons.widgets_outlined, size: 18, color: AppColors.primary),
+                  SizedBox(width: 6),
+                  Text(
+                    'सर्व सेवा व सुविधा (Quick Actions)',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
+
+              // 2-Column Responsive Service Grid (Everything visible at a glance!)
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth > 500;
+                  return GridView.count(
+                    crossAxisCount: isWide ? 4 : 2,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: isWide ? 2.0 : 2.1,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [
+                      _buildFeatureCard(
+                        context,
+                        icon: Icons.receipt_long,
+                        color: AppColors.success,
+                        title: 'वर्गणी जमा',
+                        subtitle: 'पावती फाडा',
+                        route: '/add-collection',
+                      ),
+                      _buildFeatureCard(
+                        context,
+                        icon: Icons.account_balance_wallet,
+                        color: Colors.blue,
+                        title: 'ठेव विनंती',
+                        subtitle: 'खजिनदाराकडे द्या',
+                        route: '/create-deposit',
+                      ),
+                      _buildFeatureCard(
+                        context,
+                        icon: Icons.money_off,
+                        color: Colors.red,
+                        title: 'खर्च नोंदवा',
+                        subtitle: 'खर्चाचा हिशेब',
+                        route: '/add-expense',
+                      ),
+                      _buildFeatureCard(
+                        context,
+                        icon: Icons.group,
+                        color: Colors.deepPurple,
+                        title: 'कुटुंबे यादी',
+                        subtitle: 'सर्व कुटुंब यादी',
+                        route: '/families',
+                      ),
+                      _buildFeatureCard(
+                        context,
+                        icon: Icons.assessment,
+                        color: Colors.teal,
+                        title: 'हिशेब अहवाल',
+                        subtitle: 'PDF व Excel',
+                        route: '/reports',
+                      ),
+                      _buildFeatureCard(
+                        context,
+                        icon: Icons.tune,
+                        color: Colors.deepOrange,
+                        title: 'वर्गणी दर',
+                        subtitle: 'दर निश्चित करा',
+                        route: '/vargani-config',
+                      ),
+                      _buildFeatureCard(
+                        context,
+                        icon: Icons.qr_code_2,
+                        color: Colors.indigo,
+                        title: 'पेमेंट QR',
+                        subtitle: 'UPI सेटिंग्स',
+                        route: '/mandal-payment-settings',
+                      ),
+                      _buildFeatureCard(
+                        context,
+                        icon: Icons.support_agent,
+                        color: Colors.brown,
+                        title: 'मदत / तक्रार',
+                        subtitle: 'ॲडमिनला मेसेज',
+                        route: '/report-issue',
+                      ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 14),
 
               // Mandal Vargani Rate Summary Banner
               InkWell(
@@ -505,32 +576,60 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildActionButton(
+  Widget _buildFeatureCard(
     BuildContext context, {
     required IconData icon,
     required Color color,
-    required String label,
+    required String title,
+    required String subtitle,
     required String route,
   }) {
-    return InkWell(
-      onTap: () => context.push(route),
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.2)),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13),
-            ),
-          ],
+    return Card(
+      elevation: 0.5,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: color.withOpacity(0.25), width: 1.2),
+      ),
+      child: InkWell(
+        onTap: () => context.push(route),
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(fontSize: 10, color: AppColors.textSecondaryLight),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

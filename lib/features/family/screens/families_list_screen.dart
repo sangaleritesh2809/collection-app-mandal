@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/form_label.dart';
 import '../providers/family_provider.dart';
 
 class FamiliesListScreen extends ConsumerWidget {
@@ -30,8 +31,11 @@ class FamiliesListScreen extends ConsumerWidget {
         label: const Text('नवीन कुटुंब जोडा'),
       ),
       body: SafeArea(
-        child: Column(
-          children: [
+        child: ResponsiveContainer(
+          maxWidth: 760,
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
             // Search & Filter Section
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -162,6 +166,23 @@ class FamiliesListScreen extends ConsumerWidget {
                                             _statColumn('बाकी रक्कम', AppFormatters.formatCurrency(family.pendingAmount), color: family.pendingAmount > 0 ? AppColors.error : AppColors.success),
                                           ],
                                         ),
+                                        if (family.pendingAmount > 0) ...[
+                                          const SizedBox(height: 10),
+                                          SizedBox(
+                                            width: double.infinity,
+                                            child: ElevatedButton.icon(
+                                              onPressed: () => context.push('/add-collection', extra: family),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: AppColors.success,
+                                                foregroundColor: Colors.white,
+                                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                              ),
+                                              icon: const Icon(Icons.receipt_long, size: 16),
+                                              label: const Text('वर्गणी जमा करा (पावती बनवा)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                            ),
+                                          ),
+                                        ],
                                       ],
                                     ),
                                   ),
@@ -173,6 +194,7 @@ class FamiliesListScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

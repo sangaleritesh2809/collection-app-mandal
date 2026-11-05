@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/form_label.dart';
 import '../../../core/services/excel_service.dart';
 import '../../../core/services/pdf_service.dart';
 import '../../mandal/providers/mandal_provider.dart';
@@ -70,8 +71,11 @@ class _CollectionsListScreenState extends ConsumerState<CollectionsListScreen> {
         label: const Text('वर्गणी पावती फाडा'),
       ),
       body: SafeArea(
-        child: Column(
-          children: [
+        child: ResponsiveContainer(
+          maxWidth: 760,
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
             // KPI Summary Header
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -241,6 +245,7 @@ class _CollectionsListScreenState extends ConsumerState<CollectionsListScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }
