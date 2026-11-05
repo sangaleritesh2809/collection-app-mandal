@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/widgets/form_label.dart';
 import '../providers/auth_provider.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -61,174 +62,179 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.person_add_alt_1, size: 44, color: AppColors.primary),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'नवीन वापरकर्ता नोंदणी',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'मंडळ हिशेब व वर्गणी व्यवस्थापनासाठी खाते उघडा',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: AppColors.textSecondaryLight),
-                  ),
-                  const SizedBox(height: 24),
-
-                  if (authState.errorMessage != null)
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red.shade200),
-                      ),
-                      child: Text(
-                        authState.errorMessage!,
-                        style: const TextStyle(color: AppColors.error, fontSize: 13),
+            child: ResponsiveContainer(
+              maxWidth: 480,
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.person_add_alt_1, size: 44, color: AppColors.primary),
                       ),
                     ),
-
-                  // Full Name
-                  TextFormField(
-                    controller: _fullNameController,
-                    decoration: InputDecoration(
-                      labelText: AppStrings.tr(BuildContextKey.fullName, lang),
-                      prefixIcon: const Icon(Icons.badge_outlined),
-                      hintText: 'उदा. राहुल सुरेश पाटील',
+                    const SizedBox(height: 16),
+                    const Text(
+                      'नवीन वापरकर्ता नोंदणी',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                     ),
-                    validator: (val) {
-                      if (val == null || val.trim().isEmpty) {
-                        return 'कृपया तुमचे पूर्ण नाव टाका';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Email Address
-                  TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      labelText: AppStrings.tr(BuildContextKey.email, lang),
-                      prefixIcon: const Icon(Icons.email_outlined),
-                      hintText: 'rahul@example.com',
+                    const SizedBox(height: 6),
+                    const Text(
+                      'मंडळ हिशेब व वर्गणी व्यवस्थापनासाठी खाते उघडा',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.textSecondaryLight),
                     ),
-                    validator: (val) {
-                      if (val == null || !val.contains('@') || !val.contains('.')) {
-                        return 'कृपया वैध ईमेल पत्ता टाका';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 24),
 
-                  // Mobile Number
-                  TextFormField(
-                    controller: _mobileController,
-                    keyboardType: TextInputType.phone,
-                    decoration: InputDecoration(
-                      labelText: AppStrings.tr(BuildContextKey.mobile, lang),
-                      prefixIcon: const Icon(Icons.phone_android),
-                      prefixText: '+91 ',
-                      hintText: '9876543210',
-                    ),
-                    validator: (val) {
-                      if (val == null || val.trim().length != 10 || int.tryParse(val.trim()) == null) {
-                        return 'कृपया वैध १० अंकी मोबाईल नंबर टाका';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Password
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      labelText: AppStrings.tr(BuildContextKey.password, lang),
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                      ),
-                    ),
-                    validator: (val) {
-                      if (val == null || val.length < 6) {
-                        return 'पासवर्ड किमान ६ अक्षरांचा असावा';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Confirm Password
-                  TextFormField(
-                    controller: _confirmPasswordController,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      labelText: AppStrings.tr(BuildContextKey.confirmPassword, lang),
-                      prefixIcon: const Icon(Icons.lock_reset),
-                    ),
-                    validator: (val) {
-                      if (val != _passwordController.text) {
-                        return 'पासवर्ड जुळत नाही (Passwords do not match)';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Submit
-                  ElevatedButton(
-                    onPressed: authState.status == AuthStatus.loading ? null : _handleRegister,
-                    child: authState.status == AuthStatus.loading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : Text(AppStrings.tr(BuildContextKey.register, lang)),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Login Link
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('आधीच खाते आहे? '),
-                      GestureDetector(
-                        onTap: () => context.pushReplacement('/login'),
+                    if (authState.errorMessage != null)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.red.shade200),
+                        ),
                         child: Text(
-                          AppStrings.tr(BuildContextKey.login, lang),
-                          style: const TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          authState.errorMessage!,
+                          style: const TextStyle(color: AppColors.error, fontSize: 13),
                         ),
                       ),
-                    ],
-                  ),
-                ],
+
+                    // Full Name
+                    FormLabel(AppStrings.tr(BuildContextKey.fullName, lang), isRequired: true),
+                    TextFormField(
+                      controller: _fullNameController,
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.badge_outlined),
+                        hintText: 'उदा. राहुल सुरेश पाटील',
+                      ),
+                      validator: (val) {
+                        if (val == null || val.trim().isEmpty) {
+                          return 'कृपया तुमचे पूर्ण नाव टाका';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Email Address
+                    FormLabel(AppStrings.tr(BuildContextKey.email, lang), isRequired: true),
+                    TextFormField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.email_outlined),
+                        hintText: 'rahul@example.com',
+                      ),
+                      validator: (val) {
+                        if (val == null || !val.contains('@') || !val.contains('.')) {
+                          return 'कृपया वैध ईमेल पत्ता टाका';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Mobile Number
+                    FormLabel(AppStrings.tr(BuildContextKey.mobile, lang), isRequired: true),
+                    TextFormField(
+                      controller: _mobileController,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.phone_android),
+                        prefixText: '+91 ',
+                        hintText: '9876543210',
+                      ),
+                      validator: (val) {
+                        if (val == null || val.trim().length != 10 || int.tryParse(val.trim()) == null) {
+                          return 'कृपया वैध १० अंकी मोबाईल नंबर टाका';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Password
+                    FormLabel(AppStrings.tr(BuildContextKey.password, lang), isRequired: true),
+                    TextFormField(
+                      controller: _passwordController,
+                      obscureText: _obscurePassword,
+                      decoration: InputDecoration(
+                        hintText: 'किमान ६ अक्षरांचा पासवर्ड',
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                        ),
+                      ),
+                      validator: (val) {
+                        if (val == null || val.length < 6) {
+                          return 'पासवर्ड किमान ६ अक्षरांचा असावा';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Confirm Password
+                    FormLabel(AppStrings.tr(BuildContextKey.confirmPassword, lang), isRequired: true),
+                    TextFormField(
+                      controller: _confirmPasswordController,
+                      obscureText: _obscurePassword,
+                      decoration: const InputDecoration(
+                        hintText: 'पासवर्ड पुन्हा टाका',
+                        prefixIcon: Icon(Icons.lock_reset),
+                      ),
+                      validator: (val) {
+                        if (val != _passwordController.text) {
+                          return 'पासवर्ड जुळत नाही (Passwords do not match)';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Submit
+                    ElevatedButton(
+                      onPressed: authState.status == AuthStatus.loading ? null : _handleRegister,
+                      child: authState.status == AuthStatus.loading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : Text(AppStrings.tr(BuildContextKey.register, lang)),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Login Link
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('आधीच खाते आहे? '),
+                        GestureDetector(
+                          onTap: () => context.pushReplacement('/login'),
+                          child: Text(
+                            AppStrings.tr(BuildContextKey.login, lang),
+                            style: const TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

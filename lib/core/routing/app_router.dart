@@ -22,6 +22,9 @@ import '../../features/reports/screens/reports_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/vargani_config/screens/vargani_config_screen.dart';
 import '../../features/mandal/screens/mandal_payment_settings_screen.dart';
+import '../../features/support/screens/report_issue_screen.dart';
+import '../../features/support/screens/my_tickets_screen.dart';
+import '../../features/support/screens/super_admin_tickets_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -119,6 +122,18 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/mandal-payment-settings',
       builder: (context, state) => const MandalPaymentSettingsScreen(),
+    ),
+    GoRoute(
+      path: '/report-issue',
+      builder: (context, state) => const ReportIssueScreen(),
+    ),
+    GoRoute(
+      path: '/my-tickets',
+      builder: (context, state) => const MyTicketsScreen(),
+    ),
+    GoRoute(
+      path: '/super-admin-tickets',
+      builder: (context, state) => const SuperAdminTicketsScreen(),
     ),
   ],
 );

@@ -9,6 +9,7 @@ import '../../collection/providers/collection_provider.dart';
 import '../../deposit/providers/deposit_provider.dart';
 import '../../expense/providers/expense_provider.dart';
 import '../../vargani_config/providers/vargani_config_provider.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -17,6 +18,8 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final lang = ref.watch(languageProvider);
+    final authState = ref.watch(authProvider);
+    final user = authState.userProfile;
     final mandalState = ref.watch(mandalProvider);
     final summary = ref.watch(dashboardProvider);
     final collectionState = ref.watch(collectionProvider);
@@ -43,6 +46,11 @@ class DashboardScreen extends ConsumerWidget {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.support_agent),
+            tooltip: 'समस्या नोंदवा / मेसेज',
+            onPressed: () => context.push('/report-issue'),
+          ),
           IconButton(
             icon: const Icon(Icons.swap_horiz),
             tooltip: 'मंडळ बदला',
@@ -85,6 +93,34 @@ class DashboardScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Super Admin Notice Banner (if user is Super Admin)
+              if (user?.isSuperAdmin == true)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.admin_panel_settings, color: Colors.red, size: 26),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'सुपर ॲडमिन पॅनेल: मंडळांचे मेसेज व समस्या तपासा.',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.red),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => context.push('/super-admin-tickets'),
+                        child: const Text('मेसेज उघडा', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                ),
+
               // Pending Deposit Request Alert Banner (for Treasurers)
               if (summary.pendingDepositRequestsCount > 0)
                 Container(
@@ -227,6 +263,14 @@ class DashboardScreen extends ConsumerWidget {
                       color: Colors.teal,
                       label: 'अहवाल',
                       route: '/reports',
+                    ),
+                    const SizedBox(width: 10),
+                    _buildActionButton(
+                      context,
+                      icon: Icons.support_agent,
+                      color: Colors.deepOrange,
+                      label: 'मदत / समस्या',
+                      route: '/report-issue',
                     ),
                   ],
                 ),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/widgets/form_label.dart';
 import '../providers/mandal_provider.dart';
 
 class CreateMandalScreen extends ConsumerStatefulWidget {
@@ -69,136 +70,150 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  'मंडळाची माहिती भरा',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'मंडळ तयार केल्यानंतर तुम्हाला एक अद्वितीय आमंत्रण कोड (Invite Code) मिळेल.',
-                  style: TextStyle(color: AppColors.textSecondaryLight, fontSize: 13),
-                ),
-                const SizedBox(height: 20),
-
-                // Mandal Name
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'मंडळाचे नाव *',
-                    hintText: 'उदा. श्री गणेश मित्र मंडळ',
-                    prefixIcon: Icon(Icons.temple_hindu),
+          child: ResponsiveContainer(
+            padding: const EdgeInsets.all(20),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'मंडळाची माहिती भरा',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-                  validator: (val) {
-                    if (val == null || val.trim().isEmpty) return 'मंडळाचे नाव आवश्यक आहे';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 14),
-
-                // Description
-                TextFormField(
-                  controller: _descController,
-                  maxLines: 2,
-                  decoration: const InputDecoration(
-                    labelText: 'वर्णन / ब्रीदवाक्य',
-                    hintText: 'उदा. स्थापना वर्ष २०१० • सामाजिक ऐक्य आणि उत्सव',
-                    prefixIcon: Icon(Icons.info_outline),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'मंडळ तयार केल्यानंतर तुम्हाला एक अद्वितीय आमंत्रण कोड (Invite Code) मिळेल.',
+                    style: TextStyle(color: AppColors.textSecondaryLight, fontSize: 13),
                   ),
-                ),
-                const SizedBox(height: 14),
+                  const SizedBox(height: 20),
 
-                // Address & Village
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _villageController,
-                        decoration: const InputDecoration(
-                          labelText: 'गाव / शहर *',
-                          hintText: 'उदा. वडगाव',
-                          prefixIcon: Icon(Icons.location_city),
-                        ),
-                        validator: (val) => val == null || val.trim().isEmpty ? 'गाव आवश्यक आहे' : null,
-                      ),
+                  // Mandal Name
+                  const FormLabel('मंडळाचे नाव', isRequired: true),
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      hintText: 'उदा. श्री गणेश मित्र मंडळ',
+                      prefixIcon: Icon(Icons.temple_hindu),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _talukaController,
-                        decoration: const InputDecoration(
-                          labelText: 'तालुका',
-                          hintText: 'उदा. हवेली',
+                    validator: (val) {
+                      if (val == null || val.trim().isEmpty) return 'मंडळाचे नाव आवश्यक आहे';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Description
+                  const FormLabel('वर्णन / ब्रीदवाक्य'),
+                  TextFormField(
+                    controller: _descController,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                      hintText: 'उदा. स्थापना वर्ष २०१० • सामाजिक ऐक्य आणि उत्सव',
+                      prefixIcon: Icon(Icons.info_outline),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Address & Village
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const FormLabel('गाव / शहर', isRequired: true),
+                            TextFormField(
+                              controller: _villageController,
+                              decoration: const InputDecoration(
+                                hintText: 'उदा. वडगाव',
+                                prefixIcon: Icon(Icons.location_city),
+                              ),
+                              validator: (val) => val == null || val.trim().isEmpty ? 'गाव आवश्यक आहे' : null,
+                            ),
+                          ],
                         ),
                       ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const FormLabel('तालुका'),
+                            TextFormField(
+                              controller: _talukaController,
+                              decoration: const InputDecoration(
+                                hintText: 'उदा. हवेली',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // District
+                  const FormLabel('जिल्हा', isRequired: true),
+                  TextFormField(
+                    controller: _districtController,
+                    decoration: const InputDecoration(
+                      hintText: 'उदा. पुणे',
+                      prefixIcon: Icon(Icons.map),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-
-                // District
-                TextFormField(
-                  controller: _districtController,
-                  decoration: const InputDecoration(
-                    labelText: 'जिल्हा *',
-                    hintText: 'उदा. पुणे',
-                    prefixIcon: Icon(Icons.map),
+                    validator: (val) => val == null || val.trim().isEmpty ? 'जिल्हा आवश्यक आहे' : null,
                   ),
-                  validator: (val) => val == null || val.trim().isEmpty ? 'जिल्हा आवश्यक आहे' : null,
-                ),
-                const SizedBox(height: 14),
+                  const SizedBox(height: 14),
 
-                // Address
-                TextFormField(
-                  controller: _addressController,
-                  decoration: const InputDecoration(
-                    labelText: 'पत्ता / मुख्य चौक',
-                    hintText: 'उदा. शिवाजी चौक, मारुती मंदिरासमोर',
-                    prefixIcon: Icon(Icons.place_outlined),
+                  // Address
+                  const FormLabel('पत्ता / मुख्य चौक'),
+                  TextFormField(
+                    controller: _addressController,
+                    decoration: const InputDecoration(
+                      hintText: 'उदा. शिवाजी चौक, मारुती मंदिरासमोर',
+                      prefixIcon: Icon(Icons.place_outlined),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 14),
+                  const SizedBox(height: 14),
 
-                // Contact Number
-                TextFormField(
-                  controller: _contactController,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
-                    labelText: 'मंडळ संपर्क मोबाईल नंबर',
-                    prefixIcon: Icon(Icons.phone),
-                    prefixText: '+91 ',
+                  // Contact Number
+                  const FormLabel('मंडळ संपर्क मोबाईल नंबर'),
+                  TextFormField(
+                    controller: _contactController,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      hintText: '९८७६५४३२१०',
+                      prefixIcon: Icon(Icons.phone),
+                      prefixText: '+91 ',
+                    ),
                   ),
-                ),
-                const SizedBox(height: 14),
+                  const SizedBox(height: 14),
 
-                // Email
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'मंडळ ईमेल पत्ता',
-                    prefixIcon: Icon(Icons.email_outlined),
+                  // Email
+                  const FormLabel('मंडळ ईमेल पत्ता'),
+                  TextFormField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      hintText: 'mandal@example.com',
+                      prefixIcon: Icon(Icons.email_outlined),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 28),
+                  const SizedBox(height: 28),
 
-                // Submit
-                ElevatedButton(
-                  onPressed: mandalState.isLoading ? null : _handleCreate,
-                  child: mandalState.isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text('मंडळ नोंदणी पूर्ण करा (Create Mandal)'),
-                ),
-              ],
+                  // Submit
+                  ElevatedButton(
+                    onPressed: mandalState.isLoading ? null : _handleCreate,
+                    child: mandalState.isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Text('मंडळ नोंदणी पूर्ण करा (Create Mandal)'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

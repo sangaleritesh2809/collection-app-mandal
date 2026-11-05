@@ -6,6 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/form_label.dart';
 import '../../family/models/family.dart';
 import '../../family/providers/family_provider.dart';
 import '../../mandal/providers/mandal_provider.dart';
@@ -128,184 +129,187 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Family Selector Dropdown
-                DropdownButtonFormField<Family>(
-                  value: _selectedFamily != null
-                      ? familyState.families.firstWhere(
-                          (f) => f.id == _selectedFamily!.id,
-                          orElse: () => _selectedFamily!,
-                        )
-                      : null,
-                  decoration: const InputDecoration(
-                    labelText: 'कुटुंब निवडा *',
-                    prefixIcon: Icon(Icons.people),
-                  ),
-                  items: familyState.families.map((f) {
-                    return DropdownMenuItem<Family>(
-                      value: f,
-                      child: Text('${f.familyName} (${f.familyHeadName})'),
-                    );
-                  }).toList(),
-                  onChanged: (val) {
-                    setState(() {
-                      _selectedFamily = val;
-                      if (val != null && val.pendingAmount > 0) {
-                        _amountController.text = val.pendingAmount.toInt().toString();
-                      }
-                    });
-                  },
-                  validator: (val) => val == null ? 'कुटुंब निवडणे आवश्यक आहे' : null,
-                ),
-                const SizedBox(height: 16),
-
-                // Selected Family Summary Card
-                if (_selectedFamily != null) ...[
-                  Card(
-                    color: Colors.orange.shade50,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: Colors.orange.shade200),
+          child: ResponsiveContainer(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Family Selector Dropdown
+                  const FormLabel('कुटुंब निवडा', isRequired: true),
+                  DropdownButtonFormField<Family>(
+                    value: _selectedFamily != null
+                        ? familyState.families.firstWhere(
+                            (f) => f.id == _selectedFamily!.id,
+                            orElse: () => _selectedFamily!,
+                          )
+                        : null,
+                    decoration: const InputDecoration(
+                      hintText: 'कुटुंब निवडा...',
+                      prefixIcon: Icon(Icons.people),
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                _selectedFamily!.familyName,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                              ),
-                              Text(
-                                '${_selectedFamily!.totalMembers} व्यक्ती',
-                                style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryLight),
-                              ),
-                            ],
-                          ),
-                          const Divider(height: 14),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              _infoSub('एकूण ठरलेली वर्गणी', AppFormatters.formatCurrency(_selectedFamily!.totalVargani)),
-                              _infoSub('आधी जमा रक्कम', AppFormatters.formatCurrency(_selectedFamily!.paidAmount), color: AppColors.success),
-                              _infoSub('बाकी रक्कम', AppFormatters.formatCurrency(_selectedFamily!.pendingAmount), color: AppColors.error),
-                            ],
-                          ),
-                        ],
+                    items: familyState.families.map((f) {
+                      return DropdownMenuItem<Family>(
+                        value: f,
+                        child: Text('${f.familyName} (${f.familyHeadName})'),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      setState(() {
+                        _selectedFamily = val;
+                        if (val != null && val.pendingAmount > 0) {
+                          _amountController.text = val.pendingAmount.toInt().toString();
+                        }
+                      });
+                    },
+                    validator: (val) => val == null ? 'कुटुंब निवडणे आवश्यक आहे' : null,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Selected Family Summary Card
+                  if (_selectedFamily != null) ...[
+                    Card(
+                      color: Colors.orange.shade50,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: Colors.orange.shade200),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  _selectedFamily!.familyName,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                ),
+                                Text(
+                                  '${_selectedFamily!.totalMembers} व्यक्ती',
+                                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryLight),
+                                ),
+                              ],
+                            ),
+                            const Divider(height: 14),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                _infoSub('एकूण ठरलेली वर्गणी', AppFormatters.formatCurrency(_selectedFamily!.totalVargani)),
+                                _infoSub('आधी जमा रक्कम', AppFormatters.formatCurrency(_selectedFamily!.paidAmount), color: AppColors.success),
+                                _infoSub('बाकी रक्कम', AppFormatters.formatCurrency(_selectedFamily!.pendingAmount), color: AppColors.error),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-
-                // Amount Field
-                TextFormField(
-                  controller: _amountController,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.success),
-                  decoration: const InputDecoration(
-                    labelText: 'वर्गणी रक्कम (₹) *',
-                    prefixIcon: Icon(Icons.currency_rupee, size: 28),
-                    hintText: 'उदा. ५००',
-                  ),
-                  onChanged: (_) => setState(() {}),
-                  validator: (val) {
-                    if (val == null || val.trim().isEmpty) return 'रक्कम आवश्यक आहे';
-                    final n = double.tryParse(val.trim());
-                    if (n == null || n <= 0) return 'वैध रक्कम टाका';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Payment Mode Dropdown
-                DropdownButtonFormField<String>(
-                  value: _paymentMode,
-                  decoration: const InputDecoration(
-                    labelText: 'पेमेंट पद्धत *',
-                    prefixIcon: Icon(Icons.payment),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'cash', child: Text('रोख (Cash)')),
-                    DropdownMenuItem(value: 'upi', child: Text('📱 ऑनलाइन / UPI QR (Scan & Pay)')),
-                    DropdownMenuItem(value: 'bank_transfer', child: Text('बँक ट्रान्सफर (NEFT/RTGS)')),
-                    DropdownMenuItem(value: 'cheque', child: Text('धनादेश (Cheque)')),
-                    DropdownMenuItem(value: 'other', child: Text('इतर (Other)')),
+                    const SizedBox(height: 16),
                   ],
-                  onChanged: (val) => setState(() => _paymentMode = val ?? 'cash'),
-                ),
-                const SizedBox(height: 16),
 
-                // ONLINE UPI QR PAYMENT CARD (Displays when 'upi' selected)
-                if (_paymentMode == 'upi') ...[
-                  _buildOnlineQrCard(context, mandal, amountVal),
-                  const SizedBox(height: 16),
-                ],
-
-                // Collection Date Picker
-                InkWell(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: _collectionDate,
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime(2030),
-                    );
-                    if (picked != null) setState(() => _collectionDate = picked);
-                  },
-                  child: InputDecorator(
+                  // Amount Field
+                  const FormLabel('वर्गणी रक्कम (₹)', isRequired: true),
+                  TextFormField(
+                    controller: _amountController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.success),
                     decoration: const InputDecoration(
-                      labelText: 'संकलन दिनांक',
-                      prefixIcon: Icon(Icons.calendar_today),
+                      prefixIcon: Icon(Icons.currency_rupee, size: 28),
+                      hintText: 'उदा. ५००',
                     ),
-                    child: Text(AppFormatters.formatDate(_collectionDate)),
+                    onChanged: (_) => setState(() {}),
+                    validator: (val) {
+                      if (val == null || val.trim().isEmpty) return 'रक्कम आवश्यक आहे';
+                      final n = double.tryParse(val.trim());
+                      if (n == null || n <= 0) return 'वैध रक्कम टाका';
+                      return null;
+                    },
                   ),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                // Notes
-                TextFormField(
-                  controller: _notesController,
-                  decoration: const InputDecoration(
-                    labelText: 'काही विशेष नोंद (Notes)',
-                    hintText: 'उदा. विशेष देणगी / उर्वरित रक्कम नंतर देतील',
-                    prefixIcon: Icon(Icons.notes),
+                  // Payment Mode Dropdown
+                  const FormLabel('पेमेंट पद्धत', isRequired: true),
+                  DropdownButtonFormField<String>(
+                    value: _paymentMode,
+                    decoration: const InputDecoration(
+                      hintText: 'पेमेंट पद्धत निवडा',
+                      prefixIcon: Icon(Icons.payment),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'cash', child: Text('रोख (Cash)')),
+                      DropdownMenuItem(value: 'upi', child: Text('📱 ऑनलाइन / UPI QR (Scan & Pay)')),
+                      DropdownMenuItem(value: 'bank_transfer', child: Text('बँक ट्रान्सफर (NEFT/RTGS)')),
+                      DropdownMenuItem(value: 'cheque', child: Text('धनादेश (Cheque)')),
+                      DropdownMenuItem(value: 'other', child: Text('इतर (Other)')),
+                    ],
+                    onChanged: (val) => setState(() => _paymentMode = val ?? 'cash'),
                   ),
-                ),
-                const SizedBox(height: 28),
+                  const SizedBox(height: 16),
 
-                // Submit Button
-                ElevatedButton.icon(
-                  onPressed: collectionState.isLoading ? null : _handleSubmit,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: _paymentMode == 'upi' ? Colors.green.shade700 : AppColors.primary,
+                  // ONLINE UPI QR PAYMENT CARD (Displays when 'upi' selected)
+                  if (_paymentMode == 'upi') ...[
+                    _buildOnlineQrCard(context, mandal, amountVal),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Collection Date Picker
+                  const FormLabel('संकलन दिनांक'),
+                  InkWell(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _collectionDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2030),
+                      );
+                      if (picked != null) setState(() => _collectionDate = picked);
+                    },
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.calendar_today),
+                      ),
+                      child: Text(AppFormatters.formatDate(_collectionDate)),
+                    ),
                   ),
-                  icon: collectionState.isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : Icon(_paymentMode == 'upi' ? Icons.check_circle : Icons.receipt_long),
-                  label: Text(
-                    _paymentMode == 'upi'
-                        ? '✅ पेमेंट पूर्ण झाले - पावती तयार करा'
-                        : 'पावती तयार करा व जतन करा (Generate Receipt)',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  const SizedBox(height: 16),
+
+                  // Notes
+                  const FormLabel('काही विशेष नोंद (Notes)'),
+                  TextFormField(
+                    controller: _notesController,
+                    decoration: const InputDecoration(
+                      hintText: 'उदा. विशेष देणगी / उर्वरित रक्कम नंतर देतील',
+                      prefixIcon: Icon(Icons.notes),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 20),
-              ],
+                  const SizedBox(height: 28),
+
+                  // Submit Button
+                  ElevatedButton.icon(
+                    onPressed: collectionState.isLoading ? null : _handleSubmit,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: _paymentMode == 'upi' ? Colors.green.shade700 : AppColors.primary,
+                    ),
+                    icon: collectionState.isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : Icon(_paymentMode == 'upi' ? Icons.check_circle : Icons.receipt_long),
+                    label: Text(
+                      _paymentMode == 'upi'
+                          ? '✅ पेमेंट पूर्ण झाले - पावती तयार करा'
+                          : 'पावती तयार करा व जतन करा (Generate Receipt)',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           ),
         ),
@@ -501,10 +505,13 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
           ],
 
           // UTR / Transaction Reference Number Input
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: FormLabel('UTR / ऑनलाइन ट्रान्झॅक्शन नंबर (ऐच्छिक)', subtitle: 'GPay/PhonePe मधील १२ अंकी UTR नंबर टाका'),
+          ),
           TextFormField(
             controller: _utrController,
             decoration: const InputDecoration(
-              labelText: 'UTR / ऑनलाइन ट्रान्झॅक्शन नंबर (ऐच्छिक)',
               hintText: 'उदा. 324156789012',
               prefixIcon: Icon(Icons.receipt_outlined),
               fillColor: Colors.white,

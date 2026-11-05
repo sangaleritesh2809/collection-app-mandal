@@ -266,10 +266,49 @@ class SettingsScreen extends ConsumerWidget {
                       }
                     },
                   ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.support_agent, color: Colors.deepOrange),
+                    title: const Text('समस्या नोंदवा / मदत (Report Issue)'),
+                    subtitle: const Text('काही अडचण आल्यास थेट सुपर ॲडमिनला मेसेज करा'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push('/report-issue'),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.mark_email_read_outlined, color: Colors.teal),
+                    title: const Text('माझ्या तक्रारी व उत्तरे (My Issues)'),
+                    subtitle: const Text('पाठवलेल्या अडचणींची स्थिती व ॲडमिनचे उत्तर पहा'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push('/my-tickets'),
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
+
+            // Super Admin Panel Section (Visible only to Super Admins)
+            if (user?.isSuperAdmin == true) ...[
+              Card(
+                color: Colors.red.shade50,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.red.shade300),
+                ),
+                child: ListTile(
+                  leading: const Icon(Icons.admin_panel_settings, color: Colors.red, size: 28),
+                  title: const Text(
+                    'सुपर ॲडमिन: मंडळांचे मेसेज व तक्रारी',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+                  ),
+                  subtitle: const Text('सर्व मंडळांकडून आलेल्या अडचणी, संपर्क व उत्तर देणे'),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.red),
+                  onTap: () => context.push('/super-admin-tickets'),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            const SizedBox(height: 12),
 
             // Logout Button
             Padding(

@@ -846,3 +846,75 @@ CREATE POLICY "Public read for qr_codes" ON storage.objects FOR SELECT USING (bu
 DROP POLICY IF EXISTS "Auth upload for qr_codes" ON storage.objects;
 CREATE POLICY "Auth upload for qr_codes" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'qr_codes' AND auth.role() = 'authenticated');
 
+-- ==============================================================================
+-- 18. SUPPORT TICKETS & MANDAL ISSUE REPORTING SYSTEM
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.support_tickets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_name TEXT NOT NULL,
+    user_mobile TEXT,
+    user_email TEXT,
+    mandal_id UUID REFERENCES public.mandals(id) ON DELETE SET NULL,
+    mandal_name TEXT NOT NULL,
+    mandal_code TEXT,
+    mandal_location TEXT,
+    user_role TEXT,
+    category TEXT NOT NULL DEFAULT 'technical',
+    subject TEXT NOT NULL,
+    description TEXT NOT NULL,
+    screenshot_url TEXT,
+    priority TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
+    status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'resolved', 'closed')),
+    admin_reply TEXT,
+    admin_reply_at TIMESTAMPTZ,
+    replied_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- Performance Indexes
+CREATE INDEX IF NOT EXISTS idx_support_tickets_mandal ON public.support_tickets(mandal_id);
+CREATE INDEX IF NOT EXISTS idx_support_tickets_user ON public.support_tickets(user_id);
+CREATE INDEX IF NOT EXISTS idx_support_tickets_status ON public.support_tickets(status);
+CREATE INDEX IF NOT EXISTS idx_support_tickets_created ON public.support_tickets(created_at DESC);
+
+-- Enable RLS
+ALTER TABLE public.support_tickets ENABLE ROW LEVEL SECURITY;
+
+-- Helper check if authenticated user is a super admin
+CREATE OR REPLACE FUNCTION public.is_super_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND is_super_admin = TRUE
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE PARALLEL SAFE;
+
+-- RLS Policies for support_tickets
+DROP POLICY IF EXISTS "Users can insert support tickets" ON public.support_tickets;
+CREATE POLICY "Users can insert support tickets" ON public.support_tickets 
+FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+
+DROP POLICY IF EXISTS "Users or super admins can view support tickets" ON public.support_tickets;
+CREATE POLICY "Users or super admins can view support tickets" ON public.support_tickets 
+FOR SELECT USING (auth.uid() = user_id OR public.is_super_admin());
+
+DROP POLICY IF EXISTS "Users or super admins can update support tickets" ON public.support_tickets;
+CREATE POLICY "Users or super admins can update support tickets" ON public.support_tickets 
+FOR UPDATE USING (auth.uid() = user_id OR public.is_super_admin());
+
+-- Storage Bucket for Support Attachments
+INSERT INTO storage.buckets (id, name, public) VALUES 
+    ('support_attachments', 'support_attachments', true)
+ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "Public read for support_attachments" ON storage.objects;
+CREATE POLICY "Public read for support_attachments" ON storage.objects FOR SELECT USING (bucket_id = 'support_attachments');
+
+DROP POLICY IF EXISTS "Auth upload for support_attachments" ON storage.objects;
+CREATE POLICY "Auth upload for support_attachments" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'support_attachments' AND auth.role() = 'authenticated');
+
+

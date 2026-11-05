@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/supabase_service.dart';
+import '../../../core/widgets/form_label.dart';
 import '../providers/mandal_provider.dart';
 
 class MandalPaymentSettingsScreen extends ConsumerStatefulWidget {
@@ -134,12 +135,13 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+          child: ResponsiveContainer(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                 // Header Banner
                 Container(
                   padding: const EdgeInsets.all(14),
@@ -314,21 +316,21 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
                         ),
                         const SizedBox(height: 14),
 
+                        const FormLabel('मंडळाचा UPI ID', subtitle: 'उदा. shreeganesh@sbi किंवा 9876543210@paytm'),
                         TextFormField(
                           controller: _upiIdController,
                           decoration: const InputDecoration(
-                            labelText: 'मंडळाचा UPI ID',
-                            hintText: 'उदा. shreeganesh@sbi किंवा 9876543210@paytm',
+                            hintText: 'shreeganesh@sbi किंवा 9876543210@paytm',
                             prefixIcon: Icon(Icons.alternate_email),
                           ),
                           onChanged: (_) => setState(() {}),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 14),
 
+                        const FormLabel('खातेधारकाचे / मंडळाचे नाव', subtitle: 'उदा. श्री गणेश मित्र मंडळ'),
                         TextFormField(
                           controller: _payeeNameController,
                           decoration: const InputDecoration(
-                            labelText: 'खातेधारकाचे / मंडळाचे नाव',
                             hintText: 'उदा. श्री गणेश मित्र मंडळ',
                             prefixIcon: Icon(Icons.person_pin),
                           ),
@@ -410,6 +412,7 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
                 const SizedBox(height: 30),
               ],
             ),
+          ),
           ),
         ),
       ),
