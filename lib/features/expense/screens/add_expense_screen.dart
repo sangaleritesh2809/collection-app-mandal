@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/validators.dart';
 import '../../../core/widgets/form_label.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/expense_provider.dart';
@@ -105,7 +106,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                       hintText: 'उदा. स्टेज व मंडप डेकोरेशन',
                       prefixIcon: Icon(Icons.title),
                     ),
-                    validator: (val) => val == null || val.trim().isEmpty ? 'खर्च शीर्षक आवश्यक आहे' : null,
+                    validator: (val) => AppValidators.required(val, 'खर्च शीर्षक'),
                   ),
                   const SizedBox(height: 16),
 
@@ -131,12 +132,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                       prefixIcon: Icon(Icons.currency_rupee, size: 28),
                       hintText: 'उदा. ३५००',
                     ),
-                    validator: (val) {
-                      if (val == null || val.trim().isEmpty) return 'रक्कम आवश्यक आहे';
-                      final n = double.tryParse(val.trim());
-                      if (n == null || n <= 0) return 'वैध रक्कम टाका';
-                      return null;
-                    },
+                    validator: (val) => AppValidators.amount(val, fieldName: 'खर्च रक्कम'),
                   ),
                   const SizedBox(height: 16),
 
@@ -148,7 +144,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                       hintText: 'उदा. साई डेकोरेटर्स / अमोल शिंदे',
                       prefixIcon: Icon(Icons.person),
                     ),
-                    validator: (val) => val == null || val.trim().isEmpty ? 'स्वीकारणाऱ्याचे नाव आवश्यक आहे' : null,
+                    validator: (val) => AppValidators.name(val, 'स्वीकारणाऱ्याचे नाव'),
                   ),
                   const SizedBox(height: 16),
 
@@ -159,6 +155,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                       hintText: 'उदा. खजिनदार सुरेश कदम',
                       prefixIcon: Icon(Icons.account_balance_wallet_outlined),
                     ),
+                    validator: (val) => AppValidators.name(val, 'रक्कम देणाऱ्याचे नाव'),
                   ),
                   const SizedBox(height: 16),
 

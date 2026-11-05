@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/responsive_container.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../models/deposit_request.dart';
 import '../providers/deposit_provider.dart';
@@ -34,13 +35,32 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('ठेव विनंती मंजूर करायची आहे का?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle_rounded, color: AppColors.success, size: 26),
+            SizedBox(width: 10),
+            Text('ठेव विनंती मंजूर करा', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ],
+        ),
         content: Text(
           'कार्यकर्ता ${req.collectorName ?? 'कार्यकर्ता'} यांच्याकडून आलेली ${AppFormatters.formatCurrency(req.amount)} ची ठेव खजिन्यात जमा म्हणून निश्चित करण्यात येईल.',
+          style: const TextStyle(fontSize: 13, color: AppColors.textPrimary, height: 1.4),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('रद्द करा')),
-          ElevatedButton(
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('रद्द करा', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.success,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            icon: const Icon(Icons.check_rounded, size: 18),
+            label: const Text('मंजूर करा (Approve)', style: TextStyle(fontWeight: FontWeight.bold)),
             onPressed: () async {
               Navigator.pop(ctx);
               final success = await ref.read(depositProvider.notifier).processRequest(
@@ -53,7 +73,6 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
                 );
               }
             },
-            child: const Text('मंजूर करा (Approve)'),
           ),
         ],
       ),
@@ -65,27 +84,47 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('ठेव विनंती नाकारायची आहे का?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Row(
+          children: [
+            Icon(Icons.cancel_rounded, color: AppColors.error, size: 26),
+            SizedBox(width: 10),
+            Text('ठेव विनंती नाकारा', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('कार्यकर्ता: ${req.collectorName ?? ''} • रक्कम: ${AppFormatters.formatCurrency(req.amount)}'),
-            const SizedBox(height: 12),
+            Text(
+              'कार्यकर्ता: ${req.collectorName ?? ''} • रक्कम: ${AppFormatters.formatCurrency(req.amount)}',
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 14),
             TextField(
               controller: reasonCtrl,
               maxLines: 2,
               decoration: const InputDecoration(
                 labelText: 'नाकारण्याचे कारण (अनिवार्य) *',
-                hintText: 'उदा. रक्कम प्रत्यक्षात कमी मिळाली / चुकीची पावती',
+                hintText: 'उदा. प्रत्यक्ष रक्कम कमी मिळाली / पावती जुळत नाही',
               ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('रद्द करा')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('रद्द करा', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            icon: const Icon(Icons.close_rounded, size: 18),
+            label: const Text('नाकारा (Reject)', style: TextStyle(fontWeight: FontWeight.bold)),
             onPressed: () async {
               if (reasonCtrl.text.trim().isEmpty) return;
               Navigator.pop(ctx);
@@ -100,7 +139,6 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
                 );
               }
             },
-            child: const Text('नाकारा (Reject)'),
           ),
         ],
       ),
@@ -109,18 +147,20 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
 
   @override
   Widget build(BuildContext context) {
-    final lang = ref.watch(languageProvider);
     final depositState = ref.watch(depositProvider);
     final currentUserId = ref.watch(authProvider).userProfile?.id;
 
     return Scaffold(
+      backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
-        title: Text(AppStrings.tr(BuildContextKey.depositRequests, lang)),
+        title: const Text('ठेव मंजुरी (Deposit Approvals)'),
         bottom: TabBar(
           controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: AppColors.primary,
+          labelColor: AppColors.primaryPurple,
+          unselectedLabelColor: AppColors.textSecondary,
+          indicatorColor: AppColors.primaryPurple,
+          indicatorWeight: 3,
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           tabs: [
             Tab(text: 'प्रलंबित (${depositState.pendingRequests.length})'),
             Tab(text: 'मंजूर (${depositState.approvedRequests.length})'),
@@ -129,168 +169,207 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'रिफ्रेश करा',
             onPressed: () => ref.read(depositProvider.notifier).loadDepositRequests(),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/create-deposit'),
-        icon: const Icon(Icons.add),
-        label: const Text('नवीन ठेव विनंती करा'),
+        backgroundColor: AppColors.primaryPurple,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        icon: const Icon(Icons.add_circle_outline_rounded),
+        label: const Text('नवीन ठेव विनंती', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: SafeArea(
-        child: depositState.isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildRequestsList(depositState.pendingRequests, currentUserId),
-                  _buildRequestsList(depositState.approvedRequests, currentUserId),
-                  _buildRequestsList(depositState.rejectedRequests, currentUserId),
-                ],
-              ),
+        child: ResponsiveContainer(
+          maxWidth: 760,
+          padding: EdgeInsets.zero,
+          child: depositState.isLoading
+              ? const Center(child: CircularProgressIndicator(color: AppColors.primaryPurple))
+              : TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildRequestsList(depositState.pendingRequests, currentUserId),
+                    _buildRequestsList(depositState.approvedRequests, currentUserId),
+                    _buildRequestsList(depositState.rejectedRequests, currentUserId),
+                  ],
+                ),
+        ),
       ),
     );
   }
 
   Widget _buildRequestsList(List<DepositRequest> list, String? currentUserId) {
     if (list.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inbox_outlined, size: 56, color: Colors.grey),
-            SizedBox(height: 12),
-            Text('कोणत्याही ठेव विनंत्या नाहीत', style: TextStyle(color: AppColors.textSecondaryLight)),
+            Icon(Icons.inbox_rounded, size: 56, color: AppColors.textMuted.withOpacity(0.5)),
+            const SizedBox(height: 12),
+            const Text('कोणत्याही ठेव विनंत्या नाहीत', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
           ],
         ),
       );
     }
 
     return RefreshIndicator(
+      color: AppColors.primaryPurple,
       onRefresh: () => ref.read(depositProvider.notifier).loadDepositRequests(),
       child: ListView.builder(
-        padding: const EdgeInsets.only(bottom: 80, top: 12),
+        padding: const EdgeInsets.only(bottom: 90, top: 12, left: 16, right: 16),
         itemCount: list.length,
         itemBuilder: (context, index) {
           final req = list[index];
           final isPending = req.isPending;
           final isOwnRequest = currentUserId == req.collectorId && currentUserId != 'demo-user-id';
 
-          return Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: Text(req.requestNumber, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColors.cardBorder),
+              boxShadow: AppShadows.soft,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.lightLavender,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.cardBorder),
                       ),
-                      _statusChip(req.status),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         children: [
-                          const Text('जमा करायची रक्कम', style: TextStyle(fontSize: 11, color: AppColors.textSecondaryLight)),
-                          Text(
-                            AppFormatters.formatCurrency(req.amount),
-                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary),
-                          ),
+                          const Icon(Icons.tag_rounded, size: 12, color: AppColors.primaryPurple),
+                          Text(req.requestNumber, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.primaryPurple)),
                         ],
                       ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          const Text('दिनांक', style: TextStyle(fontSize: 11, color: AppColors.textSecondaryLight)),
-                          Text(AppFormatters.formatDate(req.requestDate), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 18),
-
-                  Row(
-                    children: [
-                      const Icon(Icons.person_pin, size: 16, color: AppColors.textSecondaryLight),
-                      const SizedBox(width: 6),
-                      Text('गोळा करणारा: ${req.collectorName ?? 'कार्यकर्ता'}', style: const TextStyle(fontSize: 12)),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.account_balance, size: 16, color: AppColors.textSecondaryLight),
-                      const SizedBox(width: 6),
-                      Text('खजिनदार: ${req.treasurerName ?? 'खजिनदार'}', style: const TextStyle(fontSize: 12)),
-                    ],
-                  ),
-                  if (req.description != null && req.description!.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Text('तपशील: ${req.description!}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryLight)),
+                    ),
+                    _statusChip(req.status),
                   ],
-                  if (req.rejectionReason != null) ...[
-                    const SizedBox(height: 6),
+                ),
+                const SizedBox(height: 14),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('जमा करायची रक्कम', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                        const SizedBox(height: 2),
+                        Text(
+                          AppFormatters.formatCurrency(req.amount),
+                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.primaryPurple),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        const Text('विनंती दिनांक', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                        const SizedBox(height: 2),
+                        Text(AppFormatters.formatDate(req.requestDate), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary)),
+                      ],
+                    ),
+                  ],
+                ),
+                const Divider(height: 20),
+
+                Row(
+                  children: [
+                    const Icon(Icons.person_pin_rounded, size: 16, color: AppColors.primaryPurple),
+                    const SizedBox(width: 6),
+                    Text('गोळा करणारा: ${req.collectorName ?? 'कार्यकर्ता'}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.account_balance_rounded, size: 16, color: AppColors.royalBlue),
+                    const SizedBox(width: 6),
+                    Text('खजिनदार: ${req.treasurerName ?? 'खजिनदार'}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                  ],
+                ),
+                if (req.description != null && req.description!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text('तपशील: ${req.description!}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                ],
+                if (req.rejectionReason != null && req.rejectionReason!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.errorLight,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                    ),
+                    child: Text('नाकारण्याचे कारण: ${req.rejectionReason}', style: const TextStyle(fontSize: 11, color: AppColors.error, fontWeight: FontWeight.w600)),
+                  ),
+                ],
+
+                // Approval Actions for Designated Treasurer
+                if (isPending) ...[
+                  const SizedBox(height: 14),
+                  if (isOwnRequest)
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(6),
+                        color: AppColors.warningLight,
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text('नाकारण्याचे कारण: ${req.rejectionReason}', style: const TextStyle(fontSize: 11, color: AppColors.error)),
+                      child: const Text(
+                        'ℹ️ तुम्ही स्वतः तयार केलेली विनंती तुम्ही स्वतः मंजूर करू शकत नाही.',
+                        style: TextStyle(fontSize: 11, color: Color(0xFF92400E), fontWeight: FontWeight.w500),
+                      ),
+                    )
+                  else ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.error,
+                              side: const BorderSide(color: AppColors.error, width: 1.5),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            icon: const Icon(Icons.close_rounded, size: 18),
+                            onPressed: () => _showRejectDialog(context, req),
+                            label: const Text('नाकारा (Reject)', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.success,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: 2,
+                            ),
+                            icon: const Icon(Icons.check_rounded, size: 18),
+                            onPressed: () => _showApproveDialog(context, req),
+                            label: const Text('मंजूर करा (Approve)', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
-
-                  // Approval Actions for Designated Treasurer
-                  if (isPending) ...[
-                    const SizedBox(height: 14),
-                    if (isOwnRequest)
-                      const Text(
-                        'ℹ️ तुम्ही स्वतः तयार केलेली विनंती तुम्ही स्वतः मंजूर करू शकत नाही.',
-                        style: TextStyle(fontSize: 11, color: Colors.orange),
-                      )
-                    else ...[
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.error,
-                                side: const BorderSide(color: AppColors.error),
-                              ),
-                              onPressed: () => _showRejectDialog(context, req),
-                              child: const Text('नाकारा (Reject)'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
-                              onPressed: () => _showApproveDialog(context, req),
-                              child: const Text('मंजूर करा (Approve)'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
                 ],
-              ),
+              ],
             ),
           );
         },
@@ -304,25 +383,25 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
     String label;
 
     if (status == 'approved') {
-      bg = Colors.green.shade50;
+      bg = AppColors.successLight;
       text = AppColors.success;
-      label = 'मंजूर';
+      label = 'मंजूर (Approved)';
     } else if (status == 'rejected') {
-      bg = Colors.red.shade50;
+      bg = AppColors.errorLight;
       text = AppColors.error;
-      label = 'नाकारले';
+      label = 'नाकारले (Rejected)';
     } else {
-      bg = Colors.amber.shade50;
-      text = Colors.orange.shade800;
+      bg = AppColors.warningLight;
+      text = const Color(0xFFB45309);
       label = 'प्रलंबित (Pending)';
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: text.withOpacity(0.4)),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: text.withOpacity(0.3)),
       ),
       child: Text(label, style: TextStyle(color: text, fontWeight: FontWeight.bold, fontSize: 11)),
     );

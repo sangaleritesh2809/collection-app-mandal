@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/validators.dart';
 import '../../../core/widgets/form_label.dart';
 import '../../mandal/providers/mandal_provider.dart';
 import '../../family/providers/family_provider.dart';
@@ -201,7 +202,7 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                     hintText: 'उदा. श्री गणेशोत्सव वर्गणी २०२६',
                                     prefixIcon: Icon(Icons.event_note),
                                   ),
-                                  validator: (val) => val == null || val.trim().isEmpty ? 'नाव आवश्यक आहे' : null,
+                                  validator: (val) => AppValidators.required(val, 'वर्गणीचे नाव'),
                                 ),
                                 const SizedBox(height: 12),
                                 const FormLabel('आर्थिक वर्ष', isRequired: true),
@@ -211,7 +212,7 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                     hintText: 'उदा. 2026-2027',
                                     prefixIcon: Icon(Icons.calendar_month),
                                   ),
-                                  validator: (val) => val == null || val.trim().isEmpty ? 'वर्ष आवश्यक आहे' : null,
+                                  validator: (val) => AppValidators.required(val, 'आर्थिक वर्ष'),
                                 ),
                               ],
                             ),
@@ -272,12 +273,7 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                       prefixIcon: Icon(Icons.currency_rupee),
                                     ),
                                     onChanged: (_) => setState(() {}),
-                                    validator: (val) {
-                                      if (val == null || double.tryParse(val.trim()) == null || double.parse(val.trim()) <= 0) {
-                                        return 'वैध दर टाका';
-                                      }
-                                      return null;
-                                    },
+                                    validator: (val) => AppValidators.amount(val, fieldName: 'प्रति सदस्य वर्गणी दर'),
                                   ),
                                 ] else ...[
                                   const FormLabel('कुटुंबास निश्चित वर्गणी दर (₹)', isRequired: true, subtitle: 'कुटुंबात कितीही सदस्य असले तरी हीच रक्कम आकारली जाईल.'),
@@ -289,12 +285,7 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                       prefixIcon: Icon(Icons.currency_rupee),
                                     ),
                                     onChanged: (_) => setState(() {}),
-                                    validator: (val) {
-                                      if (val == null || double.tryParse(val.trim()) == null || double.parse(val.trim()) <= 0) {
-                                        return 'वैध रक्कम टाका';
-                                      }
-                                      return null;
-                                    },
+                                    validator: (val) => AppValidators.amount(val, fieldName: 'कुटुंबास निश्चित वर्गणी दर'),
                                   ),
                                 ],
                               ],
@@ -332,6 +323,12 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                               hintText: '0',
                                               prefixIcon: Icon(Icons.discount_outlined),
                                             ),
+                                            validator: (val) {
+                                              if (val != null && val.trim().isNotEmpty) {
+                                                return AppValidators.amount(val, min: 0, fieldName: 'सवलत');
+                                              }
+                                              return null;
+                                            },
                                             onChanged: (_) => setState(() {}),
                                           ),
                                         ],
@@ -350,6 +347,12 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                               hintText: '0',
                                               prefixIcon: Icon(Icons.add_circle_outline),
                                             ),
+                                            validator: (val) {
+                                              if (val != null && val.trim().isNotEmpty) {
+                                                return AppValidators.amount(val, min: 0, fieldName: 'विशेष देणगी');
+                                              }
+                                              return null;
+                                            },
                                             onChanged: (_) => setState(() {}),
                                           ),
                                         ],

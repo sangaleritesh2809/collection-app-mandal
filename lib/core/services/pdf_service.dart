@@ -53,6 +53,10 @@ class PdfService {
     final font = await PdfGoogleFonts.notoSansDevanagariRegular();
     final boldFont = await PdfGoogleFonts.notoSansDevanagariBold();
 
+    final brandPurple = PdfColor.fromInt(0xFF3510B8);
+    final brandBlue = PdfColor.fromInt(0xFF087BF5);
+    final brandLightPurple = PdfColor.fromInt(0xFFF5F4FA);
+
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a5,
@@ -61,7 +65,7 @@ class PdfService {
           return pw.Container(
             padding: const pw.EdgeInsets.all(16),
             decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: PdfColors.deepOrange800, width: 2),
+              border: pw.Border.all(color: brandPurple, width: 2),
               borderRadius: pw.BorderRadius.circular(8),
             ),
             child: pw.Column(
@@ -71,14 +75,14 @@ class PdfService {
                 pw.Center(
                   child: pw.Text(
                     '॥ श्री गणेशाय नमः ॥',
-                    style: pw.TextStyle(font: boldFont, fontSize: 10, color: PdfColors.deepOrange900),
+                    style: pw.TextStyle(font: boldFont, fontSize: 10, color: brandPurple),
                   ),
                 ),
                 pw.SizedBox(height: 4),
                 pw.Center(
                   child: pw.Text(
                     data.mandalName,
-                    style: pw.TextStyle(font: boldFont, fontSize: 16, color: PdfColors.deepOrange900),
+                    style: pw.TextStyle(font: boldFont, fontSize: 16, color: brandPurple),
                     textAlign: pw.TextAlign.center,
                   ),
                 ),
@@ -96,7 +100,7 @@ class PdfService {
                       style: pw.TextStyle(font: font, fontSize: 9, color: PdfColors.grey700),
                     ),
                   ),
-                pw.Divider(color: PdfColors.deepOrange300, thickness: 1),
+                pw.Divider(color: brandBlue, thickness: 1),
                 pw.SizedBox(height: 6),
 
                 // Receipt Title & Numbers
@@ -106,13 +110,13 @@ class PdfService {
                     pw.Container(
                       padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: pw.BoxDecoration(
-                        color: PdfColors.deepOrange50,
-                        border: pw.Border.all(color: PdfColors.deepOrange200),
+                        color: brandLightPurple,
+                        border: pw.Border.all(color: brandPurple),
                         borderRadius: pw.BorderRadius.circular(4),
                       ),
                       child: pw.Text(
                         'पावती क्र. / Receipt No: ${data.receiptNumber}',
-                        style: pw.TextStyle(font: boldFont, fontSize: 9, color: PdfColors.deepOrange900),
+                        style: pw.TextStyle(font: boldFont, fontSize: 9, color: brandPurple),
                       ),
                     ),
                     pw.Text(

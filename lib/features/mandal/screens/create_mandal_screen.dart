@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/utils/validators.dart';
 import '../../../core/widgets/form_label.dart';
 import '../providers/mandal_provider.dart';
 
@@ -96,10 +97,7 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
                       hintText: 'उदा. श्री गणेश मित्र मंडळ',
                       prefixIcon: Icon(Icons.temple_hindu),
                     ),
-                    validator: (val) {
-                      if (val == null || val.trim().isEmpty) return 'मंडळाचे नाव आवश्यक आहे';
-                      return null;
-                    },
+                    validator: (val) => AppValidators.name(val, 'मंडळाचे नाव', minLength: 3),
                   ),
                   const SizedBox(height: 14),
 
@@ -129,7 +127,7 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
                                 hintText: 'उदा. वडगाव',
                                 prefixIcon: Icon(Icons.location_city),
                               ),
-                              validator: (val) => val == null || val.trim().isEmpty ? 'गाव आवश्यक आहे' : null,
+                              validator: (val) => AppValidators.required(val, 'गाव / शहर'),
                             ),
                           ],
                         ),
@@ -161,7 +159,7 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
                       hintText: 'उदा. पुणे',
                       prefixIcon: Icon(Icons.map),
                     ),
-                    validator: (val) => val == null || val.trim().isEmpty ? 'जिल्हा आवश्यक आहे' : null,
+                    validator: (val) => AppValidators.required(val, 'जिल्हा'),
                   ),
                   const SizedBox(height: 14),
 
@@ -186,6 +184,7 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
                       prefixIcon: Icon(Icons.phone),
                       prefixText: '+91 ',
                     ),
+                    validator: (val) => AppValidators.mobile(val, isRequired: false),
                   ),
                   const SizedBox(height: 14),
 
@@ -198,6 +197,7 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
                       hintText: 'mandal@example.com',
                       prefixIcon: Icon(Icons.email_outlined),
                     ),
+                    validator: (val) => AppValidators.email(val, isRequired: false),
                   ),
                   const SizedBox(height: 28),
 

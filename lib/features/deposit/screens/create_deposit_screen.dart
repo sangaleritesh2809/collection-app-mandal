@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/validators.dart';
 import '../../../core/widgets/form_label.dart';
 import '../../collection/providers/collection_provider.dart';
 import '../providers/deposit_provider.dart';
@@ -155,12 +156,7 @@ class _CreateDepositScreenState extends ConsumerState<CreateDepositScreen> {
                       prefixIcon: Icon(Icons.currency_rupee, size: 28),
                       hintText: 'उदा. ५०००',
                     ),
-                    validator: (val) {
-                      if (val == null || val.trim().isEmpty) return 'रक्कम आवश्यक आहे';
-                      final n = double.tryParse(val.trim());
-                      if (n == null || n <= 0) return 'वैध रक्कम टाका';
-                      return null;
-                    },
+                    validator: (val) => AppValidators.amount(val, fieldName: 'जमा रक्कम'),
                   ),
                   const SizedBox(height: 16),
 

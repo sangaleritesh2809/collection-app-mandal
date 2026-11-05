@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 CREATE INDEX IF NOT EXISTS idx_profiles_mobile ON public.profiles(mobile_number);
 CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
 
--- Trigger to create profile on signup
+-- Trigger to create profile on signup (gracefully handles existing mobile/email)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -42,6 +42,21 @@ BEGIN
     SET full_name = EXCLUDED.full_name,
         email = EXCLUDED.email,
         mobile_number = COALESCE(EXCLUDED.mobile_number, public.profiles.mobile_number),
+        updated_at = NOW();
+    RETURN NEW;
+EXCEPTION WHEN unique_violation THEN
+    -- If mobile number already belongs to another user, insert profile without conflicting mobile number
+    INSERT INTO public.profiles (id, full_name, email, created_at, updated_at)
+    VALUES (
+        NEW.id,
+        COALESCE(NEW.raw_user_meta_data->>'full_name', 'User'),
+        NEW.email,
+        NOW(),
+        NOW()
+    )
+    ON CONFLICT (id) DO UPDATE
+    SET full_name = EXCLUDED.full_name,
+        email = EXCLUDED.email,
         updated_at = NOW();
     RETURN NEW;
 END;
@@ -110,6 +125,10 @@ CREATE TABLE IF NOT EXISTS public.roles (
     is_system_role BOOLEAN DEFAULT FALSE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
+
+-- Unique index to prevent duplicate roles (System roles & per-mandal roles)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_roles_system_unique ON public.roles(name) WHERE mandal_id IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_roles_mandal_unique ON public.roles(name, mandal_id) WHERE mandal_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.permissions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -619,14 +638,14 @@ INSERT INTO public.permissions (code, name, module, description) VALUES
     ('manage_roles', 'भूमिका व्यवस्थापन', 'roles', 'भूमिका आणि अधिकार ठरवणे')
 ON CONFLICT (code) DO NOTHING;
 
--- Insert System Roles
+-- Insert System Roles (idempotent with partial unique index)
 INSERT INTO public.roles (name, description, is_system_role) VALUES
     ('Super Admin', 'प्लॅटफॉर्म सुपर ॲडमिन', TRUE),
     ('Mandal Admin', 'मंडळ प्रमुख / अध्यक्ष', TRUE),
     ('Treasurer', 'खजिनदार', TRUE),
     ('Collector', 'वर्गणी गोळा करणारा कार्यकर्ता', TRUE),
     ('Member', 'सर्वसाधारण सदस्य', TRUE)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (name) WHERE mandal_id IS NULL DO NOTHING;
 
 -- Map permissions for default roles
 DO $$
@@ -721,6 +740,9 @@ CREATE INDEX IF NOT EXISTS idx_vargani_configs_active ON public.vargani_configs(
 -- Profiles
 DROP POLICY IF EXISTS "Public profiles are viewable" ON public.profiles;
 CREATE POLICY "Public profiles are viewable" ON public.profiles FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
+CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
 DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
@@ -916,5 +938,6 @@ CREATE POLICY "Public read for support_attachments" ON storage.objects FOR SELEC
 
 DROP POLICY IF EXISTS "Auth upload for support_attachments" ON storage.objects;
 CREATE POLICY "Auth upload for support_attachments" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'support_attachments' AND auth.role() = 'authenticated');
+
 
 

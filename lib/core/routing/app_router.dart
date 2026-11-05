@@ -1,5 +1,7 @@
 import 'package:go_router/go_router.dart';
 import '../services/pdf_service.dart';
+import '../../features/splash/screens/splash_screen.dart';
+import '../../features/onboarding/screens/onboarding_screen.dart';
 import '../../features/auth/screens/home_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
@@ -31,6 +33,14 @@ final appRouter = GoRouter(
   routes: [
     GoRoute(
       path: '/',
+      builder: (context, state) => const SplashScreen(),
+    ),
+    GoRoute(
+      path: '/onboarding',
+      builder: (context, state) => const OnboardingScreen(),
+    ),
+    GoRoute(
+      path: '/home',
       builder: (context, state) => const HomeScreen(),
     ),
     GoRoute(

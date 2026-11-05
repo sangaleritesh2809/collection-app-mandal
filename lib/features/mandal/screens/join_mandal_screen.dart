@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/utils/validators.dart';
 import '../../../core/widgets/form_label.dart';
 import '../providers/mandal_provider.dart';
 
@@ -14,6 +15,7 @@ class JoinMandalScreen extends ConsumerStatefulWidget {
 }
 
 class _JoinMandalScreenState extends ConsumerState<JoinMandalScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _codeController = TextEditingController();
 
   @override
@@ -23,8 +25,8 @@ class _JoinMandalScreenState extends ConsumerState<JoinMandalScreen> {
   }
 
   Future<void> _handleJoin() async {
+    if (!_formKey.currentState!.validate()) return;
     final code = _codeController.text.trim();
-    if (code.isEmpty) return;
 
     final success = await ref.read(mandalProvider.notifier).joinMandal(code);
     if (success && mounted) {
@@ -48,9 +50,11 @@ class _JoinMandalScreenState extends ConsumerState<JoinMandalScreen> {
         child: SingleChildScrollView(
           child: ResponsiveContainer(
             padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                 Center(
                   child: Container(
                     padding: const EdgeInsets.all(16),
@@ -91,7 +95,7 @@ class _JoinMandalScreenState extends ConsumerState<JoinMandalScreen> {
                   ),
 
                 const FormLabel('आमंत्रण कोड (Invite Code)', isRequired: true),
-                TextField(
+                TextFormField(
                   controller: _codeController,
                   textCapitalization: TextCapitalization.characters,
                   textAlign: TextAlign.center,
@@ -104,6 +108,7 @@ class _JoinMandalScreenState extends ConsumerState<JoinMandalScreen> {
                     hintText: 'VG2026A',
                     prefixIcon: Icon(Icons.vpn_key),
                   ),
+                  validator: AppValidators.inviteCode,
                 ),
                 const SizedBox(height: 24),
 
@@ -122,7 +127,8 @@ class _JoinMandalScreenState extends ConsumerState<JoinMandalScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 

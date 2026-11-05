@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/supabase_service.dart';
+import '../../../core/utils/validators.dart';
 import '../../../core/widgets/form_label.dart';
 import '../providers/mandal_provider.dart';
 
@@ -323,6 +324,7 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
                             hintText: 'shreeganesh@sbi किंवा 9876543210@paytm',
                             prefixIcon: Icon(Icons.alternate_email),
                           ),
+                          validator: (val) => AppValidators.upiId(val, isRequired: false),
                           onChanged: (_) => setState(() {}),
                         ),
                         const SizedBox(height: 14),
@@ -334,6 +336,12 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
                             hintText: 'उदा. श्री गणेश मित्र मंडळ',
                             prefixIcon: Icon(Icons.person_pin),
                           ),
+                          validator: (val) {
+                            if (_upiIdController.text.trim().isNotEmpty) {
+                              return AppValidators.name(val, 'खातेधारकाचे नाव', minLength: 3);
+                            }
+                            return null;
+                          },
                           onChanged: (_) => setState(() {}),
                         ),
                       ],

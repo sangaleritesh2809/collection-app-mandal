@@ -6,6 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/validators.dart';
 import '../../../core/widgets/form_label.dart';
 import '../../family/models/family.dart';
 import '../../family/providers/family_provider.dart';
@@ -220,12 +221,7 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                       hintText: 'उदा. ५००',
                     ),
                     onChanged: (_) => setState(() {}),
-                    validator: (val) {
-                      if (val == null || val.trim().isEmpty) return 'रक्कम आवश्यक आहे';
-                      final n = double.tryParse(val.trim());
-                      if (n == null || n <= 0) return 'वैध रक्कम टाका';
-                      return null;
-                    },
+                    validator: (val) => AppValidators.amount(val, fieldName: 'वर्गणी रक्कम'),
                   ),
                   const SizedBox(height: 16),
 
@@ -511,6 +507,7 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
           ),
           TextFormField(
             controller: _utrController,
+            validator: (val) => AppValidators.utrNumber(val, isRequired: false),
             decoration: const InputDecoration(
               hintText: 'उदा. 324156789012',
               prefixIcon: Icon(Icons.receipt_outlined),

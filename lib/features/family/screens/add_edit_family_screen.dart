@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/validators.dart';
 import '../../../core/widgets/form_label.dart';
 import '../../vargani_config/models/vargani_config.dart';
 import '../../vargani_config/providers/vargani_config_provider.dart';
@@ -102,7 +103,7 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                       hintText: 'उदा. पाटील परिवार / देशमुख',
                       prefixIcon: Icon(Icons.people),
                     ),
-                    validator: (val) => val == null || val.trim().isEmpty ? 'कुटुंबाचे नाव आवश्यक आहे' : null,
+                    validator: (val) => AppValidators.name(val, 'कुटुंबाचे नाव'),
                   ),
                   const SizedBox(height: 14),
 
@@ -114,7 +115,7 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                       hintText: 'उदा. श्री. रविंद्र गणपत पाटील',
                       prefixIcon: Icon(Icons.person),
                     ),
-                    validator: (val) => val == null || val.trim().isEmpty ? 'कुटुंब प्रमुखाचे नाव आवश्यक आहे' : null,
+                    validator: (val) => AppValidators.name(val, 'कुटुंब प्रमुखाचे नाव'),
                   ),
                   const SizedBox(height: 14),
 
@@ -128,6 +129,7 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                       prefixIcon: Icon(Icons.phone),
                       prefixText: '+91 ',
                     ),
+                    validator: (val) => AppValidators.mobile(val, isRequired: false),
                   ),
                   const SizedBox(height: 14),
 
@@ -210,12 +212,7 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                               prefixIcon: Icon(Icons.people_alt_outlined),
                             ),
                             onChanged: (_) => setState(() {}),
-                            validator: (val) {
-                              if (val == null || int.tryParse(val.trim()) == null || int.parse(val.trim()) < 1) {
-                                return 'किमान १ सदस्य आवश्यक';
-                              }
-                              return null;
-                            },
+                            validator: AppValidators.memberCount,
                           ),
                           const SizedBox(height: 12),
                           Row(
@@ -266,6 +263,7 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                                 hintText: 'उदा. १५००',
                                 prefixIcon: Icon(Icons.currency_rupee),
                               ),
+                              validator: (val) => _useCustomVargani ? AppValidators.amount(val, fieldName: 'निश्चित केलेली वर्गणी रक्कम') : null,
                               onChanged: (_) => setState(() {}),
                             ),
                           ],

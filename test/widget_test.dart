@@ -11,5 +11,8 @@ void main() {
     );
 
     expect(find.byType(VarganiCollectionApp), findsOneWidget);
+    // Advance timers so splash navigation completes cleanly
+    await tester.pump(const Duration(milliseconds: 2300));
+    await tester.pumpAndSettle();
   });
 }
