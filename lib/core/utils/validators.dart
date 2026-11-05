@@ -134,14 +134,17 @@ class AppValidators {
     return null;
   }
 
-  /// Mandal invitation code validation
+  /// Mandal invitation code validation (exactly 8 alphanumeric characters)
   static String? inviteCode(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'आमंत्रण कोड आवश्यक आहे.';
     }
-    final trimmed = value.trim();
-    if (trimmed.length < 4) {
-      return 'आमंत्रण कोड किमान ४ अक्षरांचा असावा.';
+    final trimmed = value.trim().toUpperCase();
+    if (trimmed.length != 8) {
+      return 'आमंत्रण कोड बरोबर ८ अक्षरांचा असावा.';
+    }
+    if (!RegExp(r'^[A-Z0-9]{8}$').hasMatch(trimmed)) {
+      return 'आमंत्रण कोडमध्ये फक्त इंग्रजी अक्षरे आणि अंक असावेत.';
     }
     return null;
   }

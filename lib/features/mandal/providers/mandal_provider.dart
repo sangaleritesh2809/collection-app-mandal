@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -264,7 +265,7 @@ class MandalNotifier extends StateNotifier<MandalState> {
       final userId = SupabaseService.currentUserId;
       if (userId == null) throw Exception('User not logged in');
 
-      final mandalCode = 'VG${DateTime.now().year}${DateTime.now().millisecond}';
+      final mandalCode = await _generateUnique8CharMandalCode();
       final mandalIdStr = 'MD-${DateTime.now().year}-${DateTime.now().millisecondsSinceEpoch.toString().substring(9)}';
 
       // 1. Insert Mandal
@@ -414,5 +415,30 @@ class MandalNotifier extends StateNotifier<MandalState> {
       state = state.copyWith(isLoading: false, error: e.toString());
       return false;
     }
+  }
+
+  Future<String> _generateUnique8CharMandalCode() async {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 32 chars, no ambiguous I, O, 1, 0
+    final rand = Random.secure();
+    for (int attempt = 0; attempt < 10; attempt++) {
+      final randomPart = List.generate(6, (_) => chars[rand.nextInt(chars.length)]).join();
+      final candidate = 'VG$randomPart'; // Always exactly 8 characters
+
+      try {
+        final existing = await SupabaseService.client
+            .from('mandals')
+            .select('id')
+            .eq('invitation_code', candidate)
+            .maybeSingle();
+
+        if (existing == null) {
+          return candidate;
+        }
+      } catch (_) {
+        return candidate;
+      }
+    }
+    final fallback = 'VG${DateTime.now().millisecondsSinceEpoch.toRadixString(36).toUpperCase().padLeft(6, 'X').substring(0, 6)}';
+    return fallback;
   }
 }

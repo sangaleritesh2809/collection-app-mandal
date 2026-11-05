@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
@@ -73,7 +74,7 @@ class _JoinMandalScreenState extends ConsumerState<JoinMandalScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  lang.tr('मंडळाच्या अध्यक्षांनी किंवा खजिनदारांनी दिलेला ६ किंवा ७ अंकी कोड येथे टाका (उदा. VG2026A)', 'Enter the 6 or 7 character code provided by the mandal admin (e.g. VG2026A)'),
+                  lang.tr('मंडळाच्या अध्यक्षांनी किंवा खजिनदारांनी दिलेला ८ अंकी कोड येथे टाका (उदा. VG26AB89)', 'Enter the 8 character code provided by the mandal admin (e.g. VG26AB89)'),
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                 ),
@@ -99,13 +100,19 @@ class _JoinMandalScreenState extends ConsumerState<JoinMandalScreen> {
                   controller: _codeController,
                   textCapitalization: TextCapitalization.characters,
                   textAlign: TextAlign.center,
+                  maxLength: 8,
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(8),
+                    FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')),
+                  ],
                   style: const TextStyle(
                     fontSize: 22,
                     letterSpacing: 4,
                     fontWeight: FontWeight.bold,
                   ),
                   decoration: const InputDecoration(
-                    hintText: 'VG2026A',
+                    hintText: 'VG26AB89',
+                    counterText: '',
                     prefixIcon: Icon(Icons.vpn_key),
                   ),
                   validator: AppValidators.inviteCode,

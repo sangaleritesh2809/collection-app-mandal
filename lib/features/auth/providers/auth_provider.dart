@@ -100,7 +100,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           fullName: user?.userMetadata?['full_name'] ?? 'User',
           email: user?.email,
           mobileNumber: mobile,
-          isSuperAdmin: mobile == '9699342811',
+          isSuperAdmin: mobile == '9699342811' || user?.email?.toLowerCase() == 'ritesh2004@gmail.com',
           createdAt: DateTime.now(),
         );
         state = state.copyWith(status: AuthStatus.authenticated, userProfile: profile);
@@ -116,7 +116,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           fullName: user?.userMetadata?['full_name'] ?? user?.email?.split('@').first ?? 'User',
           email: user?.email,
           mobileNumber: mobile,
-          isSuperAdmin: mobile == '9699342811',
+          isSuperAdmin: mobile == '9699342811' || user?.email?.toLowerCase() == 'ritesh2004@gmail.com',
           createdAt: DateTime.now(),
         ),
       );
@@ -292,15 +292,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       // 1. If mobile number entered, look up associated email securely
       if (!input.contains('@')) {
-        final profileRes = await SupabaseService.client
-            .from('profiles')
-            .select('email')
-            .eq('mobile_number', cleanMobile)
-            .maybeSingle();
-
-        if (profileRes != null && profileRes['email'] != null) {
-          emailToUse = profileRes['email'] as String;
+        if (cleanMobile == '9699342811') {
+          emailToUse = 'ritesh2004@gmail.com';
         } else {
+          final profileRes = await SupabaseService.client
+              .from('profiles')
+              .select('email')
+              .eq('mobile_number', cleanMobile)
+              .maybeSingle();
+
+          if (profileRes != null && profileRes['email'] != null) {
+            emailToUse = profileRes['email'] as String;
+          } else {
           // If profile not found by mobile, attempt master admin lookup
           try {
             final masterRes = await SupabaseService.client.rpc('master_admin_login', params: {
@@ -487,19 +490,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       if (!input.contains('@')) {
         final cleanMobile = input.replaceAll(RegExp(r'^\+91|^0|\s+'), '');
-        final profileRes = await SupabaseService.client
-            .from('profiles')
-            .select('email')
-            .eq('mobile_number', cleanMobile)
-            .maybeSingle();
-
-        if (profileRes != null && profileRes['email'] != null) {
-          emailToUse = profileRes['email'] as String;
+        if (cleanMobile == '9699342811') {
+          emailToUse = 'ritesh2004@gmail.com';
         } else {
-          return {
-            'success': false,
-            'message': 'मोबाईल नंबर $cleanMobile शी संबंधित खाते सापडले नाही.'
-          };
+          final profileRes = await SupabaseService.client
+              .from('profiles')
+              .select('email')
+              .eq('mobile_number', cleanMobile)
+              .maybeSingle();
+
+          if (profileRes != null && profileRes['email'] != null) {
+            emailToUse = profileRes['email'] as String;
+          } else {
+            return {
+              'success': false,
+              'message': 'मोबाईल नंबर $cleanMobile शी संबंधित खाते सापडले नाही.'
+            };
+          }
         }
       }
 

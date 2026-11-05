@@ -32,3 +32,4 @@ foreach ($dest in $sizes.Keys) {
 
 $srcImg.Dispose()
 Write-Host 'All Android launcher icons generated successfully!'
+

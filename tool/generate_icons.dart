@@ -34,3 +34,4 @@ void main() {
 
   print('All Android launcher icons generated successfully!');
 }
+
