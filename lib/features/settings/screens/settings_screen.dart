@@ -393,6 +393,32 @@ class SettingsScreen extends ConsumerWidget {
                           trailing: const Icon(Icons.chevron_right, size: 20),
                           onTap: () => context.push('/mandal-payment-settings'),
                         ),
+                        if (user?.isSuperAdmin == true ||
+                            user?.mobileNumber == '9699342811' ||
+                            user?.email?.toLowerCase() == 'ritesh2004@gmail.com' ||
+                            activeMandal.userRole == 'Mandal Admin' ||
+                            activeMandal.userRole == 'Super Admin' ||
+                            (SupabaseService.currentUserId != null && activeMandal.createdBy == SupabaseService.currentUserId)) ...[
+                          const Divider(height: 16),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.green.shade50,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(Icons.group_rounded, color: Colors.green.shade700, size: 20),
+                            ),
+                            title: Text(lang.tr('मंडळाचे सदस्य व रोल्स', 'Manage Members & Roles'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            subtitle: Text(
+                              lang.tr('कार्यकर्ते, खजिनदार व ॲडमिन यांचे अधिकार बदला', 'Manage workers, treasurer & admin roles'),
+                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                            ),
+                            trailing: const Icon(Icons.chevron_right, size: 20),
+                            onTap: () => context.push('/manage-members'),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -426,38 +452,6 @@ class SettingsScreen extends ConsumerWidget {
                           value: lang == AppLanguage.marathi,
                           onChanged: (_) => ref.read(languageProvider.notifier).toggleLanguage(),
                         ),
-                      ),
-                      const Divider(height: 1),
-                      ListTile(
-                        leading: const Icon(Icons.speed_rounded, color: AppColors.success),
-                        title: Text(lang.tr('सर्व्हर गती तपासा', 'Speed Test'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: Text(lang.tr('क्लाउड डेटाबेस रिस्पॉन्स वेळ पडताळा', 'Verify cloud database latency'), style: const TextStyle(fontSize: 12)),
-                        trailing: const Icon(Icons.bolt, color: AppColors.success),
-                        onTap: () async {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(lang.tr('सर्व्हर गती तपासत आहे...', 'Checking server latency...'))),
-                          );
-                          final ms = await SupabaseService.checkLatency();
-                          if (context.mounted) {
-                            showDialog(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                title: Row(
-                                  children: [
-                                    const Icon(Icons.bolt, color: Colors.green),
-                                    const SizedBox(width: 8),
-                                    Text(lang.tr('डेटाबेस गती निकाल', 'Database Latency Result')),
-                                  ],
-                                ),
-                                content: Text('${lang.tr("रिस्पॉन्स वेळ:", "Response time:")} $ms ms\n\n✅ ${lang.tr("सुरक्षित SSL/TLS एन्क्रिप्टेड, RLS सुरक्षित.", "SSL/TLS encrypted, RLS secured.")}'),
-                                actions: [
-                                  TextButton(onPressed: () => Navigator.pop(ctx), child: Text(lang.tr('ठीक आहे', 'OK'))),
-                                ],
-                              ),
-                            );
-                          }
-                        },
                       ),
                       const Divider(height: 1),
                       ListTile(

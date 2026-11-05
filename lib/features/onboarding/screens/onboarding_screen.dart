@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/app_colors.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -37,19 +38,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     ),
   ];
 
-  void _onNext() {
+  Future<void> _markOnboardingComplete() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('has_seen_onboarding', true);
+    } catch (_) {}
+  }
+
+  void _onNext() async {
     if (_currentPage < _pages.length - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 350),
         curve: Curves.easeInOut,
       );
     } else {
-      context.go('/login');
+      await _markOnboardingComplete();
+      if (mounted) context.go('/login');
     }
   }
 
-  void _onSkip() {
-    context.go('/login');
+  void _onSkip() async {
+    await _markOnboardingComplete();
+    if (mounted) context.go('/login');
   }
 
   @override

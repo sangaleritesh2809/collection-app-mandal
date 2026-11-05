@@ -149,7 +149,7 @@ class CollectionNotifier extends StateNotifier<CollectionState> {
       final userId = SupabaseService.currentUserId ?? currentUserId;
       if (userId == null) throw Exception('User not authenticated');
 
-      await SupabaseService.client.from('collections').insert({
+      final insertPayload = <String, dynamic>{
         'mandal_id': mandalId,
         'family_id': familyId,
         'collector_id': userId,
@@ -157,11 +157,22 @@ class CollectionNotifier extends StateNotifier<CollectionState> {
         'receipt_number': rctNumber,
         'amount': amount,
         'payment_mode': paymentMode,
-        'utr_number': utrNumber,
         'collection_date': collectionDate.toIso8601String().substring(0, 10),
-        'notes': notes,
+        'notes': utrNumber != null && utrNumber.isNotEmpty
+            ? (notes != null && notes.isNotEmpty ? '$notes (UTR: $utrNumber)' : 'UTR: $utrNumber')
+            : notes,
         'is_deposited': false,
-      });
+      };
+
+      try {
+        await SupabaseService.client.from('collections').insert({
+          ...insertPayload,
+          if (utrNumber != null) 'utr_number': utrNumber,
+        });
+      } catch (insertEx) {
+        debugPrint('Insert with utr_number failed, retrying standard columns: $insertEx');
+        await SupabaseService.client.from('collections').insert(insertPayload);
+      }
 
       // Insert audit log (non-critical so wrapped safely)
       try {

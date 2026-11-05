@@ -106,6 +106,14 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
           ),
         );
         context.pop();
+      } else if (mounted) {
+        final err = ref.read(familyProvider).error;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.error,
+            content: Text(err != null ? 'त्रुटी: $err' : 'माहिती बदलताना अडचण आली.'),
+          ),
+        );
       }
     } else {
       final success = await ref.read(familyProvider.notifier).addFamily(
@@ -127,6 +135,14 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
           ),
         );
         context.pop();
+      } else if (mounted) {
+        final err = ref.read(familyProvider).error;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.error,
+            content: Text(err != null ? 'त्रुटी: $err' : 'कुटुंब जोडताना अडचण आली. कृपया पुन्हा प्रयत्न करा.'),
+          ),
+        );
       }
     }
   }

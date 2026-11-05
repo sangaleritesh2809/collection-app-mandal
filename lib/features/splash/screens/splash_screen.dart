@@ -2,7 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/supabase_service.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../mandal/providers/mandal_provider.dart';
 
@@ -40,24 +42,46 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
     _controller.forward();
 
     // Navigate smoothly after animation
-    _navTimer = Timer(const Duration(milliseconds: 2200), () {
+    _navTimer = Timer(const Duration(milliseconds: 2200), () async {
       if (!mounted) return;
-      _handleNavigation();
+      await _handleNavigation();
     });
   }
 
-  void _handleNavigation() {
-    final authState = ref.read(authProvider);
-    final mandalState = ref.read(mandalProvider);
+  Future<void> _handleNavigation() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final wasLoggedIn = prefs.getBool('is_logged_in') ?? false;
+      final hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
+      final lastMandalId = prefs.getString('last_selected_mandal_id');
 
-    if (authState.status == AuthStatus.authenticated) {
-      if (mandalState.selectedMandal != null) {
-        context.go('/dashboard');
+      final authState = ref.read(authProvider);
+      final mandalState = ref.read(mandalProvider);
+
+      final isAuthenticated = authState.status == AuthStatus.authenticated ||
+          wasLoggedIn ||
+          (SupabaseService.isInitialized && SupabaseService.currentUser != null);
+
+      if (!mounted) return;
+
+      if (isAuthenticated) {
+        // User is logged in! Never show login page on app reopen
+        if (mandalState.selectedMandal != null || lastMandalId != null) {
+          context.go('/dashboard');
+        } else {
+          context.go('/mandal-selection');
+        }
       } else {
-        context.go('/mandal-selection');
+        // User is NOT logged in: only show onboarding on fresh install
+        if (hasSeenOnboarding) {
+          context.go('/login');
+        } else {
+          context.go('/onboarding');
+        }
       }
-    } else {
-      context.go('/onboarding');
+    } catch (e) {
+      debugPrint('Navigation error in splash screen: $e');
+      if (mounted) context.go('/login');
     }
   }
 

@@ -196,9 +196,12 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
         configId = cfgRes?['id'] as String?;
       }
 
-      final code = 'FAM-${(state.families.length + 1).toString().padLeft(3, '0')}';
+      String code = 'FAM-${(state.families.length + 1).toString().padLeft(3, '0')}';
+      if (state.families.any((f) => f.familyCode == code)) {
+        code = 'FAM-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+      }
 
-      final res = await SupabaseService.client.from('families').insert({
+      final insertData = <String, dynamic>{
         'mandal_id': mandalId,
         'family_code': code,
         'family_name': familyName,
@@ -213,8 +216,18 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
         'paid_amount': 0.0,
         'pending_amount': expectedVargani,
         'status': 'active',
-        'is_custom_vargani': customTotalVargani != null,
-      }).select().single();
+      };
+
+      Map<String, dynamic> res;
+      try {
+        res = await SupabaseService.client.from('families').insert({
+          ...insertData,
+          if (customTotalVargani != null) 'is_custom_vargani': true,
+        }).select().single();
+      } catch (insertEx) {
+        debugPrint('Insert with is_custom_vargani failed, retrying standard columns: $insertEx');
+        res = await SupabaseService.client.from('families').insert(insertData).select().single();
+      }
 
       final familyId = res['id'] as String;
 
@@ -229,11 +242,12 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
 
       // Defensive overwrite: If custom amount was set, ensure trigger didn't overwrite it
       if (customTotalVargani != null) {
-        await SupabaseService.client.from('families').update({
-          'is_custom_vargani': true,
-          'total_vargani': customTotalVargani,
-          'pending_amount': customTotalVargani,
-        }).eq('id', familyId);
+        try {
+          await SupabaseService.client.from('families').update({
+            'total_vargani': customTotalVargani,
+            'pending_amount': customTotalVargani,
+          }).eq('id', familyId);
+        } catch (_) {}
       }
 
       await loadFamilies();
@@ -297,7 +311,7 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
 
       final newPending = (newTotal - existing.paidAmount).clamp(0.0, double.infinity);
 
-      await SupabaseService.client.from('families').update({
+      final updatePayload = <String, dynamic>{
         'family_name': familyName,
         'family_head_name': familyHeadName,
         'house_number': houseNumber,
@@ -305,11 +319,19 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
         'village': village,
         'mobile_number': mobileNumber,
         'total_members': totalMembers,
-        'is_custom_vargani': customFlag,
         'total_vargani': newTotal,
         'pending_amount': newPending,
         'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', familyId);
+      };
+
+      try {
+        await SupabaseService.client.from('families').update({
+          ...updatePayload,
+          'is_custom_vargani': customFlag,
+        }).eq('id', familyId);
+      } catch (_) {
+        await SupabaseService.client.from('families').update(updatePayload).eq('id', familyId);
+      }
 
       await loadFamilies();
       return true;

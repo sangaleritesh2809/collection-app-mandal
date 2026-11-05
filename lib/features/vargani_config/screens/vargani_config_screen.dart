@@ -191,16 +191,43 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primaryPurple),
                                 ),
                               ),
-                              if (hasExistingConfig && _editingSection == null)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.success.withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    lang.tr('सक्रिय', 'Active'),
-                                    style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.bold, fontSize: 12),
+                              if (hasExistingConfig)
+                                InkWell(
+                                  onTap: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        backgroundColor: AppColors.primaryPurple,
+                                        content: Text(lang.tr(
+                                          '🚩 ही वर्गणी मोहीम सध्या सक्रिय आहे व मंडळाच्या सर्व कुटुंबांना लागू आहे.',
+                                          '🚩 This vargani campaign is currently active for all families.',
+                                        )),
+                                        duration: const Duration(seconds: 2),
+                                      ),
+                                    );
+                                  },
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.success.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: AppColors.success, width: 1.2),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.check_circle_rounded, size: 14, color: AppColors.success),
+                                        const SizedBox(width: 5),
+                                        Text(
+                                          lang.tr('सक्रिय', 'Active'),
+                                          style: const TextStyle(
+                                            color: AppColors.success,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                             ],
@@ -224,11 +251,12 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      lang.tr('वर्गणी मोहीम तपशील', 'Vargani Campaign Details'),
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                    Expanded(
+                                      child: Text(
+                                        lang.tr('वर्गणी मोहीम तपशील', 'Vargani Campaign Details'),
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                      ),
                                     ),
                                     if (hasExistingConfig) ...[
                                       if (!isCampaignEditing)
@@ -244,26 +272,13 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                           ),
                                         )
                                       else
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            TextButton(
-                                              onPressed: () {
-                                                _resetValuesFromConfig();
-                                                setState(() => _editingSection = null);
-                                              },
-                                              child: Text(lang.tr('रद्द करा', 'Cancel'), style: const TextStyle(color: AppColors.textSecondary)),
-                                            ),
-                                            ElevatedButton(
-                                              onPressed: _handleSave,
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: AppColors.primaryPurple,
-                                                foregroundColor: Colors.white,
-                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                              ),
-                                              child: Text(lang.tr('जतन करा', 'Save')),
-                                            ),
-                                          ],
+                                        IconButton(
+                                          onPressed: () {
+                                            _resetValuesFromConfig();
+                                            setState(() => _editingSection = null);
+                                          },
+                                          icon: const Icon(Icons.close, size: 20, color: AppColors.textSecondary),
+                                          tooltip: lang.tr('रद्द करा', 'Cancel'),
                                         ),
                                     ],
                                   ],
@@ -298,6 +313,40 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                   ),
                                   validator: (val) => AppValidators.required(val, lang.tr('आर्थिक वर्ष', 'Financial Year')),
                                 ),
+                                if (hasExistingConfig && isCampaignEditing) ...[
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: OutlinedButton(
+                                          onPressed: () {
+                                            _resetValuesFromConfig();
+                                            setState(() => _editingSection = null);
+                                          },
+                                          style: OutlinedButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(vertical: 10),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                          ),
+                                          child: Text(lang.tr('रद्द करा', 'Cancel'), style: const TextStyle(color: AppColors.textSecondary)),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: ElevatedButton.icon(
+                                          onPressed: _handleSave,
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: AppColors.primaryPurple,
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(vertical: 10),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                          ),
+                                          icon: const Icon(Icons.check, size: 16),
+                                          label: Text(lang.tr('जतन करा', 'Save')),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -320,11 +369,12 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      lang.tr('वर्गणी आकारणी पद्धत', 'Calculation Type'),
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                    Expanded(
+                                      child: Text(
+                                        lang.tr('वर्गणी आकारणी पद्धत', 'Calculation Type'),
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                      ),
                                     ),
                                     if (hasExistingConfig) ...[
                                       if (!isCalculationEditing)
@@ -340,26 +390,13 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                           ),
                                         )
                                       else
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            TextButton(
-                                              onPressed: () {
-                                                _resetValuesFromConfig();
-                                                setState(() => _editingSection = null);
-                                              },
-                                              child: Text(lang.tr('रद्द करा', 'Cancel'), style: const TextStyle(color: AppColors.textSecondary)),
-                                            ),
-                                            ElevatedButton(
-                                              onPressed: _handleSave,
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: AppColors.primaryPurple,
-                                                foregroundColor: Colors.white,
-                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                              ),
-                                              child: Text(lang.tr('जतन करा', 'Save')),
-                                            ),
-                                          ],
+                                        IconButton(
+                                          onPressed: () {
+                                            _resetValuesFromConfig();
+                                            setState(() => _editingSection = null);
+                                          },
+                                          icon: const Icon(Icons.close, size: 20, color: AppColors.textSecondary),
+                                          tooltip: lang.tr('रद्द करा', 'Cancel'),
                                         ),
                                     ],
                                   ],
@@ -422,6 +459,40 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                     validator: (val) => AppValidators.amount(val, fieldName: lang.tr('कुटुंबास निश्चित वर्गणी दर', 'Fixed Family Rate')),
                                   ),
                                 ],
+                                if (hasExistingConfig && isCalculationEditing) ...[
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: OutlinedButton(
+                                          onPressed: () {
+                                            _resetValuesFromConfig();
+                                            setState(() => _editingSection = null);
+                                          },
+                                          style: OutlinedButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(vertical: 10),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                          ),
+                                          child: Text(lang.tr('रद्द करा', 'Cancel'), style: const TextStyle(color: AppColors.textSecondary)),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: ElevatedButton.icon(
+                                          onPressed: _handleSave,
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: AppColors.primaryPurple,
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(vertical: 10),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                          ),
+                                          icon: const Icon(Icons.check, size: 16),
+                                          label: Text(lang.tr('जतन करा', 'Save')),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -444,11 +515,12 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      lang.tr('सवलत किंवा देणगी (ऐच्छिक)', 'Discount or Donation (Optional)'),
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                    Expanded(
+                                      child: Text(
+                                        lang.tr('सवलत किंवा देणगी (ऐच्छिक)', 'Discount or Donation (Optional)'),
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                      ),
                                     ),
                                     if (hasExistingConfig) ...[
                                       if (!isDiscountEditing)
@@ -464,26 +536,13 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                           ),
                                         )
                                       else
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            TextButton(
-                                              onPressed: () {
-                                                _resetValuesFromConfig();
-                                                setState(() => _editingSection = null);
-                                              },
-                                              child: Text(lang.tr('रद्द करा', 'Cancel'), style: const TextStyle(color: AppColors.textSecondary)),
-                                            ),
-                                            ElevatedButton(
-                                              onPressed: _handleSave,
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: AppColors.primaryPurple,
-                                                foregroundColor: Colors.white,
-                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                              ),
-                                              child: Text(lang.tr('जतन करा', 'Save')),
-                                            ),
-                                          ],
+                                        IconButton(
+                                          onPressed: () {
+                                            _resetValuesFromConfig();
+                                            setState(() => _editingSection = null);
+                                          },
+                                          icon: const Icon(Icons.close, size: 20, color: AppColors.textSecondary),
+                                          tooltip: lang.tr('रद्द करा', 'Cancel'),
                                         ),
                                     ],
                                   ],
@@ -543,6 +602,40 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                     ),
                                   ],
                                 ),
+                                if (hasExistingConfig && isDiscountEditing) ...[
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: OutlinedButton(
+                                          onPressed: () {
+                                            _resetValuesFromConfig();
+                                            setState(() => _editingSection = null);
+                                          },
+                                          style: OutlinedButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(vertical: 10),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                          ),
+                                          child: Text(lang.tr('रद्द करा', 'Cancel'), style: const TextStyle(color: AppColors.textSecondary)),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: ElevatedButton.icon(
+                                          onPressed: _handleSave,
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: AppColors.primaryPurple,
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(vertical: 10),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                          ),
+                                          icon: const Icon(Icons.check, size: 16),
+                                          label: Text(lang.tr('जतन करा', 'Save')),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ],
                             ),
                           ),

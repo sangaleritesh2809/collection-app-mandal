@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/services/supabase_service.dart';
 import '../models/user_profile.dart';
 
@@ -48,31 +49,99 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  void _initAuthListener() {
+  void _initAuthListener() async {
+    // 1. Immediately restore cached session from SharedPreferences for instant launch
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final wasLoggedIn = prefs.getBool('is_logged_in') ?? false;
+      final cachedUserId = prefs.getString('cached_user_id');
+
+      if (wasLoggedIn && cachedUserId != null) {
+        final mobile = prefs.getString('cached_user_mobile');
+        final fullName = prefs.getString('cached_user_name') ?? 'वापरकर्ता';
+        final email = prefs.getString('cached_user_email');
+        final isSuperAdmin = prefs.getBool('cached_is_super_admin') ??
+            (mobile == '9699342811' || email?.toLowerCase() == 'ritesh2004@gmail.com');
+
+        state = state.copyWith(
+          status: AuthStatus.authenticated,
+          userProfile: UserProfile(
+            id: cachedUserId,
+            fullName: fullName,
+            email: email,
+            mobileNumber: mobile,
+            isSuperAdmin: isSuperAdmin,
+            createdAt: DateTime.now(),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error restoring cached auth: $e');
+    }
+
     if (!SupabaseService.isInitialized) {
-      state = state.copyWith(status: AuthStatus.unauthenticated);
+      if (state.status != AuthStatus.authenticated) {
+        state = state.copyWith(status: AuthStatus.unauthenticated);
+      }
       return;
     }
 
     try {
       final session = SupabaseService.client.auth.currentSession;
       if (session != null) {
-        _loadUserProfile(session.user.id);
+        // Fast-path: Set authenticated immediately using session info!
+        final user = session.user;
+        final mobile = user.userMetadata?['mobile_number'] as String?;
+        final fullName = user.userMetadata?['full_name'] as String? ?? user.email?.split('@').first ?? 'वापरकर्ता';
+        final isSuperAdmin = mobile == '9699342811' || user.email?.toLowerCase() == 'ritesh2004@gmail.com';
+
+        state = state.copyWith(
+          status: AuthStatus.authenticated,
+          userProfile: UserProfile(
+            id: user.id,
+            fullName: fullName,
+            email: user.email,
+            mobileNumber: mobile,
+            isSuperAdmin: isSuperAdmin,
+            createdAt: DateTime.now(),
+          ),
+        );
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('is_logged_in', true);
+        await prefs.setBool('has_seen_onboarding', true);
+        await prefs.setString('cached_user_id', user.id);
+
+        _loadUserProfile(user.id);
       } else {
-        state = state.copyWith(status: AuthStatus.unauthenticated);
+        final prefs = await SharedPreferences.getInstance();
+        final wasLoggedIn = prefs.getBool('is_logged_in') ?? false;
+        if (!wasLoggedIn) {
+          state = state.copyWith(status: AuthStatus.unauthenticated);
+        }
       }
 
-      SupabaseService.client.auth.onAuthStateChange.listen((data) {
+      SupabaseService.client.auth.onAuthStateChange.listen((data) async {
         final session = data.session;
         if (session != null) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('is_logged_in', true);
+          await prefs.setBool('has_seen_onboarding', true);
+          await prefs.setString('cached_user_id', session.user.id);
           _loadUserProfile(session.user.id);
         } else {
-          state = state.copyWith(status: AuthStatus.unauthenticated, userProfile: null);
+          final prefs = await SharedPreferences.getInstance();
+          final wasExplicit = !(prefs.getBool('is_logged_in') ?? false);
+          if (wasExplicit) {
+            state = state.copyWith(status: AuthStatus.unauthenticated, userProfile: null);
+          }
         }
       });
     } catch (e) {
       debugPrint('Error attaching auth state listener: $e');
-      state = state.copyWith(status: AuthStatus.unauthenticated);
+      if (state.status != AuthStatus.authenticated) {
+        state = state.copyWith(status: AuthStatus.unauthenticated);
+      }
     }
   }
 
@@ -84,18 +153,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
           .eq('id', userId)
           .maybeSingle();
 
+      UserProfile profile;
       if (res != null) {
-        var profile = UserProfile.fromJson(res);
+        profile = UserProfile.fromJson(res);
         // Automatic Super Admin guarantee for developer phone number
         if (profile.mobileNumber == '9699342811' && !profile.isSuperAdmin) {
           profile = profile.copyWith(isSuperAdmin: true);
         }
-        state = state.copyWith(status: AuthStatus.authenticated, userProfile: profile);
       } else {
         // Fallback profile if row is not populated yet
         final user = SupabaseService.client.auth.currentUser;
         final mobile = user?.userMetadata?['mobile_number'] as String?;
-        final profile = UserProfile(
+        profile = UserProfile(
           id: userId,
           fullName: user?.userMetadata?['full_name'] ?? 'User',
           email: user?.email,
@@ -103,23 +172,36 @@ class AuthNotifier extends StateNotifier<AuthState> {
           isSuperAdmin: mobile == '9699342811' || user?.email?.toLowerCase() == 'ritesh2004@gmail.com',
           createdAt: DateTime.now(),
         );
-        state = state.copyWith(status: AuthStatus.authenticated, userProfile: profile);
+      }
+
+      state = state.copyWith(status: AuthStatus.authenticated, userProfile: profile);
+
+      // Save to SharedPreferences for permanent cold-start persistence
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('is_logged_in', true);
+        await prefs.setBool('has_seen_onboarding', true);
+        await prefs.setString('cached_user_id', profile.id);
+        await prefs.setString('cached_user_name', profile.fullName);
+        if (profile.email != null) await prefs.setString('cached_user_email', profile.email!);
+        if (profile.mobileNumber != null) await prefs.setString('cached_user_mobile', profile.mobileNumber!);
+        await prefs.setBool('cached_is_super_admin', profile.isSuperAdmin);
+      } catch (cacheErr) {
+        debugPrint('Cache write error: $cacheErr');
       }
     } catch (e) {
       debugPrint('Error loading user profile: $e');
       final user = SupabaseService.client.auth.currentUser;
       final mobile = user?.userMetadata?['mobile_number'] as String?;
-      state = state.copyWith(
-        status: AuthStatus.authenticated,
-        userProfile: UserProfile(
-          id: userId,
-          fullName: user?.userMetadata?['full_name'] ?? user?.email?.split('@').first ?? 'User',
-          email: user?.email,
-          mobileNumber: mobile,
-          isSuperAdmin: mobile == '9699342811' || user?.email?.toLowerCase() == 'ritesh2004@gmail.com',
-          createdAt: DateTime.now(),
-        ),
+      final profile = UserProfile(
+        id: userId,
+        fullName: user?.userMetadata?['full_name'] ?? user?.email?.split('@').first ?? 'User',
+        email: user?.email,
+        mobileNumber: mobile,
+        isSuperAdmin: mobile == '9699342811' || user?.email?.toLowerCase() == 'ritesh2004@gmail.com',
+        createdAt: DateTime.now(),
       );
+      state = state.copyWith(status: AuthStatus.authenticated, userProfile: profile);
     }
   }
 
@@ -467,6 +549,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_logged_in', false);
+      await prefs.remove('cached_user_id');
+      await prefs.remove('cached_user_email');
+      await prefs.remove('cached_user_name');
+      await prefs.remove('cached_user_mobile');
+      await prefs.remove('cached_is_super_admin');
+      await prefs.remove('last_selected_mandal_id');
+    } catch (e) {
+      debugPrint('Logout prefs clear error: $e');
+    }
+
     if (SupabaseService.isInitialized) {
       try {
         await SupabaseService.client.auth.signOut();

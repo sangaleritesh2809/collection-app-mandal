@@ -18,6 +18,7 @@ class Mandal {
   final String? qrCodeUrl; // Photo of official payment QR code
   final String? upiId; // Mandal's UPI ID (e.g. mandal@upi)
   final String? upiPayeeName; // Beneficiary name on UPI
+  final String? createdBy;
   final DateTime createdAt;
 
   Mandal({
@@ -40,6 +41,7 @@ class Mandal {
     this.qrCodeUrl,
     this.upiId,
     this.upiPayeeName,
+    this.createdBy,
     required this.createdAt,
   });
 
@@ -66,6 +68,7 @@ class Mandal {
       qrCodeUrl: json['qr_code_url'] as String?,
       upiId: json['upi_id'] as String?,
       upiPayeeName: json['upi_payee_name'] as String?,
+      createdBy: json['created_by'] as String?,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),

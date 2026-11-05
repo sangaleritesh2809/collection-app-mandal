@@ -724,6 +724,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             icon: const Icon(Icons.share, size: 14),
             label: const Text('WhatsApp', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
           ),
+          const SizedBox(width: 6),
+          IconButton(
+            icon: const Icon(Icons.group_rounded, color: AppColors.primaryPurple, size: 22),
+            tooltip: lang.tr('सदस्य व रोल्स व्यवस्थापन', 'Manage Members & Roles'),
+            onPressed: () => context.push('/manage-members'),
+          ),
         ],
       ),
     );
