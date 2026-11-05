@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/services/supabase_service.dart';
 import '../models/user_profile.dart';
 
@@ -206,6 +207,28 @@ class AuthNotifier extends StateNotifier<AuthState> {
         errorMessage: 'नोंदणी पूर्ण होऊ शकली नाही. कृपया पुन्हा प्रयत्न करा.',
       );
       return false;
+    } on AuthException catch (e) {
+      String msg;
+      final code = e.code?.toLowerCase() ?? '';
+      final message = e.message.toLowerCase();
+
+      if (code == 'over_email_send_rate_limit' || message.contains('rate limit')) {
+        msg = 'Supabase ईमेल मर्यादा संपली आहे (Email rate limit exceeded).\nकृपया Supabase Dashboard मध्ये Authentication ➔ Providers ➔ Email मध्ये "Confirm email" बंद (OFF) करा.';
+      } else if (code == 'user_already_exists' || message.contains('already registered') || message.contains('already exists')) {
+        msg = 'हा ईमेल पत्ता आधीच नोंदणीकृत आहे. कृपया लॉगिन करा.';
+      } else if (message.contains('password') && (message.contains('least') || message.contains('short'))) {
+        msg = 'पासवर्ड किमान ६ अक्षरांचा असावा.';
+      } else if (message.contains('database error') || message.contains('23505')) {
+        msg = 'हा मोबाईल नंबर ($cleanMobile) किंवा ईमेल आधीच नोंदणीकृत आहे. कृपया लॉगिन करा.';
+      } else {
+        msg = e.message;
+      }
+
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: msg,
+      );
+      return false;
     } catch (e) {
       String msg = 'नोंदणी करताना त्रुटी आली. कृपया पुन्हा प्रयत्न करा.';
       final errLower = e.toString().toLowerCase();
@@ -217,7 +240,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       } else if (errLower.contains('password') && (errLower.contains('least') || errLower.contains('short'))) {
         msg = 'पासवर्ड किमान ६ अक्षरांचा असावा.';
       } else if (errLower.contains('rate limit')) {
-        msg = 'खूप जास्त प्रयत्न झाले आहेत. कृपया १ मिनिटानंतर प्रयत्न करा.';
+        msg = 'Supabase ईमेल मर्यादा संपली आहे. कृपया Supabase मध्ये "Confirm email" बंद (OFF) करा.';
       } else if (errLower.contains('network') || errLower.contains('socket') || errLower.contains('failed host lookup')) {
         msg = 'इंटरनेट कनेक्शन उपलब्ध नाही. कृपया नेटवर्क तपासा.';
       } else {
@@ -292,6 +315,24 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(
         status: AuthStatus.error,
         errorMessage: 'लॉगिन अयशस्वी झाले (Login failed).',
+      );
+      return false;
+    } on AuthException catch (e) {
+      String msg;
+      final code = e.code?.toLowerCase() ?? '';
+      final message = e.message.toLowerCase();
+
+      if (code == 'invalid_credentials' || message.contains('invalid login credentials')) {
+        msg = 'ईमेल / मोबाईल किंवा पासवर्ड चुकीचा आहे.';
+      } else if (code == 'email_not_confirmed' || message.contains('email not confirmed')) {
+        msg = 'ईमेल अद्याप कन्फर्म झालेला नाही. कृपया Supabase Dashboard मध्ये "Confirm email" बंद (OFF) करा किंवा ईमेल इनबॉक्स तपासा.';
+      } else {
+        msg = e.message;
+      }
+
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: msg,
       );
       return false;
     } catch (e) {
