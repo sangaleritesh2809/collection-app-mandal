@@ -1,0 +1,6 @@
+{
+  "outputDirectory": "web_build",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
