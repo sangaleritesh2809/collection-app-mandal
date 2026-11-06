@@ -465,7 +465,7 @@ class _SuperAdminTicketsScreenState extends ConsumerState<SuperAdminTicketsScree
                   controller: replyController,
                   maxLines: 4,
                   decoration: const InputDecoration(
-                    hintText: 'उदा. नमस्कार, आपल्या समस्येचे निराकरण केले आहे. ॲप रिस्टार्ट करून पावती तपासावी.',
+                    hintText: 'आपला अधिकृत रिप्लाय किंवा उत्तर येथे टाका...',
                   ),
                 ),
               ],

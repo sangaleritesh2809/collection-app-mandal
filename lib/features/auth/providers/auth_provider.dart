@@ -641,20 +641,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
       _activeResetEmail = emailToUse.toLowerCase();
       _activeResetExpiry = DateTime.now().add(const Duration(minutes: 10));
 
-      // 1. Send via EmailJS (User's custom email service)
+      // 1. Send OTP strictly via EmailJS (so Supabase link email is NOT sent to the user)
       final emailJsSent = await EmailJsService.sendOtp(
         toEmail: emailToUse,
         otp: generatedOtp,
         purpose: 'पासवर्ड रिसेट व्हेरिफिकेशन (Password Reset Verification)',
         userName: userName,
       );
-
-      // 2. Also trigger Supabase native recovery in background if possible
-      try {
-        await SupabaseService.client.auth.resetPasswordForEmail(emailToUse);
-      } catch (sbErr) {
-        debugPrint('Supabase native resetPasswordForEmail skipped or rate-limited: $sbErr');
-      }
 
       if (emailJsSent) {
         return {
@@ -663,11 +656,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
           'message': 'तुमच्या $emailToUse या ईमेलवर ६-अंकी OTP पाठवला आहे.'
         };
       } else {
-        // If EmailJS failed, check if we can still tell the user to check their email
         return {
-          'success': true,
-          'email': emailToUse,
-          'message': 'तुमच्या $emailToUse या ईमेलवर पासवर्ड रिसेट OTP पाठवला आहे.'
+          'success': false,
+          'message': 'OTP पाठवता आला नाही. कृपया ईमेल बरोबर असल्याची खात्री करा किंवा पुन्हा प्रयत्न करा.'
         };
       }
     } on AuthException catch (e) {

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_strings.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/form_label.dart';
@@ -25,6 +26,7 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
   String? _existingQrUrl;
   bool _isUploading = false;
   final ImagePicker _picker = ImagePicker();
+  AppLanguage get lang => ref.watch(languageProvider);
 
   @override
   void initState() {
@@ -317,24 +319,24 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
                         ),
                         const SizedBox(height: 14),
 
-                        const FormLabel('मंडळाचा UPI ID', subtitle: 'उदा. shreeganesh@sbi किंवा 9876543210@paytm'),
+                        const FormLabel('मंडळाचा UPI ID'),
                         TextFormField(
                           controller: _upiIdController,
-                          decoration: const InputDecoration(
-                            hintText: 'shreeganesh@sbi किंवा 9876543210@paytm',
-                            prefixIcon: Icon(Icons.alternate_email),
+                          decoration: InputDecoration(
+                            hintText: lang.tr('UPI ID टाका', 'Enter UPI ID'),
+                            prefixIcon: const Icon(Icons.alternate_email),
                           ),
                           validator: (val) => AppValidators.upiId(val, isRequired: false),
                           onChanged: (_) => setState(() {}),
                         ),
                         const SizedBox(height: 14),
 
-                        const FormLabel('खातेधारकाचे / मंडळाचे नाव', subtitle: 'उदा. श्री गणेश मित्र मंडळ'),
+                        const FormLabel('खातेधारकाचे / मंडळाचे नाव'),
                         TextFormField(
                           controller: _payeeNameController,
-                          decoration: const InputDecoration(
-                            hintText: 'उदा. श्री गणेश मित्र मंडळ',
-                            prefixIcon: Icon(Icons.person_pin),
+                          decoration: InputDecoration(
+                            hintText: lang.tr('खातेधारकाचे नाव टाका', 'Enter payee name'),
+                            prefixIcon: const Icon(Icons.person_pin),
                           ),
                           validator: (val) {
                             if (_upiIdController.text.trim().isNotEmpty) {

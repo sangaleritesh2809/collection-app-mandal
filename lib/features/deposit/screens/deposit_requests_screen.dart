@@ -109,7 +109,7 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
               maxLines: 2,
               decoration: InputDecoration(
                 labelText: lang.tr('नाकारण्याचे कारण (अनिवार्य) *', 'Rejection Reason (Required) *'),
-                hintText: lang.tr('उदा. प्रत्यक्ष रक्कम कमी मिळाली / पावती जुळत नाही', 'e.g. Received less cash / receipt mismatch'),
+                hintText: lang.tr('नाकारण्याचे कारण टाका', 'Enter reason for rejection'),
               ),
             ),
           ],

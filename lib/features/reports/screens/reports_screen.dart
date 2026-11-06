@@ -6,6 +6,8 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../core/widgets/responsive_container.dart';
 import '../../../core/services/excel_service.dart';
+import '../../../core/services/pdf_service.dart';
+import '../../../core/services/supabase_service.dart';
 import '../../mandal/providers/mandal_provider.dart';
 import '../../dashboard/providers/dashboard_provider.dart';
 import '../../collection/providers/collection_provider.dart';
@@ -20,6 +22,7 @@ class ReportsScreen extends ConsumerStatefulWidget {
 
 class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   String _selectedYear = '२०२६-२०२७';
+  bool _isExporting = false;
   AppLanguage get lang => ref.watch(languageProvider);
 
   @override
@@ -39,14 +42,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         title: Text(lang.tr('आर्थिक अहवाल व ताळेबंद', 'Reports & Balance Sheet')),
         actions: [
           IconButton(
-            icon: const Icon(Icons.file_download_outlined),
-            tooltip: 'वर्गणी Excel डाउनलोड',
-            onPressed: () => _exportCollectionsExcel(mandal?.name, collectionState),
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+            tooltip: lang.tr('PDF ताळेबंद डाउनलोड / शेअर', 'Download / Share PDF Report'),
+            onPressed: _isExporting ? null : () => _exportBalanceSheetPdf(mandal, summary),
           ),
           IconButton(
-            icon: const Icon(Icons.upload_file_outlined),
-            tooltip: 'खर्च Excel डाउनलोड',
-            onPressed: () => _exportExpensesExcel(mandal?.name, expenseState),
+            icon: const Icon(Icons.print_outlined),
+            tooltip: lang.tr('ताळेबंद प्रिंट करा', 'Print Balance Sheet'),
+            onPressed: _isExporting ? null : () => _printBalanceSheetPdf(mandal, summary),
           ),
         ],
       ),
@@ -580,38 +583,236 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     }
   }
 
+  Future<void> _exportBalanceSheetPdf(dynamic mandal, dynamic summary) async {
+    if (mandal == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('कृपया प्रथम मंडळ निवडा.')),
+      );
+      return;
+    }
+    setState(() => _isExporting = true);
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('ताळेबंद PDF तयार करत आहे...')),
+      );
+      final pdfData = PdfBalanceSheetData(
+        mandalName: mandal.name,
+        mandalAddress: mandal.village != null ? '${mandal.village}, ${mandal.district ?? ""}' : null,
+        selectedYear: _selectedYear,
+        expectedVargani: summary.totalExpectedVargani,
+        collectedVargani: summary.totalCollected,
+        depositedWithTreasurer: summary.totalDepositedWithTreasurer,
+        pendingWithCollectors: summary.pendingCollectionWithCollectors,
+        pendingVargani: summary.totalPendingVargani,
+        totalApprovedExpenses: summary.totalApprovedExpenses,
+        totalPendingExpenses: summary.totalPendingExpenses,
+        availableBalance: summary.availableBalance,
+        totalFamilies: summary.totalFamilies,
+      );
+      await PdfService.shareBalanceSheetPdf(pdfData);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('PDF तयार करताना एरर आला: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
+  Future<void> _printBalanceSheetPdf(dynamic mandal, dynamic summary) async {
+    if (mandal == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('कृपया प्रथम मंडळ निवडा.')),
+      );
+      return;
+    }
+    setState(() => _isExporting = true);
+    try {
+      final pdfData = PdfBalanceSheetData(
+        mandalName: mandal.name,
+        mandalAddress: mandal.village != null ? '${mandal.village}, ${mandal.district ?? ""}' : null,
+        selectedYear: _selectedYear,
+        expectedVargani: summary.totalExpectedVargani,
+        collectedVargani: summary.totalCollected,
+        depositedWithTreasurer: summary.totalDepositedWithTreasurer,
+        pendingWithCollectors: summary.pendingCollectionWithCollectors,
+        pendingVargani: summary.totalPendingVargani,
+        totalApprovedExpenses: summary.totalApprovedExpenses,
+        totalPendingExpenses: summary.totalPendingExpenses,
+        availableBalance: summary.availableBalance,
+        totalFamilies: summary.totalFamilies,
+      );
+      await PdfService.printBalanceSheetPdf(pdfData);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('प्रिंट करताना एरर आला: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
   Future<void> _exportCollectionsExcel(String? mandalName, dynamic collectionState) async {
-    if (collectionState.collections.isEmpty) return;
-    await ExcelService.exportCollectionsExcel(
-      mandalName: mandalName ?? 'Mandal',
-      collections: collectionState.collections.map((c) => {
-        'receipt_number': c.receiptNumber,
-        'collection_date': AppFormatters.formatDate(c.collectionDate),
-        'family_name': c.familyName,
-        'family_head_name': c.familyHeadName,
-        'amount': c.amount,
-        'payment_mode': c.paymentMode,
-        'collector_name': c.collectorName,
-        'notes': c.notes,
-      }).toList(),
-    );
+    final mandal = ref.read(mandalProvider).selectedMandal;
+    if (mandal == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('कृपया प्रथम मंडळ निवडा.')),
+      );
+      return;
+    }
+
+    setState(() => _isExporting = true);
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('वर्गणी Excel तयार करत आहे...')),
+      );
+
+      List<Map<String, dynamic>> records = [];
+      if (collectionState.collections.isNotEmpty) {
+        records = collectionState.collections.map<Map<String, dynamic>>((c) => {
+          'receipt_number': c.receiptNumber,
+          'collection_date': AppFormatters.formatDate(c.collectionDate),
+          'family_name': c.familyName,
+          'family_head_name': c.familyHeadName,
+          'amount': c.amount,
+          'payment_mode': c.paymentMode,
+          'collector_name': c.collectorName,
+          'notes': c.notes,
+        }).toList();
+      } else {
+        final res = await SupabaseService.client
+            .from('collections')
+            .select('''
+              *,
+              family:families (family_name, family_head_name),
+              collector:profiles (full_name)
+            ''')
+            .eq('mandal_id', mandal.id)
+            .order('collection_date', ascending: false);
+
+        final list = res as List;
+        records = list.map<Map<String, dynamic>>((c) {
+          final fam = c['family'] as Map<String, dynamic>?;
+          final coll = c['collector'] as Map<String, dynamic>?;
+          final dateStr = c['collection_date'] != null
+              ? AppFormatters.formatDate(DateTime.tryParse(c['collection_date']) ?? DateTime.now())
+              : '-';
+          return {
+            'receipt_number': c['receipt_number'] ?? '-',
+            'collection_date': dateStr,
+            'family_name': fam?['family_name'] ?? '-',
+            'family_head_name': fam?['family_head_name'] ?? '-',
+            'amount': (c['amount'] as num?)?.toDouble() ?? 0.0,
+            'payment_mode': c['payment_mode'] ?? 'cash',
+            'collector_name': coll?['full_name'] ?? '-',
+            'notes': c['notes'] ?? '',
+          };
+        }).toList();
+      }
+
+      if (records.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('या मंडळासाठी वर्गणी नोंदी उपलब्ध नाहीत.')),
+          );
+        }
+        return;
+      }
+
+      await ExcelService.exportCollectionsExcel(
+        mandalName: mandal.name,
+        collections: records,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Excel तयार करताना एरर आला: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
   }
 
   Future<void> _exportExpensesExcel(String? mandalName, dynamic expenseState) async {
-    if (expenseState.expenses.isEmpty) return;
-    await ExcelService.exportExpensesExcel(
-      mandalName: mandalName ?? 'Mandal',
-      expenses: expenseState.expenses.map((e) => {
-        'title': e.title,
-        'category': e.category,
-        'amount': e.amount,
-        'expense_date': AppFormatters.formatDate(e.expenseDate),
-        'paid_to': e.paidTo,
-        'paid_by': e.paidBy,
-        'payment_mode': e.paymentMode,
-        'approval_status': e.approvalStatus,
-        'description': e.description,
-      }).toList(),
-    );
+    final mandal = ref.read(mandalProvider).selectedMandal;
+    if (mandal == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('कृपया प्रथम मंडळ निवडा.')),
+      );
+      return;
+    }
+
+    setState(() => _isExporting = true);
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('खर्च Excel तयार करत आहे...')),
+      );
+
+      List<Map<String, dynamic>> records = [];
+      if (expenseState.expenses.isNotEmpty) {
+        records = expenseState.expenses.map<Map<String, dynamic>>((e) => {
+          'title': e.title,
+          'category': e.category,
+          'amount': e.amount,
+          'expense_date': AppFormatters.formatDate(e.expenseDate),
+          'paid_to': e.paidTo,
+          'paid_by': e.paidBy,
+          'payment_mode': e.paymentMode,
+          'approval_status': e.approvalStatus,
+          'description': e.description,
+        }).toList();
+      } else {
+        final res = await SupabaseService.client
+            .from('expenses')
+            .select()
+            .eq('mandal_id', mandal.id)
+            .order('expense_date', ascending: false);
+
+        final list = res as List;
+        records = list.map<Map<String, dynamic>>((e) {
+          final dateStr = e['expense_date'] != null
+              ? AppFormatters.formatDate(DateTime.tryParse(e['expense_date']) ?? DateTime.now())
+              : '-';
+          return {
+            'title': e['title'] ?? '-',
+            'category': e['category'] ?? '-',
+            'amount': (e['amount'] as num?)?.toDouble() ?? 0.0,
+            'expense_date': dateStr,
+            'paid_to': e['paid_to'] ?? '-',
+            'paid_by': e['paid_by'] ?? '-',
+            'payment_mode': e['payment_mode'] ?? 'cash',
+            'approval_status': e['approval_status'] ?? 'approved',
+            'description': e['description'] ?? '',
+          };
+        }).toList();
+      }
+
+      if (records.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('या मंडळासाठी खर्च नोंदी उपलब्ध नाहीत.')),
+          );
+        }
+        return;
+      }
+
+      await ExcelService.exportExpensesExcel(
+        mandalName: mandal.name,
+        expenses: records,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Excel तयार करताना एरर आला: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
   }
 }

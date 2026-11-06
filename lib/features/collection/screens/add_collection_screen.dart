@@ -31,6 +31,7 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
   final _utrController = TextEditingController();
   String _paymentMode = 'cash';
   DateTime _collectionDate = DateTime.now();
+  AppLanguage get lang => ref.watch(languageProvider);
 
   @override
   void initState() {
@@ -158,9 +159,9 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                             orElse: () => _selectedFamily!,
                           )
                         : null,
-                    decoration: const InputDecoration(
-                      hintText: 'कुटुंब निवडा...',
-                      prefixIcon: Icon(Icons.people),
+                    decoration: InputDecoration(
+                      hintText: lang.tr('कुटुंब निवडा', 'Select family'),
+                      prefixIcon: const Icon(Icons.people),
                     ),
                     items: familyState.families.map((f) {
                       return DropdownMenuItem<Family>(
@@ -229,9 +230,9 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                     controller: _amountController,
                     keyboardType: TextInputType.number,
                     style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.success),
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.currency_rupee, size: 28),
-                      hintText: 'उदा. ५००',
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.currency_rupee, size: 28),
+                      hintText: lang.tr('रक्कम टाका', 'Enter amount'),
                     ),
                     onChanged: (_) => setState(() {}),
                     validator: (val) => AppValidators.amount(val, fieldName: 'वर्गणी रक्कम'),
@@ -290,7 +291,7 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                   TextFormField(
                     controller: _notesController,
                     decoration: InputDecoration(
-                      hintText: lang.tr('उदा. विशेष देणगी / उर्वरित रक्कम नंतर देतील', 'e.g. Special contribution / remaining balance later'),
+                      hintText: lang.tr('काही विशेष नोंद असल्यास टाका', 'Enter special notes (optional)'),
                       prefixIcon: const Icon(Icons.notes),
                     ),
                   ),
@@ -522,9 +523,9 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
           TextFormField(
             controller: _utrController,
             validator: (val) => AppValidators.utrNumber(val, isRequired: false),
-            decoration: const InputDecoration(
-              hintText: 'उदा. 324156789012',
-              prefixIcon: Icon(Icons.receipt_outlined),
+            decoration: InputDecoration(
+              hintText: lang.tr('UTR / ट्रान्झॅक्शन नंबर टाका', 'Enter UTR / Transaction number'),
+              prefixIcon: const Icon(Icons.receipt_outlined),
               fillColor: Colors.white,
               filled: true,
             ),

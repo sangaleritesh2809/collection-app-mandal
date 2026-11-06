@@ -57,6 +57,9 @@ DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- 5. Automatically promote ONLY Ritesh (9699342811) to Super Admin
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_super_admin BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'member';
+
 UPDATE public.profiles
 SET is_super_admin = TRUE,
     role = 'super_admin'

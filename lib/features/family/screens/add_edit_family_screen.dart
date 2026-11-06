@@ -173,7 +173,7 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                   TextFormField(
                     controller: _headNameController,
                     decoration: InputDecoration(
-                      hintText: lang.tr('उदा. श्री. रविंद्र गणपत पाटील', 'e.g. Shri. Ravindra Ganpat Patil'),
+                      hintText: lang.tr('कुटुंब प्रमुखाचे नाव टाका', 'Enter head of family name'),
                       prefixIcon: const Icon(Icons.person),
                     ),
                     validator: (val) => AppValidators.name(val, lang.tr('कुटुंब प्रमुखाचे नाव', 'Head of Family Name')),
@@ -192,9 +192,9 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                       LengthLimitingTextInputFormatter(10),
                     ],
                     autovalidateMode: AutovalidateMode.onUserInteraction,
-                    decoration: const InputDecoration(
-                      hintText: '9876543210',
-                      prefixIcon: Icon(Icons.phone),
+                    decoration: InputDecoration(
+                      hintText: lang.tr('मोबाईल नंबर टाका', 'Enter mobile number'),
+                      prefixIcon: const Icon(Icons.phone),
                       prefixText: '+91 ',
                     ),
                     validator: (val) => AppValidators.mobile(val, isRequired: true),
@@ -214,7 +214,7 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                             TextFormField(
                               controller: _houseNumberController,
                               decoration: InputDecoration(
-                                hintText: lang.tr('उदा. १२/अ', 'e.g. 12/A'),
+                                hintText: lang.tr('घर नंबर टाका', 'Enter house number'),
                                 prefixIcon: const Icon(Icons.home),
                               ),
                             ),
@@ -231,7 +231,7 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                             TextFormField(
                               controller: _villageController,
                               decoration: InputDecoration(
-                                hintText: lang.tr('उदा. वडगाव', 'e.g. Wadgaon'),
+                                hintText: lang.tr('गाव किंवा वस्ती टाका', 'Enter village or area'),
                                 prefixIcon: const Icon(Icons.location_city),
                               ),
                             ),
@@ -247,7 +247,7 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                   TextFormField(
                     controller: _addressController,
                     decoration: InputDecoration(
-                      hintText: lang.tr('उदा. मुख्य रस्ता, मारुती मंदिराजवळ', 'e.g. Main Road, near temple'),
+                      hintText: lang.tr('पत्ता किंवा गल्ली टाका', 'Enter address or street'),
                       prefixIcon: const Icon(Icons.place_outlined),
                     ),
                   ),
@@ -281,8 +281,8 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                             ],
                             decoration: InputDecoration(
                               hintText: _useCustomVargani
-                                  ? lang.tr('उदा. १ (पर्यायी)', 'e.g. 1 (Optional)')
-                                  : lang.tr('उदा. ४', 'e.g. 4'),
+                                  ? lang.tr('सदस्य संख्या टाका (पर्यायी)', 'Enter member count (Optional)')
+                                  : lang.tr('सदस्य संख्या टाका', 'Enter member count'),
                               prefixIcon: const Icon(Icons.people_alt_outlined),
                             ),
                             onChanged: (_) => setState(() {}),
@@ -330,7 +330,7 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                               keyboardType: TextInputType.number,
                               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                               decoration: InputDecoration(
-                                hintText: lang.tr('उदा. १५००', 'e.g. 1500'),
+                                hintText: lang.tr('रक्कम टाका', 'Enter amount'),
                                 prefixIcon: const Icon(Icons.currency_rupee),
                               ),
                               validator: (val) => _useCustomVargani ? AppValidators.amount(val, fieldName: lang.tr('निश्चित केलेली वर्गणी रक्कम', 'Custom Amount')) : null,

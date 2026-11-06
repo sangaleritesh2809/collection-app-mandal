@@ -31,7 +31,7 @@ class AppValidators {
     final cleanNumber = trimmed.replaceAll(RegExp(r'^\+91|^0'), '').trim();
     
     if (!RegExp(r'^[6-9]\d{9}$').hasMatch(cleanNumber)) {
-      return 'कृपया वैध १० अंकी मोबाईल नंबर टाका (उदा. ९८७६५४३२१०).';
+      return 'कृपया वैध १० अंकी मोबाईल नंबर टाका.';
     }
     return null;
   }
@@ -69,7 +69,7 @@ class AppValidators {
     return null;
   }
 
-  /// UPI ID validation (e.g. name@bank, 9876543210@paytm)
+  /// UPI ID validation (e.g. name@bank, 9699342811@paytm)
   static String? upiId(String? value, {bool isRequired = false}) {
     if (value == null || value.trim().isEmpty) {
       if (isRequired) return 'UPI ID आवश्यक आहे.';
@@ -77,7 +77,7 @@ class AppValidators {
     }
     final trimmed = value.trim();
     if (!trimmed.contains('@') || trimmed.startsWith('@') || trimmed.endsWith('@')) {
-      return 'कृपया वैध UPI ID टाका (उदा. 9876543210@paytm किंवा shree@sbi).';
+      return 'कृपया वैध UPI ID टाका.';
     }
     if (trimmed.length < 5) {
       return 'UPI ID किमान ५ अक्षरांचा असावा.';
@@ -107,18 +107,24 @@ class AppValidators {
     final trimmed = value.trim();
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     if (!emailRegex.hasMatch(trimmed)) {
-      return 'कृपया वैध ईमेल पत्ता टाका (उदा. name@example.com).';
+      return 'कृपया वैध ईमेल पत्ता टाका.';
     }
     return null;
   }
 
-  /// Password validation (minimum 6 chars)
-  static String? password(String? value, {int minLength = 6}) {
+  /// Password validation (8 to 16 characters, no spaces allowed)
+  static String? password(String? value, {int minLength = 8, int maxLength = 16}) {
     if (value == null || value.isEmpty) {
       return 'पासवर्ड आवश्यक आहे.';
     }
+    if (value.contains(' ')) {
+      return 'पासवर्डमध्ये स्पेस (Space) असू नये.';
+    }
     if (value.length < minLength) {
       return 'पासवर्ड किमान $minLength अक्षरांचा असावा.';
+    }
+    if (value.length > maxLength) {
+      return 'पासवर्ड जास्तीत जास्त $maxLength अक्षरांचा असावा.';
     }
     return null;
   }
@@ -128,8 +134,17 @@ class AppValidators {
     if (value == null || value.isEmpty) {
       return 'पासवर्ड पुन्हा टाका.';
     }
+    if (value.contains(' ')) {
+      return 'पासवर्डमध्ये स्पेस (Space) असू नये.';
+    }
+    if (value.length < 8) {
+      return 'पासवर्ड किमान ८ अक्षरांचा असावा.';
+    }
+    if (value.length > 16) {
+      return 'पासवर्ड जास्तीत जास्त १६ अक्षरांचा असावा.';
+    }
     if (value != originalPassword) {
-      return 'पासवर्ड जुळत नाही (Passwords do not match).';
+      return 'दोन्ही पासवर्ड जुळत नाहीत (Passwords do not match).';
     }
     return null;
   }

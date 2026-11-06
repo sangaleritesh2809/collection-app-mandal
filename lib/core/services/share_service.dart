@@ -106,9 +106,14 @@ class ShareService {
 
   static Future<void> sharePdfFile(PdfReceiptData data) async {
     final pdfBytes = await PdfService.generateReceiptPdf(data);
-    final xFile = XFile.fromData(
-      pdfBytes,
-      name: 'Receipt_${data.receiptNumber}.pdf',
+    final safeRctNo = data.receiptNumber.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+    final tempDir = Directory.systemTemp;
+    final file = File('${tempDir.path}/Receipt_$safeRctNo.pdf');
+    await file.writeAsBytes(pdfBytes, flush: true);
+
+    final xFile = XFile(
+      file.path,
+      name: 'Receipt_$safeRctNo.pdf',
       mimeType: 'application/pdf',
     );
     await Share.shareXFiles([xFile], text: '${data.mandalName} - वर्गणी पावती (${data.receiptNumber})');

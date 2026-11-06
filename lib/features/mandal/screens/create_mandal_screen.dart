@@ -93,9 +93,9 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
                   const FormLabel('मंडळाचे नाव', isRequired: true),
                   TextFormField(
                     controller: _nameController,
-                    decoration: const InputDecoration(
-                      hintText: 'उदा. श्री गणेश मित्र मंडळ',
-                      prefixIcon: Icon(Icons.temple_hindu),
+                    decoration: InputDecoration(
+                      hintText: lang.tr('मंडळाचे नाव टाका', 'Enter mandal name'),
+                      prefixIcon: const Icon(Icons.temple_hindu),
                     ),
                     validator: (val) => AppValidators.name(val, 'मंडळाचे नाव', minLength: 3),
                   ),
@@ -106,9 +106,9 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
                   TextFormField(
                     controller: _descController,
                     maxLines: 2,
-                    decoration: const InputDecoration(
-                      hintText: 'उदा. स्थापना वर्ष २०१० • सामाजिक ऐक्य आणि उत्सव',
-                      prefixIcon: Icon(Icons.info_outline),
+                    decoration: InputDecoration(
+                      hintText: lang.tr('मंडळाचे वर्णन किंवा ब्रीदवाक्य टाका', 'Enter description or slogan'),
+                      prefixIcon: const Icon(Icons.info_outline),
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -123,9 +123,9 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
                             const FormLabel('गाव / शहर', isRequired: true),
                             TextFormField(
                               controller: _villageController,
-                              decoration: const InputDecoration(
-                                hintText: 'उदा. वडगाव',
-                                prefixIcon: Icon(Icons.location_city),
+                              decoration: InputDecoration(
+                                hintText: lang.tr('गाव किंवा शहर टाका', 'Enter village or city'),
+                                prefixIcon: const Icon(Icons.location_city),
                               ),
                               validator: (val) => AppValidators.required(val, 'गाव / शहर'),
                             ),
@@ -140,8 +140,8 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
                             const FormLabel('तालुका'),
                             TextFormField(
                               controller: _talukaController,
-                              decoration: const InputDecoration(
-                                hintText: 'उदा. हवेली',
+                              decoration: InputDecoration(
+                                hintText: lang.tr('तालुका टाका', 'Enter taluka'),
                               ),
                             ),
                           ],
@@ -155,9 +155,9 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
                   const FormLabel('जिल्हा', isRequired: true),
                   TextFormField(
                     controller: _districtController,
-                    decoration: const InputDecoration(
-                      hintText: 'उदा. पुणे',
-                      prefixIcon: Icon(Icons.map),
+                    decoration: InputDecoration(
+                      hintText: lang.tr('जिल्हा टाका', 'Enter district'),
+                      prefixIcon: const Icon(Icons.map),
                     ),
                     validator: (val) => AppValidators.required(val, 'जिल्हा'),
                   ),
@@ -167,9 +167,9 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
                   const FormLabel('पत्ता / मुख्य चौक'),
                   TextFormField(
                     controller: _addressController,
-                    decoration: const InputDecoration(
-                      hintText: 'उदा. शिवाजी चौक, मारुती मंदिरासमोर',
-                      prefixIcon: Icon(Icons.place_outlined),
+                    decoration: InputDecoration(
+                      hintText: lang.tr('पत्ता किंवा मुख्य चौक टाका', 'Enter address or landmark'),
+                      prefixIcon: const Icon(Icons.place_outlined),
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -179,9 +179,9 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
                   TextFormField(
                     controller: _contactController,
                     keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      hintText: '९८७६५४३२१०',
-                      prefixIcon: Icon(Icons.phone),
+                    decoration: InputDecoration(
+                      hintText: lang.tr('मोबाईल नंबर टाका', 'Enter mobile number'),
+                      prefixIcon: const Icon(Icons.phone),
                       prefixText: '+91 ',
                     ),
                     validator: (val) => AppValidators.mobile(val, isRequired: false),
@@ -193,9 +193,9 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
-                      hintText: 'mandal@example.com',
-                      prefixIcon: Icon(Icons.email_outlined),
+                    decoration: InputDecoration(
+                      hintText: lang.tr('ईमेल पत्ता टाका', 'Enter email address'),
+                      prefixIcon: const Icon(Icons.email_outlined),
                     ),
                     validator: (val) => AppValidators.email(val, isRequired: false),
                   ),

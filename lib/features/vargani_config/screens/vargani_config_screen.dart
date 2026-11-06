@@ -289,7 +289,7 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                   controller: _nameController,
                                   enabled: isCampaignEditing,
                                   decoration: InputDecoration(
-                                    hintText: lang.tr('उदा. श्री गणेशोत्सव वर्गणी २०२६', 'e.g. Ganeshotsav Vargani 2026'),
+                                    hintText: lang.tr('वर्गणीचे नाव टाका', 'Enter campaign name'),
                                     prefixIcon: const Icon(Icons.event_note),
                                     suffixIcon: isCampaignEditing && _nameController.text.isNotEmpty
                                         ? IconButton(
@@ -307,9 +307,9 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                 TextFormField(
                                   controller: _financialYearController,
                                   enabled: isCampaignEditing,
-                                  decoration: const InputDecoration(
-                                    hintText: '2026-2027',
-                                    prefixIcon: Icon(Icons.calendar_month),
+                                  decoration: InputDecoration(
+                                    hintText: lang.tr('आर्थिक वर्ष टाका', 'Enter financial year'),
+                                    prefixIcon: const Icon(Icons.calendar_month),
                                   ),
                                   validator: (val) => AppValidators.required(val, lang.tr('आर्थिक वर्ष', 'Financial Year')),
                                 ),
@@ -407,7 +407,7 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                 _buildCalculationOption(
                                   type: 'per_member',
                                   title: lang.tr('प्रत्येक सदस्यानुसार', 'Per Member'),
-                                  subtitle: lang.tr('कुटुंबातील व्यक्तींच्या संख्येनुसार वर्गणी (उदा. ४ व्यक्ती × दर)', 'Based on family members count (e.g. 4 members × rate)'),
+                                  subtitle: lang.tr('कुटुंबातील व्यक्तींच्या संख्येनुसार वर्गणी (व्यक्ती × दर)', 'Based on family members count (members × rate)'),
                                   icon: Icons.people_outline,
                                   enabled: isCalculationEditing,
                                 ),
@@ -428,15 +428,15 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                   FormLabel(
                                     lang.tr('प्रति सदस्य वर्गणी दर (₹)', 'Per Member Vargani Rate (₹)'),
                                     isRequired: true,
-                                    subtitle: lang.tr('उदा. ५०० टाकल्यास ४ सदस्यांच्या कुटुंबाची वर्गणी ₹२,००० होईल.', 'e.g. ₹500 means 4 member family will pay ₹2,000.'),
+                                    subtitle: lang.tr('कुटुंबातील सदस्यांच्या संख्येने या दरास गुणले जाईल.', 'Multiplied by number of family members.'),
                                   ),
                                   TextFormField(
                                     controller: _perMemberAmountController,
                                     enabled: isCalculationEditing,
                                     keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(
-                                      hintText: '500',
-                                      prefixIcon: Icon(Icons.currency_rupee),
+                                    decoration: InputDecoration(
+                                      hintText: lang.tr('दर टाका', 'Enter rate'),
+                                      prefixIcon: const Icon(Icons.currency_rupee),
                                     ),
                                     onChanged: (_) => setState(() {}),
                                     validator: (val) => AppValidators.amount(val, fieldName: lang.tr('प्रति सदस्य वर्गणी दर', 'Per Member Rate')),
@@ -451,9 +451,9 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                     controller: _fixedAmountController,
                                     enabled: isCalculationEditing,
                                     keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(
-                                      hintText: '2000',
-                                      prefixIcon: Icon(Icons.currency_rupee),
+                                    decoration: InputDecoration(
+                                      hintText: lang.tr('निश्चित रक्कम टाका', 'Enter fixed amount'),
+                                      prefixIcon: const Icon(Icons.currency_rupee),
                                     ),
                                     onChanged: (_) => setState(() {}),
                                     validator: (val) => AppValidators.amount(val, fieldName: lang.tr('कुटुंबास निश्चित वर्गणी दर', 'Fixed Family Rate')),
@@ -560,9 +560,9 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                             controller: _discountController,
                                             enabled: isDiscountEditing,
                                             keyboardType: TextInputType.number,
-                                            decoration: const InputDecoration(
-                                              hintText: '0',
-                                              prefixIcon: Icon(Icons.discount_outlined),
+                                            decoration: InputDecoration(
+                                              hintText: lang.tr('सवलत रक्कम टाका', 'Enter discount amount'),
+                                              prefixIcon: const Icon(Icons.discount_outlined),
                                             ),
                                             validator: (val) {
                                               if (val != null && val.trim().isNotEmpty) {
@@ -585,9 +585,9 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                             controller: _specialContributionController,
                                             enabled: isDiscountEditing,
                                             keyboardType: TextInputType.number,
-                                            decoration: const InputDecoration(
-                                              hintText: '0',
-                                              prefixIcon: Icon(Icons.add_circle_outline),
+                                            decoration: InputDecoration(
+                                              hintText: lang.tr('देणगी रक्कम टाका', 'Enter contribution amount'),
+                                              prefixIcon: const Icon(Icons.add_circle_outline),
                                             ),
                                             validator: (val) {
                                               if (val != null && val.trim().isNotEmpty) {
@@ -668,7 +668,7 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    lang.tr('उदा. ४ सदस्यांच्या कुटुंबाची वर्गणी:', 'e.g. Family with 4 members:'),
+                                    lang.tr('४ सदस्यांच्या कुटुंबाची अपेक्षित वर्गणी:', 'Expected for family with 4 members:'),
                                     style: const TextStyle(fontSize: 13),
                                   ),
                                   Text(
@@ -682,7 +682,7 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    lang.tr('उदा. १ सदस्याच्या कुटुंबाची वर्गणी:', 'e.g. Family with 1 member:'),
+                                    lang.tr('१ सदस्याच्या कुटुंबाची अपेक्षित वर्गणी:', 'Expected for family with 1 member:'),
                                     style: const TextStyle(fontSize: 13),
                                   ),
                                   Text(

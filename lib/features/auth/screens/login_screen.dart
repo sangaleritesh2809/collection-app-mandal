@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
@@ -167,7 +168,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       },
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.primaryPurple),
-                        hintText: lang.tr('user@example.com किंवा 9699342811', 'user@example.com or 9699342811'),
+                        hintText: lang.tr('ईमेल किंवा मोबाईल नंबर टाका', 'Enter your email or mobile number'),
                       ),
                       validator: (val) {
                         if (val == null || val.trim().isEmpty) {
@@ -189,13 +190,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                        LengthLimitingTextInputFormatter(16),
+                      ],
                       onChanged: (_) {
                         if (ref.read(authProvider).errorMessage != null) {
                           ref.read(authProvider.notifier).clearError();
                         }
                       },
                       decoration: InputDecoration(
-                        hintText: lang.tr('पासवर्ड टाका', 'Enter password'),
+                        hintText: lang.tr('पासवर्ड टाका', 'Enter your password'),
                         prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primaryPurple),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -205,7 +210,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                         ),
                       ),
-                      validator: AppValidators.password,
+                      validator: (val) {
+                        if (val == null || val.isEmpty) {
+                          return 'पासवर्ड आवश्यक आहे.';
+                        }
+                        if (val.contains(' ')) {
+                          return 'पासवर्डमध्ये स्पेस (Space) असू नये.';
+                        }
+                        if (val.length < 8) {
+                          return 'पासवर्ड किमान ८ अक्षरांचा असावा.';
+                        }
+                        if (val.length > 16) {
+                          return 'पासवर्ड जास्तीत जास्त १६ अक्षरांचा असावा.';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 10),
 
@@ -382,7 +401,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       if (dialogError != null) setDialogState(() => dialogError = null);
                     },
                     decoration: InputDecoration(
-                      hintText: lang.tr('user@example.com किंवा 9876543210', 'user@example.com or 9876543210'),
+                      hintText: lang.tr('ईमेल किंवा मोबाईल नंबर टाका', 'Enter your email or mobile number'),
                       prefixIcon: const Icon(Icons.contact_mail_outlined, color: AppColors.primaryPurple),
                     ),
                   ),
@@ -420,10 +439,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     onChanged: (_) {
                       if (dialogError != null) setDialogState(() => dialogError = null);
                     },
-                    decoration: const InputDecoration(
-                      hintText: '123456',
+                    decoration: InputDecoration(
+                      hintText: lang.tr('६ अंकी OTP टाका', 'Enter 6-digit OTP'),
                       counterText: '',
-                      prefixIcon: Icon(Icons.password_rounded, color: AppColors.primaryPurple),
+                      prefixIcon: const Icon(Icons.password_rounded, color: AppColors.primaryPurple),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -433,11 +452,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   TextField(
                     controller: newPasswordCtrl,
                     obscureText: obscureNew,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                      LengthLimitingTextInputFormatter(16),
+                    ],
                     onChanged: (_) {
                       if (dialogError != null) setDialogState(() => dialogError = null);
                     },
                     decoration: InputDecoration(
-                      hintText: lang.tr('किमान ६ अक्षरांचा पासवर्ड', 'Minimum 6 character password'),
+                      hintText: lang.tr('नवीन पासवर्ड टाका', 'Enter your password'),
                       prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primaryPurple),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -455,11 +478,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   TextField(
                     controller: confirmPasswordCtrl,
                     obscureText: obscureNew,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                      LengthLimitingTextInputFormatter(16),
+                    ],
                     onChanged: (_) {
                       if (dialogError != null) setDialogState(() => dialogError = null);
                     },
                     decoration: InputDecoration(
-                      hintText: lang.tr('पासवर्ड पुन्हा टाका', 'Re-enter password'),
+                      hintText: lang.tr('पासवर्ड पुन्हा टाका', 'Re-enter your password'),
                       prefixIcon: const Icon(Icons.lock_reset_rounded, color: AppColors.primaryPurple),
                     ),
                   ),
@@ -566,12 +593,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           setDialogState(() => dialogError = 'कृपया ६-अंकी वैध OTP कोड टाका.');
                           return;
                         }
-                        if (newPass.length < 6) {
-                          setDialogState(() => dialogError = 'नवीन पासवर्ड किमान ६ अक्षरांचा असावा.');
+                        final passErr = AppValidators.password(newPass);
+                        if (passErr != null) {
+                          setDialogState(() => dialogError = passErr);
                           return;
                         }
-                        if (newPass != confirmPass) {
-                          setDialogState(() => dialogError = 'दोन्ही पासवर्ड जुळत नाहीत.');
+                        final confirmErr = AppValidators.confirmPassword(confirmPass, newPass);
+                        if (confirmErr != null) {
+                          setDialogState(() => dialogError = confirmErr);
                           return;
                         }
 

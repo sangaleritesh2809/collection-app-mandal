@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+import 'dart:io';
 import 'package:excel/excel.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -49,9 +49,14 @@ class ExcelService {
 
     final fileBytes = excel.save();
     if (fileBytes != null) {
-      final xFile = XFile.fromData(
-        Uint8List.fromList(fileBytes),
-        name: '${mandalName}_Collections.xlsx',
+      final safeName = mandalName.replaceAll(RegExp(r'[^a-zA-Z0-9_\-\u0900-\u097F]'), '_');
+      final tempDir = Directory.systemTemp;
+      final file = File('${tempDir.path}/${safeName}_Collections.xlsx');
+      await file.writeAsBytes(fileBytes, flush: true);
+
+      final xFile = XFile(
+        file.path,
+        name: '${safeName}_Collections.xlsx',
         mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       );
       await Share.shareXFiles([xFile], text: '$mandalName - वर्गणी संकलन अहवाल (Excel)');
@@ -104,13 +109,17 @@ class ExcelService {
 
     final fileBytes = excel.save();
     if (fileBytes != null) {
-      final xFile = XFile.fromData(
-        Uint8List.fromList(fileBytes),
-        name: '${mandalName}_Expenses.xlsx',
+      final safeName = mandalName.replaceAll(RegExp(r'[^a-zA-Z0-9_\-\u0900-\u097F]'), '_');
+      final tempDir = Directory.systemTemp;
+      final file = File('${tempDir.path}/${safeName}_Expenses.xlsx');
+      await file.writeAsBytes(fileBytes, flush: true);
+
+      final xFile = XFile(
+        file.path,
+        name: '${safeName}_Expenses.xlsx',
         mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       );
       await Share.shareXFiles([xFile], text: '$mandalName - मंडळ खर्च अहवाल (Excel)');
     }
   }
 }
-

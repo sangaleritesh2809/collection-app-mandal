@@ -45,7 +45,15 @@ class _CollectionsListScreenState extends ConsumerState<CollectionsListScreen> {
             icon: const Icon(Icons.file_download_outlined),
             tooltip: 'Excel अहवाल डाउनलोड करा',
             onPressed: () async {
-              if (collectionState.collections.isEmpty) return;
+              if (collectionState.collections.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(lang.tr('कोणतीही वर्गणी नोंद उपलब्ध नाही.', 'No collection records found.'))),
+                );
+                return;
+              }
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(lang.tr('Excel तयार करत आहे...', 'Generating Excel...'))),
+              );
               await ExcelService.exportCollectionsExcel(
                 mandalName: mandal?.name ?? 'Mandal',
                 collections: collectionState.collections.map((c) => {
@@ -133,7 +141,7 @@ class _CollectionsListScreenState extends ConsumerState<CollectionsListScreen> {
                 child: TextField(
                   onChanged: (val) => setState(() => _search = val),
                   decoration: InputDecoration(
-                    hintText: 'पावती क्रमांक किंवा कुटुंबाचे नाव शोधा...',
+                    hintText: lang.tr('पावती क्रमांक किंवा कुटुंबाचे नाव शोधा...', 'Search receipt number or family name...'),
                     prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primaryPurple),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     suffixIcon: _search.isNotEmpty

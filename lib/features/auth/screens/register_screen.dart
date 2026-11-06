@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
@@ -178,7 +179,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       },
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.badge_outlined, color: AppColors.primaryPurple),
-                        hintText: lang.tr('उदा. राहुल सुरेश पाटील', 'e.g. Rahul Suresh Patil'),
+                        hintText: lang.tr('पूर्ण नाव टाका', 'Enter your full name'),
                       ),
                       validator: (val) => AppValidators.name(val, lang.tr('पूर्ण नाव', 'Full Name')),
                     ),
@@ -194,9 +195,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           ref.read(authProvider.notifier).clearError();
                         }
                       },
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.email_outlined, color: AppColors.primaryPurple),
-                        hintText: 'rahul@example.com',
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.email_outlined, color: AppColors.primaryPurple),
+                        hintText: lang.tr('ईमेल पत्ता टाका', 'Enter your email address'),
                       ),
                       validator: (val) => AppValidators.email(val, isRequired: true),
                     ),
@@ -212,10 +213,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           ref.read(authProvider.notifier).clearError();
                         }
                       },
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.phone_android_rounded, color: AppColors.primaryPurple),
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.phone_android_rounded, color: AppColors.primaryPurple),
                         prefixText: '+91 ',
-                        hintText: '9876543210',
+                        hintText: lang.tr('मोबाईल नंबर टाका', 'Enter your mobile number'),
                       ),
                       validator: (val) => AppValidators.mobile(val, isRequired: true),
                     ),
@@ -226,13 +227,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                        LengthLimitingTextInputFormatter(16),
+                      ],
                       onChanged: (_) {
                         if (ref.read(authProvider).errorMessage != null) {
                           ref.read(authProvider.notifier).clearError();
                         }
                       },
                       decoration: InputDecoration(
-                        hintText: lang.tr('किमान ६ अक्षरांचा पासवर्ड', 'Minimum 6 character password'),
+                        hintText: lang.tr('पासवर्ड टाका', 'Enter your password'),
                         prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primaryPurple),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -251,13 +256,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     TextFormField(
                       controller: _confirmPasswordController,
                       obscureText: _obscurePassword,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                        LengthLimitingTextInputFormatter(16),
+                      ],
                       onChanged: (_) {
                         if (ref.read(authProvider).errorMessage != null) {
                           ref.read(authProvider.notifier).clearError();
                         }
                       },
                       decoration: InputDecoration(
-                        hintText: lang.tr('पासवर्ड पुन्हा टाका', 'Re-enter password'),
+                        hintText: lang.tr('पासवर्ड पुन्हा टाका', 'Re-enter your password'),
                         prefixIcon: const Icon(Icons.lock_reset_rounded, color: AppColors.primaryPurple),
                       ),
                       validator: (val) => AppValidators.confirmPassword(val, _passwordController.text),

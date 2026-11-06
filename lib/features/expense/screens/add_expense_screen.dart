@@ -104,9 +104,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   const FormLabel('खर्च शीर्षक', isRequired: true),
                   TextFormField(
                     controller: _titleController,
-                    decoration: const InputDecoration(
-                      hintText: 'उदा. स्टेज व मंडप डेकोरेशन',
-                      prefixIcon: Icon(Icons.title),
+                    decoration: InputDecoration(
+                      hintText: lang.tr('खर्च शीर्षक टाका', 'Enter expense title'),
+                      prefixIcon: const Icon(Icons.title),
                     ),
                     validator: (val) => AppValidators.required(val, 'खर्च शीर्षक'),
                   ),
@@ -130,9 +130,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                     controller: _amountController,
                     keyboardType: TextInputType.number,
                     style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.error),
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.currency_rupee, size: 28),
-                      hintText: 'उदा. ३५००',
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.currency_rupee, size: 28),
+                      hintText: lang.tr('रक्कम टाका', 'Enter amount'),
                     ),
                     validator: (val) => AppValidators.amount(val, fieldName: 'खर्च रक्कम'),
                   ),
@@ -143,7 +143,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   TextFormField(
                     controller: _paidToController,
                     decoration: InputDecoration(
-                      hintText: lang.tr('उदा. साई डेकोरेटर्स / अमोल शिंदे', 'e.g. Sai Decorators / Amol Shinde'),
+                      hintText: lang.tr('रक्कम कोणाला दिली त्याचे नाव टाका', 'Enter recipient name'),
                       prefixIcon: const Icon(Icons.person),
                     ),
                     validator: (val) => AppValidators.name(val, lang.tr('स्वीकारणाऱ्याचे नाव', 'Recipient Name')),
@@ -154,7 +154,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   TextFormField(
                     controller: _paidByController,
                     decoration: InputDecoration(
-                      hintText: lang.tr('उदा. खजिनदार सुरेश कदम', 'e.g. Treasurer Suresh Kadam'),
+                      hintText: lang.tr('रक्कम कोणी दिली त्याचे नाव टाका', 'Enter payer name'),
                       prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
                     ),
                     validator: (val) => AppValidators.name(val, lang.tr('रक्कम देणाऱ्याचे नाव', 'Payer Name')),
@@ -204,9 +204,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   TextFormField(
                     controller: _descController,
                     maxLines: 2,
-                    decoration: const InputDecoration(
-                      hintText: 'उदा. बिल क्र. ४५ / ५०% ॲडव्हान्स दिला',
-                      prefixIcon: Icon(Icons.notes),
+                    decoration: InputDecoration(
+                      hintText: lang.tr('तपशील किंवा बिल संदर्भ टाका', 'Enter details or bill reference'),
+                      prefixIcon: const Icon(Icons.notes),
                     ),
                   ),
                   const SizedBox(height: 28),

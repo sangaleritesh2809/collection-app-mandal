@@ -200,11 +200,11 @@ class _ReportIssueScreenState extends ConsumerState<ReportIssueScreen> {
                   const SizedBox(height: 16),
 
                   // Subject
-                  const FormLabel('समस्येचा विषय (Subject)', isRequired: true, subtitle: 'उदा. QR कोड स्कॅन होत नाही किंवा पावती दिसत नाही'),
+                  const FormLabel('समस्येचा विषय (Subject)', isRequired: true),
                   TextFormField(
                     controller: _subjectController,
                     decoration: const InputDecoration(
-                      hintText: 'उदा. ऑनलाईन QR स्कॅनर उघडत नाही',
+                      hintText: 'समस्येचा विषय टाका',
                       prefixIcon: Icon(Icons.title),
                     ),
                     validator: (val) {
@@ -215,12 +215,12 @@ class _ReportIssueScreenState extends ConsumerState<ReportIssueScreen> {
                   const SizedBox(height: 16),
 
                   // Description
-                  const FormLabel('सविस्तर अडचण / मेसेज (Detailed Message)', isRequired: true, subtitle: 'काय समस्या आली आहे, काय अडथळा येतोय ते सविस्तर लिहा'),
+                  const FormLabel('सविस्तर अडचण / मेसेज (Detailed Message)', isRequired: true),
                   TextFormField(
                     controller: _descriptionController,
                     maxLines: 4,
                     decoration: const InputDecoration(
-                      hintText: 'उदा. वर्गणी घेताना ऑनलाईन पर्याय निवडला तरी QR कोड दिसत नाही, कृपया त्वरित मदत करा...',
+                      hintText: 'काय समस्या आली आहे ते सविस्तर लिहा...',
                       prefixIcon: Icon(Icons.notes),
                     ),
                     validator: (val) {

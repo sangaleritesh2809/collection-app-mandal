@@ -74,7 +74,7 @@ class _JoinMandalScreenState extends ConsumerState<JoinMandalScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  lang.tr('मंडळाच्या अध्यक्षांनी किंवा खजिनदारांनी दिलेला ८ अंकी कोड येथे टाका (उदा. VG26AB89)', 'Enter the 8 character code provided by the mandal admin (e.g. VG26AB89)'),
+                  lang.tr('मंडळाच्या अध्यक्षांनी किंवा खजिनदारांनी दिलेला ८ अंकी कोड येथे टाका', 'Enter the 8 character code provided by the mandal admin'),
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                 ),
@@ -110,10 +110,10 @@ class _JoinMandalScreenState extends ConsumerState<JoinMandalScreen> {
                     letterSpacing: 4,
                     fontWeight: FontWeight.bold,
                   ),
-                  decoration: const InputDecoration(
-                    hintText: 'VG26AB89',
+                  decoration: InputDecoration(
+                    hintText: lang.tr('आमंत्रण कोड टाका', 'Enter invite code'),
                     counterText: '',
-                    prefixIcon: Icon(Icons.vpn_key),
+                    prefixIcon: const Icon(Icons.vpn_key),
                   ),
                   validator: AppValidators.inviteCode,
                 ),

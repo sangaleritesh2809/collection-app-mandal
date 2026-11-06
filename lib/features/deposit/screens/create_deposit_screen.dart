@@ -154,9 +154,9 @@ class _CreateDepositScreenState extends ConsumerState<CreateDepositScreen> {
                     controller: _amountController,
                     keyboardType: TextInputType.number,
                     style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.primary),
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.currency_rupee, size: 28),
-                      hintText: 'उदा. ५०००',
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.currency_rupee, size: 28),
+                      hintText: lang.tr('रक्कम टाका', 'Enter amount'),
                     ),
                     validator: (val) => AppValidators.amount(val, fieldName: 'जमा रक्कम'),
                   ),
@@ -185,7 +185,7 @@ class _CreateDepositScreenState extends ConsumerState<CreateDepositScreen> {
                     controller: _descController,
                     maxLines: 3,
                     decoration: InputDecoration(
-                      hintText: lang.tr('उदा. आज शिवाजी चौकातील १० कुटुंबांकडून गोळा केलेली रोख वर्गणी.', 'e.g. Cash collected today from 10 families.'),
+                      hintText: lang.tr('तपशील किंवा वर्णन टाका', 'Enter details or description'),
                       prefixIcon: const Icon(Icons.description),
                     ),
                   ),
