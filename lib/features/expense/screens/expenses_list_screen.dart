@@ -6,6 +6,7 @@ import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/services/excel_service.dart';
 import '../../../core/widgets/responsive_container.dart';
+import '../../../core/widgets/app_bottom_nav.dart';
 import '../../mandal/providers/mandal_provider.dart';
 import '../providers/expense_provider.dart';
 
@@ -270,6 +271,7 @@ class ExpensesListScreen extends ConsumerWidget {
           ),
         ),
       ),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 3),
     );
   }
 

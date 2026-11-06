@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/responsive_container.dart';
+import '../../../core/widgets/app_bottom_nav.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../models/deposit_request.dart';
 import '../providers/deposit_provider.dart';
@@ -202,6 +203,7 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
                 ),
         ),
       ),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 4),
     );
   }
 

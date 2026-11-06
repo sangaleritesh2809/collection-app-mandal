@@ -50,7 +50,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: const AppBottomNav(currentIndex: 3),
+      bottomNavigationBar: const AppBottomNav(currentIndex: -1),
       body: SafeArea(
         child: SingleChildScrollView(
           child: ResponsiveContainer(

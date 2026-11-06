@@ -8,13 +8,35 @@ import '../../../core/services/pdf_service.dart';
 import '../../../core/services/share_service.dart';
 import '../../../core/widgets/responsive_container.dart';
 
-class ReceiptPreviewScreen extends ConsumerWidget {
+class ReceiptPreviewScreen extends ConsumerStatefulWidget {
   final PdfReceiptData receiptData;
 
   const ReceiptPreviewScreen({super.key, required this.receiptData});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ReceiptPreviewScreen> createState() => _ReceiptPreviewScreenState();
+}
+
+class _ReceiptPreviewScreenState extends ConsumerState<ReceiptPreviewScreen> {
+  bool _isSharingWhatsApp = false;
+
+  PdfReceiptData get receiptData => widget.receiptData;
+
+  Future<void> _handleWhatsAppShare() async {
+    if (_isSharingWhatsApp) return;
+    setState(() => _isSharingWhatsApp = true);
+    try {
+      await ShareService.shareReceiptOnWhatsApp(
+        mobileNumber: receiptData.mobile,
+        data: receiptData,
+      );
+    } finally {
+      if (mounted) setState(() => _isSharingWhatsApp = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final lang = ref.watch(languageProvider);
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -236,14 +258,20 @@ class ReceiptPreviewScreen extends ConsumerWidget {
 
                 // Actions: WhatsApp, PDF, Print
                 ElevatedButton.icon(
-                  onPressed: () {
-                    ShareService.shareReceiptOnWhatsApp(
-                      mobileNumber: receiptData.mobile,
-                      data: receiptData,
-                    );
-                  },
-                  icon: const Icon(Icons.send_rounded, size: 20),
-                  label: const Text('WhatsApp वर पावती पाठवा', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  onPressed: _isSharingWhatsApp ? null : _handleWhatsAppShare,
+                  icon: _isSharingWhatsApp
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
+                        )
+                      : const Icon(Icons.send_rounded, size: 20),
+                  label: Text(
+                    _isSharingWhatsApp
+                        ? lang.tr('PDF तयार करून WhatsApp उघडत आहे...', 'Opening WhatsApp with PDF...')
+                        : lang.tr('WhatsApp वर PDF पावती पाठवा', 'Send PDF Receipt on WhatsApp'),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF25D366),
                     foregroundColor: Colors.white,

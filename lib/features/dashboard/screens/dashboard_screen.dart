@@ -589,24 +589,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           builder: (context, constraints) {
             final isWide = constraints.maxWidth > 500;
             return GridView.count(
-              crossAxisCount: isWide ? 5 : 4,
+              crossAxisCount: isWide ? 6 : 3,
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               children: [
-                _buildQuickActionItem(
-                  icon: Icons.person_add_alt_1_rounded,
-                  label: lang.tr('कुटुंब जोडा', 'Add Family'),
-                  color: AppColors.primaryPurple,
-                  onTap: () => context.push('/add-family'),
-                ),
-                _buildQuickActionItem(
-                  icon: Icons.receipt_long_rounded,
-                  label: lang.tr('वर्गणी नोंद', 'Add Vargani'),
-                  color: AppColors.royalBlue,
-                  onTap: () => context.push('/add-collection'),
-                ),
                 _buildQuickActionItem(
                   icon: Icons.money_off_rounded,
                   label: lang.tr('खर्च नोंदवा', 'Add Expense'),
@@ -624,6 +612,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   label: lang.tr('अहवाल पहा', 'Reports'),
                   color: AppColors.success,
                   onTap: () => context.push('/reports'),
+                ),
+                _buildQuickActionItem(
+                  icon: Icons.group_add_rounded,
+                  label: lang.tr('सदस्य व पदे', 'Members & Roles'),
+                  color: AppColors.primaryPurple,
+                  onTap: () => context.push('/manage-members'),
+                ),
+                _buildQuickActionItem(
+                  icon: Icons.tune_rounded,
+                  label: lang.tr('दर सेटिंग्ज', 'Vargani Settings'),
+                  color: AppColors.royalBlue,
+                  onTap: () => context.push('/vargani-config'),
+                ),
+                _buildQuickActionItem(
+                  icon: Icons.qr_code_2_rounded,
+                  label: lang.tr('पेमेंट QR', 'Payment QR'),
+                  color: const Color(0xFF0D9488),
+                  onTap: () => context.push('/mandal-payment-settings'),
                 ),
               ],
             );

@@ -184,6 +184,17 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
     }
 
     try {
+      final currentUserId = SupabaseService.currentUser?.id;
+      if (currentUserId != null) {
+        try {
+          await SupabaseService.client.from('mandal_memberships').upsert({
+            'mandal_id': mandalId,
+            'user_id': currentUserId,
+            'status': 'active',
+          }, onConflict: 'mandal_id,user_id');
+        } catch (_) {}
+      }
+
       String? configId = activeConfig?.id;
       if (configId == null) {
         final cfgRes = await SupabaseService.client
@@ -280,6 +291,17 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
     }
 
     try {
+      final currentUserId = SupabaseService.currentUser?.id;
+      if (currentUserId != null) {
+        try {
+          await SupabaseService.client.from('mandal_memberships').upsert({
+            'mandal_id': mandalId,
+            'user_id': currentUserId,
+            'status': 'active',
+          }, onConflict: 'mandal_id,user_id');
+        } catch (_) {}
+      }
+
       final existing = state.families.firstWhere(
         (f) => f.id == familyId,
         orElse: () => Family(

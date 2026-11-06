@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -5,11 +8,10 @@ import '../utils/formatters.dart';
 import 'pdf_service.dart';
 
 class ShareService {
-  static Future<void> shareReceiptOnWhatsApp({
-    required String? mobileNumber,
-    required PdfReceiptData data,
-  }) async {
-    final message = '''
+  static const MethodChannel _channel = MethodChannel('com.vargani.vargani_collection/whatsapp_share');
+
+  static String _buildReceiptMessage(PdfReceiptData data) {
+    return '''
 🚩 *${data.mandalName}* 🚩
 पावती क्रमांक: *${data.receiptNumber}*
 तारीख: *${AppFormatters.formatDate(data.date)}*
@@ -25,7 +27,53 @@ class ShareService {
 
 मंडळाच्या कार्यात आपले बहुमूल्य सहकार्य लाभल्याबद्दल मनःपूर्वक आभार! 🙏
 ''';
+  }
 
+  static Future<void> shareReceiptOnWhatsApp({
+    required String? mobileNumber,
+    required PdfReceiptData data,
+  }) async {
+    final message = _buildReceiptMessage(data);
+
+    try {
+      // 1. Generate the receipt PDF bytes
+      final pdfBytes = await PdfService.generateReceiptPdf(data);
+
+      // 2. Save PDF file to system temporary cache directory
+      final safeRctNo = data.receiptNumber.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+      final tempDir = Directory.systemTemp;
+      final file = File('${tempDir.path}/Receipt_$safeRctNo.pdf');
+      await file.writeAsBytes(pdfBytes, flush: true);
+
+      // 3. Invoke native Android WhatsApp share with direct contact targeting (JID)
+      bool sent = false;
+      try {
+        final result = await _channel.invokeMethod<bool>('sharePdfToWhatsApp', {
+          'filePath': file.path,
+          'phoneNumber': mobileNumber,
+          'message': message,
+        });
+        sent = result == true;
+      } catch (nativeErr) {
+        debugPrint('Native WhatsApp share failed or not on Android: $nativeErr');
+      }
+
+      // 4. Fallback to share_plus with the generated PDF file if native intent didn't launch
+      if (!sent) {
+        final xFile = XFile(file.path, name: 'Receipt_$safeRctNo.pdf', mimeType: 'application/pdf');
+        await Share.shareXFiles([xFile], text: message);
+      }
+    } catch (err) {
+      debugPrint('Error generating or sharing PDF: $err');
+      await _fallbackTextShare(mobileNumber: mobileNumber, data: data, message: message);
+    }
+  }
+
+  static Future<void> _fallbackTextShare({
+    required String? mobileNumber,
+    required PdfReceiptData data,
+    required String message,
+  }) async {
     final encoded = Uri.encodeComponent(message);
     Uri whatsappUri;
 
@@ -43,7 +91,7 @@ class ShareService {
       } else {
         await Share.share(message, subject: '${data.mandalName} - वर्गणी पावती');
       }
-    } catch (e) {
+    } catch (_) {
       await Share.share(message, subject: '${data.mandalName} - वर्गणी पावती');
     }
   }

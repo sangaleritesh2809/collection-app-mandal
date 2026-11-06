@@ -271,7 +271,7 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primaryPurple),
                           ),
                           const SizedBox(height: 12),
-                          FormLabel(lang.tr('एकूण सदस्य संख्या', 'Total Members'), isRequired: true),
+                          FormLabel(lang.tr('एकूण सदस्य संख्या', 'Total Members'), isRequired: !_useCustomVargani),
                           TextFormField(
                             controller: _membersCountController,
                             keyboardType: TextInputType.number,
@@ -280,11 +280,21 @@ class _AddEditFamilyScreenState extends ConsumerState<AddEditFamilyScreen> {
                               LengthLimitingTextInputFormatter(3),
                             ],
                             decoration: InputDecoration(
-                              hintText: lang.tr('उदा. ४', 'e.g. 4'),
+                              hintText: _useCustomVargani
+                                  ? lang.tr('उदा. १ (पर्यायी)', 'e.g. 1 (Optional)')
+                                  : lang.tr('उदा. ४', 'e.g. 4'),
                               prefixIcon: const Icon(Icons.people_alt_outlined),
                             ),
                             onChanged: (_) => setState(() {}),
-                            validator: AppValidators.memberCount,
+                            validator: (val) {
+                              if (_useCustomVargani) {
+                                if (val != null && val.trim().isNotEmpty) {
+                                  return AppValidators.memberCount(val);
+                                }
+                                return null;
+                              }
+                              return AppValidators.memberCount(val);
+                            },
                           ),
                           const SizedBox(height: 12),
                           Text(

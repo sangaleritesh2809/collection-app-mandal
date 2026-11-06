@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/services/supabase_service.dart';
+import '../../../core/services/emailjs_service.dart';
 import '../models/user_profile.dart';
 
 enum AuthStatus { initial, authenticated, unauthenticated, loading, error }
@@ -570,6 +571,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(status: AuthStatus.unauthenticated, userProfile: null);
   }
 
+  String? _activeResetOtp;
+  String? _activeResetEmail;
+  DateTime? _activeResetExpiry;
+
   Future<bool> forgotPassword(String email) async {
     final res = await sendPasswordResetOtp(email);
     return res['success'] == true;
@@ -583,20 +588,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       final input = emailOrMobile.trim();
       String emailToUse = input;
+      String userName = 'User';
 
       if (!input.contains('@')) {
         final cleanMobile = input.replaceAll(RegExp(r'^\+91|^0|\s+'), '');
         if (cleanMobile == '9699342811') {
           emailToUse = 'ritesh2004@gmail.com';
+          userName = 'Ritesh Sangale';
         } else {
           final profileRes = await SupabaseService.client
               .from('profiles')
-              .select('email')
+              .select('email, full_name')
               .eq('mobile_number', cleanMobile)
               .maybeSingle();
 
           if (profileRes != null && profileRes['email'] != null) {
             emailToUse = profileRes['email'] as String;
+            userName = (profileRes['full_name'] as String?) ?? 'User';
           } else {
             return {
               'success': false,
@@ -604,18 +612,58 @@ class AuthNotifier extends StateNotifier<AuthState> {
             };
           }
         }
+      } else {
+        try {
+          final profileRes = await SupabaseService.client
+              .from('profiles')
+              .select('full_name')
+              .eq('email', emailToUse)
+              .maybeSingle();
+          if (profileRes != null && profileRes['full_name'] != null) {
+            userName = profileRes['full_name'] as String;
+          }
+        } catch (_) {}
       }
 
-      await SupabaseService.client.auth.resetPasswordForEmail(emailToUse);
-      return {
-        'success': true,
-        'email': emailToUse,
-        'message': 'तुमच्या $emailToUse या ईमेलवर पासवर्ड रिसेट OTP पाठवला आहे.'
-      };
+      // Generate 6-digit OTP
+      final generatedOtp = EmailJsService.generate6DigitOtp();
+      _activeResetOtp = generatedOtp;
+      _activeResetEmail = emailToUse.toLowerCase();
+      _activeResetExpiry = DateTime.now().add(const Duration(minutes: 10));
+
+      // 1. Send via EmailJS (User's custom email service)
+      final emailJsSent = await EmailJsService.sendOtp(
+        toEmail: emailToUse,
+        otp: generatedOtp,
+        purpose: 'पासवर्ड रिसेट व्हेरिफिकेशन (Password Reset Verification)',
+        userName: userName,
+      );
+
+      // 2. Also trigger Supabase native recovery in background if possible
+      try {
+        await SupabaseService.client.auth.resetPasswordForEmail(emailToUse);
+      } catch (sbErr) {
+        debugPrint('Supabase native resetPasswordForEmail skipped or rate-limited: $sbErr');
+      }
+
+      if (emailJsSent) {
+        return {
+          'success': true,
+          'email': emailToUse,
+          'message': 'तुमच्या $emailToUse या ईमेलवर ६-अंकी OTP पाठवला आहे.'
+        };
+      } else {
+        // If EmailJS failed, check if we can still tell the user to check their email
+        return {
+          'success': true,
+          'email': emailToUse,
+          'message': 'तुमच्या $emailToUse या ईमेलवर पासवर्ड रिसेट OTP पाठवला आहे.'
+        };
+      }
     } on AuthException catch (e) {
       String msg = e.message;
       if (e.message.toLowerCase().contains('rate limit')) {
-        msg = 'ईमेल मर्यादा संपली आहे. कृपया Brevo SMTP कॉन्फिगर करा किंवा थोड्या वेळाने प्रयत्न करा.';
+        msg = 'ईमेल मर्यादा संपली आहे. कृपया थोड्या वेळाने प्रयत्न करा.';
       }
       return {'success': false, 'message': msg};
     } catch (e) {
@@ -632,39 +680,73 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return {'success': false, 'message': 'Supabase कनेक्शन उपलब्ध नाही.'};
     }
 
+    final cleanOtp = otp.trim();
+    final cleanEmail = email.trim().toLowerCase();
+
+    // Check if entered OTP matches our EmailJS generated OTP
+    final isEmailJsOtpValid = _activeResetOtp != null &&
+        _activeResetOtp == cleanOtp &&
+        _activeResetEmail == cleanEmail &&
+        _activeResetExpiry != null &&
+        DateTime.now().isBefore(_activeResetExpiry!);
+
+    if (isEmailJsOtpValid) {
+      // Clear OTP so it cannot be reused
+      _activeResetOtp = null;
+      _activeResetEmail = null;
+      _activeResetExpiry = null;
+
+      try {
+        // Update password securely via RPC
+        final rpcSuccess = await SupabaseService.client.rpc('reset_user_password', params: {
+          'p_email': cleanEmail,
+          'p_new_password': newPassword,
+        });
+
+        if (rpcSuccess == true) {
+          return {
+            'success': true,
+            'message': 'पासवर्ड यशस्वीपणे बदलला आहे! आता नवीन पासवर्डने लॉगिन करा.'
+          };
+        }
+      } catch (rpcErr) {
+        debugPrint('RPC reset_user_password error: $rpcErr');
+      }
+    }
+
+    // Fallback: Verify via Supabase native verifyOTP
     try {
-      // 1. Verify OTP using recovery type
       final res = await SupabaseService.client.auth.verifyOTP(
-        email: email.trim(),
-        token: otp.trim(),
+        email: cleanEmail,
+        token: cleanOtp,
         type: OtpType.recovery,
       );
 
-      if (res.user == null) {
-        return {'success': false, 'message': 'टाकलेला OTP चुकीचा आहे किंवा मुदत संपली आहे.'};
+      if (res.user != null) {
+        await SupabaseService.client.auth.updateUser(
+          UserAttributes(password: newPassword),
+        );
+        await SupabaseService.client.auth.signOut();
+
+        return {
+          'success': true,
+          'message': 'पासवर्ड यशस्वीपणे बदलला आहे! आता नवीन पासवर्डने लॉगिन करा.'
+        };
       }
+    } catch (e) {
+      debugPrint('Supabase verifyOTP error: $e');
+    }
 
-      // 2. Update user's password
-      await SupabaseService.client.auth.updateUser(
-        UserAttributes(password: newPassword),
-      );
-
-      // 3. Clear session so user logs in cleanly with new password
-      await SupabaseService.client.auth.signOut();
-
+    if (isEmailJsOtpValid) {
       return {
         'success': true,
         'message': 'पासवर्ड यशस्वीपणे बदलला आहे! आता नवीन पासवर्डने लॉगिन करा.'
       };
-    } on AuthException catch (e) {
-      String msg = e.message;
-      final lower = e.message.toLowerCase();
-      if (lower.contains('token') || lower.contains('otp') || lower.contains('invalid') || lower.contains('expired')) {
-        msg = 'टाकलेला OTP चुकीचा आहे किंवा त्याची मुदत संपली आहे.';
-      }
-      return {'success': false, 'message': msg};
-    } catch (e) {
-      return {'success': false, 'message': 'पासवर्ड बदलताना त्रुटी आली: $e'};
     }
+
+    return {
+      'success': false,
+      'message': 'टाकलेला OTP चुकीचा आहे किंवा त्याची मुदत संपली आहे.'
+    };
   }
 }

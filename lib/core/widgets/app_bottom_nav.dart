@@ -26,9 +26,12 @@ class AppBottomNav extends ConsumerWidget {
         context.go('/families');
         break;
       case 3:
-        context.go('/reports');
+        context.go('/expenses');
         break;
       case 4:
+        context.go('/deposits');
+        break;
+      case 5:
         context.go('/settings');
         break;
     }
@@ -54,15 +57,16 @@ class AppBottomNav extends ConsumerWidget {
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildNavItem(context, 0, Icons.home_rounded, Icons.home_outlined, lang.tr('मुख्य', 'Home')),
-              _buildNavItem(context, 1, Icons.payments_rounded, Icons.payments_outlined, lang.tr('वर्गणी', 'Collections')),
+              _buildNavItem(context, 1, Icons.payments_rounded, Icons.payments_outlined, lang.tr('वर्गणी', 'Vargani')),
               _buildNavItem(context, 2, Icons.people_alt_rounded, Icons.people_alt_outlined, lang.tr('कुटुंबे', 'Families')),
-              _buildNavItem(context, 3, Icons.insert_chart_rounded, Icons.insert_chart_outlined, lang.tr('अहवाल', 'Reports')),
-              _buildNavItem(context, 4, Icons.person_rounded, Icons.person_outline_rounded, lang.tr('प्रोफाइल', 'Profile')),
+              _buildNavItem(context, 3, Icons.money_off_rounded, Icons.money_off_outlined, lang.tr('खर्च', 'Expense')),
+              _buildNavItem(context, 4, Icons.account_balance_wallet_rounded, Icons.account_balance_wallet_outlined, lang.tr('डिपॉझिट', 'Deposit')),
+              _buildNavItem(context, 5, Icons.person_rounded, Icons.person_outline_rounded, lang.tr('प्रोफाइल', 'Profile')),
             ],
           ),
         ),
@@ -79,40 +83,41 @@ class AppBottomNav extends ConsumerWidget {
   ) {
     final isSelected = currentIndex == index;
 
-    return InkWell(
-      onTap: () => _onItemTapped(context, index),
-      borderRadius: BorderRadius.circular(16),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 16 : 10,
-          vertical: 6,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryPurple.withOpacity(0.10) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isSelected ? activeIcon : inactiveIcon,
-              size: 22,
-              color: isSelected ? AppColors.primaryPurple : AppColors.textSecondary,
-            ),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+    return Expanded(
+      child: InkWell(
+        onTap: () => _onItemTapped(context, index),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primaryPurple.withOpacity(0.09) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isSelected ? activeIcon : inactiveIcon,
+                size: 20,
                 color: isSelected ? AppColors.primaryPurple : AppColors.textSecondary,
               ),
-            ),
-          ],
+              const SizedBox(height: 2),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                    color: isSelected ? AppColors.primaryPurple : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
-
