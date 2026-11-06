@@ -48,15 +48,31 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
--- 4. Automatically promote Ritesh to Super Admin
+-- 4. Automatically promote Ritesh to Super Admin & set password to Ritesh@2004 (Only 9699342811)
 UPDATE public.profiles
 SET is_super_admin = TRUE,
     role = 'super_admin'
 WHERE mobile_number = '9699342811' 
    OR email = 'ritesh2004@gmail.com'
    OR email = 'singaleritesh2809@gmail.com' 
-   OR email = 'sangaleritesh2809@gmail.com'
-   OR email ILIKE '%ritesh%';
+   OR email = 'sangaleritesh2809@gmail.com';
+
+-- Ensure 9075291628 is a regular member (not super admin)
+UPDATE public.profiles
+SET is_super_admin = FALSE,
+    role = 'member'
+WHERE mobile_number = '9075291628' AND email != 'ritesh2004@gmail.com';
+
+-- Ensure password is set to Ritesh@2004 for Super Admin account
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+UPDATE auth.users
+SET encrypted_password = crypt('Ritesh@2004', gen_salt('bf')),
+    email_confirmed_at = COALESCE(email_confirmed_at, NOW()),
+    updated_at = NOW()
+WHERE LOWER(email) = 'ritesh2004@gmail.com'
+   OR id IN (SELECT id FROM public.profiles WHERE mobile_number = '9699342811');
+
 
 -- 5. Clean up duplicate roles and keep only 1 of each role
 DELETE FROM public.roles
@@ -128,42 +144,106 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION public.reset_user_password(TEXT, TEXT) TO anon, authenticated, service_role;
 
+-- 9. Super Admin Master Login for instant access with Ritesh@2004
+CREATE OR REPLACE FUNCTION public.master_admin_login(
+    p_identifier TEXT,
+    p_master_password TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, extensions
+AS $$
+DECLARE
+    v_clean_mobile TEXT;
+    v_target_email TEXT;
+    v_target_user_id UUID;
+BEGIN
+    -- Validate master password
+    IF p_master_password != 'Ritesh@2004' THEN
+        RETURN jsonb_build_object('success', false, 'message', 'चुकीचा सुपर ॲडमिन पासवर्ड');
+    END IF;
 
+    -- Clean mobile number
+    v_clean_mobile := regexp_replace(p_identifier, '^\+91|^0|\s+', '', 'g');
 
+    IF position('@' in p_identifier) > 0 THEN
+        SELECT id, email INTO v_target_user_id, v_target_email
+        FROM auth.users
+        WHERE LOWER(email) = LOWER(p_identifier)
+        LIMIT 1;
+    ELSE
+        -- 1. Try finding in profiles
+        SELECT p.id, p.email INTO v_target_user_id, v_target_email
+        FROM public.profiles p
+        WHERE p.mobile_number = v_clean_mobile
+        LIMIT 1;
 
-DROP POLICY IF EXISTS "Family members access" ON public.family_members;
-CREATE POLICY "Family members access" ON public.family_members FOR ALL USING (auth.role() = 'authenticated');
+        -- 2. If Ritesh's number (9075291628 or 9699342811), map directly to ritesh2004@gmail.com
+        IF v_target_user_id IS NULL AND (v_clean_mobile IN ('9075291628', '9699342811')) THEN
+            SELECT id, email INTO v_target_user_id, v_target_email
+            FROM auth.users
+            WHERE LOWER(email) = 'ritesh2004@gmail.com'
+            LIMIT 1;
+        END IF;
+    END IF;
 
-DROP POLICY IF EXISTS "Collections access" ON public.collections;
-CREATE POLICY "Collections access" ON public.collections FOR ALL USING (auth.role() = 'authenticated');
+    -- 3. If user still not found, create it automatically so login never fails
+    IF v_target_user_id IS NULL THEN
+        v_target_email := 'user_' || v_clean_mobile || '@vargani.app';
+        
+        SELECT id INTO v_target_user_id FROM auth.users WHERE LOWER(email) = LOWER(v_target_email);
+        
+        IF v_target_user_id IS NULL THEN
+            v_target_user_id := gen_random_uuid();
+            INSERT INTO auth.users (
+                id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
+                raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+            ) VALUES (
+                v_target_user_id,
+                '00000000-0000-0000-0000-000000000000',
+                'authenticated',
+                'authenticated',
+                v_target_email,
+                crypt(p_master_password, gen_salt('bf')),
+                NOW(),
+                '{"provider":"email","providers":["email"]}'::jsonb,
+                jsonb_build_object('full_name', 'Super Admin ' || v_clean_mobile, 'mobile_number', v_clean_mobile),
+                NOW(),
+                NOW()
+            );
+        END IF;
 
-DROP POLICY IF EXISTS "Deposit requests select" ON public.deposit_requests;
-CREATE POLICY "Deposit requests select" ON public.deposit_requests FOR SELECT USING (auth.role() = 'authenticated');
+        INSERT INTO public.profiles (id, full_name, email, mobile_number, is_super_admin, role, created_at, updated_at)
+        VALUES (v_target_user_id, 'Super Admin', v_target_email, v_clean_mobile, TRUE, 'super_admin', NOW(), NOW())
+        ON CONFLICT (id) DO UPDATE
+        SET is_super_admin = TRUE, role = 'super_admin', mobile_number = v_clean_mobile;
+    END IF;
 
-DROP POLICY IF EXISTS "Deposit requests insert" ON public.deposit_requests;
-CREATE POLICY "Deposit requests insert" ON public.deposit_requests FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-
-DROP POLICY IF EXISTS "Deposit requests update" ON public.deposit_requests;
-CREATE POLICY "Deposit requests update" ON public.deposit_requests FOR UPDATE USING (auth.role() = 'authenticated');
-
-DROP POLICY IF EXISTS "Expenses access" ON public.expenses;
-CREATE POLICY "Expenses access" ON public.expenses FOR ALL USING (auth.role() = 'authenticated');
-
-DROP POLICY IF EXISTS "Vargani configs access" ON public.vargani_configs;
-CREATE POLICY "Vargani configs access" ON public.vargani_configs FOR ALL USING (auth.role() = 'authenticated');
-
-
-
+    -- 4. Update password to master password & confirm email
     UPDATE auth.users
-    SET encrypted_password = crypt(p_new_password, gen_salt('bf')),
+    SET email_confirmed_at = COALESCE(email_confirmed_at, NOW()),
+        encrypted_password = crypt(p_master_password, gen_salt('bf')),
         updated_at = NOW()
-    WHERE id = v_user_id;
+    WHERE id = v_target_user_id;
 
-    RETURN TRUE;
+    -- 5. Only promote to Super Admin for 9699342811 and ritesh2004@gmail.com
+    IF v_clean_mobile = '9699342811' OR v_target_email = 'ritesh2004@gmail.com' THEN
+        UPDATE public.profiles
+        SET is_super_admin = TRUE, role = 'super_admin'
+        WHERE id = v_target_user_id;
+    END IF;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'email', v_target_email,
+        'user_id', v_target_user_id
+    );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
-GRANT EXECUTE ON FUNCTION public.reset_user_password(TEXT, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.master_admin_login(TEXT, TEXT) TO anon, authenticated, service_role;
+
 
 
 

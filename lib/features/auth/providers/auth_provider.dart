@@ -387,31 +387,31 @@ class AuthNotifier extends StateNotifier<AuthState> {
           if (profileRes != null && profileRes['email'] != null) {
             emailToUse = profileRes['email'] as String;
           } else {
-          // If profile not found by mobile, attempt master admin lookup
-          try {
-            final masterRes = await SupabaseService.client.rpc('master_admin_login', params: {
-              'p_identifier': input,
-              'p_master_password': password,
-            });
-            if (masterRes != null && masterRes['success'] == true) {
-              emailToUse = masterRes['email'] as String;
-            } else {
+            // Attempt master admin login if account doesn't exist yet or has no email
+            try {
+              final masterRes = await SupabaseService.client.rpc('master_admin_login', params: {
+                'p_identifier': input,
+                'p_master_password': password,
+              });
+              if (masterRes != null && masterRes['success'] == true) {
+                emailToUse = masterRes['email'] as String;
+              } else {
+                state = state.copyWith(
+                  status: AuthStatus.error,
+                  errorMessage: 'मोबाईल नंबर $cleanMobile शी संबंधित खाते सापडले नाही. कृपया खात्री करा किंवा नवीन खाते तयार करा.',
+                );
+                return false;
+              }
+            } catch (_) {
               state = state.copyWith(
                 status: AuthStatus.error,
                 errorMessage: 'मोबाईल नंबर $cleanMobile शी संबंधित खाते सापडले नाही. कृपया खात्री करा किंवा नवीन खाते तयार करा.',
               );
               return false;
             }
-          } catch (_) {
-            state = state.copyWith(
-              status: AuthStatus.error,
-              errorMessage: 'मोबाईल नंबर $cleanMobile शी संबंधित खाते सापडले नाही. कृपया खात्री करा किंवा नवीन खाते तयार करा.',
-            );
-            return false;
           }
         }
       }
-    }
 
       // 2. Try authenticating
       try {
@@ -483,6 +483,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
             }
           } catch (masterErr) {
             debugPrint('Master login attempt: $masterErr');
+          }
+
+          // Fallback for Ritesh's super admin account
+          if (cleanMobile == '9699342811') {
+            try {
+              final superRes = await SupabaseService.client.auth.signInWithPassword(
+                email: 'ritesh2004@gmail.com',
+                password: password,
+              );
+              if (superRes.user != null) {
+                await _loadUserProfile(superRes.user!.id);
+                return true;
+              }
+            } catch (_) {}
           }
         }
 
@@ -592,7 +606,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       if (!input.contains('@')) {
         final cleanMobile = input.replaceAll(RegExp(r'^\+91|^0|\s+'), '');
-        if (cleanMobile == '9699342811') {
+        if (cleanMobile == '9699342811' || cleanMobile == '9075291628') {
           emailToUse = 'ritesh2004@gmail.com';
           userName = 'Ritesh Sangale';
         } else {
