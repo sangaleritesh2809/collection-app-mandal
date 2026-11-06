@@ -1,22 +1,30 @@
 -- ==============================================================================
 -- VARGANI COLLECTION: QUICK AUTH & SUPER ADMIN FIX SCRIPT
--- Paste and run this script in your Supabase Dashboard -> SQL Editor
+-- Paste and run this entire script in Supabase Dashboard -> SQL Editor
 -- ==============================================================================
 
--- 1. Free up mobile number 9699342811 by removing any unconfirmed placeholder accounts
+-- 1. Ensure required columns exist in profiles table
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_super_admin BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'member';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS mobile_number TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS full_name TEXT;
+
+-- 2. Free up mobile number 9699342811 by removing any unconfirmed placeholder accounts
 DELETE FROM auth.users WHERE email = 'ritesh9699342811@collection.app';
 DELETE FROM public.profiles WHERE email = 'ritesh9699342811@collection.app';
 
--- 2. Prevent future 500 crashes by making user creation trigger robust against conflicts
+-- 3. Prevent future crashes by making user creation trigger robust against conflicts
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO public.profiles (id, full_name, email, mobile_number, created_at, updated_at)
+    INSERT INTO public.profiles (id, full_name, email, mobile_number, is_super_admin, role, created_at, updated_at)
     VALUES (
         NEW.id,
         COALESCE(NEW.raw_user_meta_data->>'full_name', 'User'),
         NEW.email,
         NEW.raw_user_meta_data->>'mobile_number',
+        (NEW.raw_user_meta_data->>'mobile_number' = '9699342811'),
+        CASE WHEN NEW.raw_user_meta_data->>'mobile_number' = '9699342811' THEN 'super_admin' ELSE 'member' END,
         NOW(),
         NOW()
     )
@@ -44,11 +52,11 @@ EXCEPTION WHEN unique_violation THEN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 3. Allow authenticated users to insert their own profile
+-- 4. Allow authenticated users to insert/update their own profile
 DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
--- 4. Automatically promote ONLY Ritesh (9699342811) to Super Admin
+-- 5. Automatically promote ONLY Ritesh (9699342811) to Super Admin
 UPDATE public.profiles
 SET is_super_admin = TRUE,
     role = 'super_admin'
@@ -61,7 +69,7 @@ SET is_super_admin = FALSE,
     role = 'member'
 WHERE mobile_number = '9075291628' AND email != 'ritesh2004@gmail.com';
 
--- Ensure pgcrypto extension is enabled for password hashing
+-- 6. Ensure pgcrypto extension is enabled for password hashing
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- Set password to Ritesh@2004 for Super Admin account (9699342811 / ritesh2004@gmail.com)
@@ -72,7 +80,7 @@ SET encrypted_password = crypt('Ritesh@2004', gen_salt('bf')),
 WHERE LOWER(email) = 'ritesh2004@gmail.com'
    OR id IN (SELECT id FROM public.profiles WHERE mobile_number = '9699342811');
 
--- Also set password for 9075291628 (shubhangi@gmail.com) so it logs in directly
+-- Also set password for 9075291628 (shubhangi@gmail.com) so direct login works
 UPDATE auth.users
 SET encrypted_password = crypt('Ritesh@2004', gen_salt('bf')),
     email_confirmed_at = COALESCE(email_confirmed_at, NOW()),
@@ -80,7 +88,7 @@ SET encrypted_password = crypt('Ritesh@2004', gen_salt('bf')),
 WHERE LOWER(email) = 'shubhangi@gmail.com'
    OR id IN (SELECT id FROM public.profiles WHERE mobile_number = '9075291628');
 
--- 5. Clean up duplicate roles and keep only 1 of each role
+-- 7. Clean up duplicate roles and keep only 1 of each role
 DELETE FROM public.roles
 WHERE id NOT IN (
     SELECT DISTINCT ON (name, COALESCE(mandal_id, '00000000-0000-0000-0000-000000000000'::uuid)) id
@@ -88,7 +96,7 @@ WHERE id NOT IN (
     ORDER BY name, COALESCE(mandal_id, '00000000-0000-0000-0000-000000000000'::uuid), created_at ASC
 );
 
--- Ensure is_system_role = TRUE for the 5 system roles
+-- Ensure is_system_role = TRUE for system roles
 UPDATE public.roles
 SET is_system_role = TRUE
 WHERE mandal_id IS NULL;
@@ -97,11 +105,11 @@ WHERE mandal_id IS NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_roles_system_unique ON public.roles(name) WHERE mandal_id IS NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_roles_mandal_unique ON public.roles(name, mandal_id) WHERE mandal_id IS NOT NULL;
 
--- 6. Add utr_number and is_custom_vargani columns if missing
+-- 8. Add utr_number and is_custom_vargani columns if missing
 ALTER TABLE public.collections ADD COLUMN IF NOT EXISTS utr_number TEXT;
 ALTER TABLE public.families ADD COLUMN IF NOT EXISTS is_custom_vargani BOOLEAN DEFAULT FALSE;
 
--- 7. Fix RLS policies for families, family_members, collections, expenses, deposit_requests
+-- 9. Fix RLS policies for families, family_members, collections, expenses, deposit_requests
 DROP POLICY IF EXISTS "Families access" ON public.families;
 CREATE POLICY "Families access" ON public.families FOR ALL USING (auth.role() = 'authenticated');
 
@@ -126,7 +134,7 @@ CREATE POLICY "Expenses access" ON public.expenses FOR ALL USING (auth.role() = 
 DROP POLICY IF EXISTS "Vargani configs access" ON public.vargani_configs;
 CREATE POLICY "Vargani configs access" ON public.vargani_configs FOR ALL USING (auth.role() = 'authenticated');
 
--- 8. Auto Confirm Email RPC
+-- 10. Auto Confirm Email RPC
 CREATE OR REPLACE FUNCTION public.confirm_user_email(p_identifier TEXT)
 RETURNS BOOLEAN AS $$
 DECLARE
@@ -157,7 +165,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION public.confirm_user_email(TEXT) TO anon, authenticated, service_role;
 
--- 9. Secure Password Reset RPC for EmailJS Verified Users
+-- 11. Secure Password Reset RPC for EmailJS Verified Users
 CREATE OR REPLACE FUNCTION public.reset_user_password(p_email TEXT, p_new_password TEXT)
 RETURNS BOOLEAN AS $$
 DECLARE
@@ -180,7 +188,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION public.reset_user_password(TEXT, TEXT) TO anon, authenticated, service_role;
 
--- 10. Super Admin Master Login for instant access with Ritesh@2004
+-- 12. Super Admin Master Login for instant access with Ritesh@2004
 CREATE OR REPLACE FUNCTION public.master_admin_login(
     p_identifier TEXT,
     p_master_password TEXT
