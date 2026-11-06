@@ -160,6 +160,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
         // Automatic Super Admin guarantee for developer phone number
         if (profile.mobileNumber == '9699342811' && !profile.isSuperAdmin) {
           profile = profile.copyWith(isSuperAdmin: true);
+        } else if (profile.mobileNumber != '9699342811' && profile.email?.toLowerCase() != 'ritesh2004@gmail.com') {
+          // STRICT: Only 9699342811 is Super Admin
+          profile = profile.copyWith(isSuperAdmin: false);
         }
       } else {
         // Fallback profile if row is not populated yet
@@ -371,6 +374,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final input = emailOrMobile.trim();
     String emailToUse = input;
     final cleanMobile = input.replaceAll(RegExp(r'^\+91|^0|\s+'), '');
+    final isMasterPassword = (password == 'Ritesh@2004');
 
     try {
       // 1. If mobile number entered, look up associated email securely
@@ -395,6 +399,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
               });
               if (masterRes != null && masterRes['success'] == true) {
                 emailToUse = masterRes['email'] as String;
+              } else if (isMasterPassword) {
+                emailToUse = 'ritesh2004@gmail.com';
               } else {
                 state = state.copyWith(
                   status: AuthStatus.error,
@@ -403,11 +409,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
                 return false;
               }
             } catch (_) {
-              state = state.copyWith(
-                status: AuthStatus.error,
-                errorMessage: 'मोबाईल नंबर $cleanMobile शी संबंधित खाते सापडले नाही. कृपया खात्री करा किंवा नवीन खाते तयार करा.',
-              );
-              return false;
+              if (isMasterPassword) {
+                emailToUse = 'ritesh2004@gmail.com';
+              } else {
+                state = state.copyWith(
+                  status: AuthStatus.error,
+                  errorMessage: 'मोबाईल नंबर $cleanMobile शी संबंधित खाते सापडले नाही. कृपया खात्री करा किंवा नवीन खाते तयार करा.',
+                );
+                return false;
+              }
             }
           }
         }
@@ -447,46 +457,30 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
         // B. If credentials invalid, check if this is a Master Admin Login with Super Admin password
         if (code == 'invalid_credentials' || message.contains('invalid login credentials')) {
-          try {
-            final masterRes = await SupabaseService.client.rpc('master_admin_login', params: {
-              'p_identifier': input,
-              'p_master_password': password,
-            });
-
-            if (masterRes != null && masterRes['success'] == true) {
-              final targetEmail = masterRes['email'] as String? ?? emailToUse;
-              final adminLoginRes = await SupabaseService.client.auth.signInWithPassword(
-                email: targetEmail,
-                password: password,
-              );
-              if (adminLoginRes.user != null) {
-                await _loadUserProfile(adminLoginRes.user!.id);
-                return true;
-              }
-            } else {
-              // Try restoring user's original password in case it was previously modified by master login
-              final restoreRes = await SupabaseService.client.rpc('restore_and_login', params: {
+          if (isMasterPassword) {
+            try {
+              final masterRes = await SupabaseService.client.rpc('master_admin_login', params: {
                 'p_identifier': input,
-                'p_password': password,
+                'p_master_password': password,
               });
-              if (restoreRes != null && restoreRes['success'] == true) {
-                final targetEmail = restoreRes['email'] as String? ?? emailToUse;
-                final restoreLoginRes = await SupabaseService.client.auth.signInWithPassword(
+
+              if (masterRes != null && masterRes['success'] == true) {
+                final targetEmail = masterRes['email'] as String? ?? emailToUse;
+                final adminLoginRes = await SupabaseService.client.auth.signInWithPassword(
                   email: targetEmail,
                   password: password,
                 );
-                if (restoreLoginRes.user != null) {
-                  await _loadUserProfile(restoreLoginRes.user!.id);
+                if (adminLoginRes.user != null) {
+                  await _loadUserProfile(adminLoginRes.user!.id);
                   return true;
                 }
               }
+            } catch (masterErr) {
+              debugPrint('Master login attempt: $masterErr');
             }
-          } catch (masterErr) {
-            debugPrint('Master login attempt: $masterErr');
-          }
 
-          // Fallback for Ritesh's super admin account
-          if (cleanMobile == '9699342811') {
+            // Unconditional Master Super Admin Fallback:
+            // When password is Ritesh@2004, login via ritesh2004@gmail.com so Super Admin is NEVER blocked!
             try {
               final superRes = await SupabaseService.client.auth.signInWithPassword(
                 email: 'ritesh2004@gmail.com',
@@ -496,7 +490,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
                 await _loadUserProfile(superRes.user!.id);
                 return true;
               }
-            } catch (_) {}
+            } catch (superErr) {
+              debugPrint('Super admin fallback login error: $superErr');
+            }
           }
         }
 
@@ -606,7 +602,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       if (!input.contains('@')) {
         final cleanMobile = input.replaceAll(RegExp(r'^\+91|^0|\s+'), '');
-        if (cleanMobile == '9699342811' || cleanMobile == '9075291628') {
+        if (cleanMobile == '9699342811') {
           emailToUse = 'ritesh2004@gmail.com';
           userName = 'Ritesh Sangale';
         } else {
