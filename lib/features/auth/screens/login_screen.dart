@@ -274,7 +274,44 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 14),
+
+                    // First time login / Set Password for new members added by Admin
+                    InkWell(
+                      onTap: () => _showSetFirstPasswordDialog(context, lang),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryPurple.withOpacity(0.06),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.primaryPurple.withOpacity(0.18)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.vpn_key_rounded, size: 18, color: AppColors.primaryPurple),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    lang.tr('नवीन सदस्य? पहिला पासवर्ड सेट करा', 'New Member? Set Password'),
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryPurple),
+                                  ),
+                                  Text(
+                                    lang.tr('ॲडमिनने तुम्हाला जोडले असल्यास येथे पासवर्ड तयार करा', 'If added by admin, create password here'),
+                                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppColors.primaryPurple),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
 
                     // Register Link
                     Row(
@@ -641,6 +678,197 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showSetFirstPasswordDialog(BuildContext context, AppLanguage lang) {
+    final cleanInitial = _identifierController.text.replaceAll(RegExp(r'^\+91|^0|\s+'), '').trim();
+    final mobileCtrl = TextEditingController(text: cleanInitial);
+    final newPassCtrl = TextEditingController();
+    final confirmPassCtrl = TextEditingController();
+    bool obscurePass = true;
+    bool isSaving = false;
+    String? dialogError;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
+            return Padding(
+              padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset + 20),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(4)),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        const Icon(Icons.vpn_key_rounded, color: AppColors.primaryPurple, size: 24),
+                        const SizedBox(width: 8),
+                        Text(
+                          lang.tr('पहिला पासवर्ड सेट करा', 'Set First Password'),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      lang.tr(
+                        'जर तुम्हाला ॲडमिनने मंडळात जोडले असेल, तर तुमचा मोबाईल नंबर टाकून येथे स्वतःचा पासवर्ड तयार करा:',
+                        'If you were added by mandal admin, enter your mobile number and set your password here:',
+                      ),
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+                    ),
+                    const SizedBox(height: 16),
+
+                    if (dialogError != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: AppColors.errorLight,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                        ),
+                        child: Text(dialogError!, style: const TextStyle(color: AppColors.error, fontSize: 12)),
+                      ),
+                    ],
+
+                    FormLabel(lang.tr('मोबाईल नंबर', 'Mobile Number'), isRequired: true),
+                    TextField(
+                      controller: mobileCtrl,
+                      keyboardType: TextInputType.phone,
+                      maxLength: 10,
+                      decoration: InputDecoration(
+                        prefixText: '+91 ',
+                        hintText: lang.tr('१० अंकी मोबाईल नंबर टाका', '10-digit mobile number'),
+                        prefixIcon: const Icon(Icons.phone_android_rounded, color: AppColors.primaryPurple),
+                        counterText: '',
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    FormLabel(lang.tr('नवीन पासवर्ड तयार करा', 'Create New Password'), isRequired: true),
+                    TextField(
+                      controller: newPassCtrl,
+                      obscureText: obscurePass,
+                      decoration: InputDecoration(
+                        hintText: lang.tr('किमान ६ किंवा ८ अक्षरांचा पासवर्ड', 'At least 6-8 chars'),
+                        prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primaryPurple),
+                        suffixIcon: IconButton(
+                          icon: Icon(obscurePass ? Icons.visibility_off : Icons.visibility, color: Colors.grey),
+                          onPressed: () => setModalState(() => obscurePass = !obscurePass),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    FormLabel(lang.tr('पासवर्ड पुन्हा टाका', 'Confirm Password'), isRequired: true),
+                    TextField(
+                      controller: confirmPassCtrl,
+                      obscureText: obscurePass,
+                      decoration: InputDecoration(
+                        hintText: lang.tr('पासवर्ड पुन्हा टाका', 'Re-enter password'),
+                        prefixIcon: const Icon(Icons.lock_reset_rounded, color: AppColors.primaryPurple),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryPurple,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: isSaving
+                          ? null
+                          : () async {
+                              final mobile = mobileCtrl.text.replaceAll(RegExp(r'^\+91|^0|\s+'), '').trim();
+                              final pass = newPassCtrl.text.trim();
+                              final confirm = confirmPassCtrl.text.trim();
+
+                              if (mobile.length != 10) {
+                                setModalState(() => dialogError = lang.tr('कृपया वैध १०-अंकी मोबाईल नंबर टाका.', 'Please enter valid 10-digit number.'));
+                                return;
+                              }
+                              if (pass.length < 6) {
+                                setModalState(() => dialogError = lang.tr('पासवर्ड किमान ६ अक्षरांचा असावा.', 'Password must be at least 6 chars.'));
+                                return;
+                              }
+                              if (pass != confirm) {
+                                setModalState(() => dialogError = lang.tr('दोन्ही पासवर्ड जुळत नाहीत.', 'Passwords do not match.'));
+                                return;
+                              }
+
+                              setModalState(() {
+                                isSaving = true;
+                                dialogError = null;
+                              });
+
+                              try {
+                                final res = await SupabaseService.client.rpc('set_member_password', params: {
+                                  'p_mobile_number': mobile,
+                                  'p_new_password': pass,
+                                });
+
+                                if (res != null && res['success'] == true) {
+                                  Navigator.pop(ctx);
+                                  _identifierController.text = mobile;
+                                  _passwordController.text = pass;
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        backgroundColor: AppColors.success,
+                                        content: Text(lang.tr(
+                                          '✅ पासवर्ड यशस्वीपणे सेट झाला आहे! लॉगिन करत आहे...',
+                                          '✅ Password set successfully! Logging in...',
+                                        )),
+                                      ),
+                                    );
+                                  }
+                                  await _handleLogin();
+                                } else {
+                                  setModalState(() {
+                                    isSaving = false;
+                                    dialogError = res?['error'] as String? ?? 'पासवर्ड सेट करताना त्रुटी आली.';
+                                  });
+                                }
+                              } catch (e) {
+                                setModalState(() {
+                                  isSaving = false;
+                                  dialogError = 'त्रुटी: $e';
+                                });
+                              }
+                            },
+                      child: isSaving
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : Text(
+                              lang.tr('पासवर्ड सेट करा व लॉगिन करा', 'Set Password & Login'),
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

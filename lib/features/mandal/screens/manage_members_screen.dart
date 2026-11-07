@@ -391,6 +391,8 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
 
     final phoneCtrl = TextEditingController();
     final manualNameCtrl = TextEditingController();
+    final manualPasswordCtrl = TextEditingController(text: 'Mandal@123');
+    bool obscureManualPassword = false;
     bool isSearching = false;
     bool isAdding = false;
     Map<String, dynamic>? foundProfile;
@@ -724,29 +726,33 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
                                 if (val != null) setModalState(() => selectedRole = val);
                               },
                             ),
-                            const SizedBox(height: 10),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.blue.shade200),
+                            const SizedBox(height: 12),
+
+                            // Login Password field (Admin can customize it)
+                            FormLabel(lang.tr('लॉगिन पासवर्ड ठरवा', 'Set Login Password'), isRequired: true),
+                            TextField(
+                              controller: manualPasswordCtrl,
+                              obscureText: obscureManualPassword,
+                              decoration: InputDecoration(
+                                hintText: lang.tr('पासवर्ड टाका (उदा. Mandal@123 किंवा 12345678)', 'Enter password'),
+                                prefixIcon: const Icon(Icons.lock_outline, color: AppColors.royalBlue),
+                                suffixIcon: IconButton(
+                                  icon: Icon(obscureManualPassword ? Icons.visibility_off : Icons.visibility, color: Colors.grey),
+                                  onPressed: () => setModalState(() => obscureManualPassword = !obscureManualPassword),
+                                ),
+                                filled: true,
+                                fillColor: Colors.white,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                               ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.key_rounded, size: 16, color: AppColors.royalBlue),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      lang.tr(
-                                        '💡 या सदस्याचा सुरुवातीचा लॉगिन पासवर्ड Mandal@123 असेल. (लॉगिन झाल्यावर ते स्वतःचा पासवर्ड बदलू शकतात.)',
-                                        '💡 Initial login password will be Mandal@123 (they can change it anytime after login).',
-                                      ),
-                                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, height: 1.3),
-                                    ),
-                                  ),
-                                ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              lang.tr(
+                                '💡 ॲडमिन म्हणून तुम्ही या सदस्यासाठी कोणताही पासवर्ड ठेवू शकता. हा पासवर्ड सदस्याला लॉगिन करण्यासाठी सांगा.',
+                                '💡 As admin you can set any password for this member. Give this password to the member to log in.',
                               ),
+                              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, height: 1.3),
                             ),
                             const SizedBox(height: 14),
                             ElevatedButton.icon(
@@ -760,8 +766,16 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
                                   ? null
                                   : () async {
                                       final name = manualNameCtrl.text.trim();
+                                      final pass = manualPasswordCtrl.text.trim().isNotEmpty
+                                          ? manualPasswordCtrl.text.trim()
+                                          : 'Mandal@123';
+
                                       if (name.isEmpty) {
                                         setModalState(() => dialogError = lang.tr('कृपया सदस्याचे पूर्ण नाव टाका.', 'Please enter full name.'));
+                                        return;
+                                      }
+                                      if (pass.length < 6) {
+                                        setModalState(() => dialogError = lang.tr('पासवर्ड किमान ६ अक्षरांचा असावा.', 'Password must be at least 6 chars.'));
                                         return;
                                       }
                                       setModalState(() {
@@ -775,6 +789,7 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
                                           'p_full_name': name,
                                           'p_mobile_number': clean,
                                           'p_role_name': selectedRole,
+                                          'p_password': pass,
                                         });
 
                                         if (ctx.mounted) Navigator.pop(ctx);
@@ -783,9 +798,10 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
                                             SnackBar(
                                               backgroundColor: AppColors.success,
                                               content: Text(lang.tr(
-                                                '✅ $name यांना जोडले आहे! सुरुवातीचा पासवर्ड: Mandal@123',
-                                                '✅ Added $name! Initial password: Mandal@123',
+                                                '✅ $name यांना जोडले आहे! सेट केलेला पासवर्ड: $pass',
+                                                '✅ Added $name! Set password: $pass',
                                               )),
+                                              duration: const Duration(seconds: 4),
                                             ),
                                           );
                                           await _loadMembersAndRoles();

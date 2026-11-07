@@ -402,19 +402,21 @@ CREATE POLICY "Deposit requests update" ON public.deposit_requests FOR UPDATE US
 );
 
 -- ==============================================================================
--- 10. RPC TO MANUALLY ADD A MEMBER TO A MANDAL
+-- 10. RPC TO MANUALLY ADD A MEMBER TO A MANDAL (WITH CUSTOM/DEFAULT PASSWORD)
 -- ==============================================================================
 CREATE OR REPLACE FUNCTION public.add_manual_member(
     p_mandal_id UUID,
     p_full_name TEXT,
     p_mobile_number TEXT,
-    p_role_name TEXT DEFAULT 'Collector'
+    p_role_name TEXT DEFAULT 'Collector',
+    p_password TEXT DEFAULT 'Mandal@123'
 )
 RETURNS JSONB AS $$
 DECLARE
     v_clean_mobile TEXT;
     v_target_user_id UUID;
     v_target_email TEXT;
+    v_target_password TEXT;
     v_role_id UUID;
 BEGIN
     -- 1. Clean mobile number to 10 digits
@@ -430,6 +432,8 @@ BEGIN
     IF p_full_name IS NULL OR TRIM(p_full_name) = '' THEN
         RAISE EXCEPTION 'Name is required';
     END IF;
+
+    v_target_password := COALESCE(NULLIF(TRIM(p_password), ''), 'Mandal@123');
 
     -- 2. Find profile by mobile
     SELECT id INTO v_target_user_id FROM public.profiles WHERE mobile_number = v_clean_mobile LIMIT 1;
@@ -450,19 +454,30 @@ BEGIN
                 'authenticated',
                 'authenticated',
                 v_target_email,
-                crypt('Mandal@123', gen_salt('bf')),
+                crypt(v_target_password, gen_salt('bf')),
                 NOW(),
                 '{"provider":"email","providers":["email"]}'::jsonb,
                 jsonb_build_object('full_name', TRIM(p_full_name), 'mobile_number', v_clean_mobile),
                 NOW(),
                 NOW()
             );
+        ELSE
+            UPDATE auth.users
+            SET encrypted_password = crypt(v_target_password, gen_salt('bf')),
+                updated_at = NOW()
+            WHERE id = v_target_user_id;
         END IF;
 
         INSERT INTO public.profiles (id, full_name, email, mobile_number, is_super_admin, role, created_at, updated_at)
         VALUES (v_target_user_id, TRIM(p_full_name), v_target_email, v_clean_mobile, (v_clean_mobile = '9699342811'), CASE WHEN v_clean_mobile = '9699342811' THEN 'super_admin' ELSE 'member' END, NOW(), NOW())
         ON CONFLICT (id) DO UPDATE
         SET full_name = EXCLUDED.full_name, mobile_number = EXCLUDED.mobile_number, updated_at = NOW();
+    ELSE
+        -- Update password for existing user if custom password supplied
+        UPDATE auth.users
+        SET encrypted_password = crypt(v_target_password, gen_salt('bf')),
+            updated_at = NOW()
+        WHERE id = v_target_user_id;
     END IF;
 
     -- 3. Find Role ID
@@ -487,4 +502,60 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-GRANT EXECUTE ON FUNCTION public.add_manual_member(UUID, TEXT, TEXT, TEXT) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.add_manual_member(UUID, TEXT, TEXT, TEXT, TEXT) TO authenticated, service_role;
+
+-- ==============================================================================
+-- 11. RPC FOR MEMBERS TO SET THEIR OWN PASSWORD (FIRST-TIME OR RESET)
+-- ==============================================================================
+CREATE OR REPLACE FUNCTION public.set_member_password(
+    p_mobile_number TEXT,
+    p_new_password TEXT
+)
+RETURNS JSONB AS $$
+DECLARE
+    v_clean_mobile TEXT;
+    v_user_id UUID;
+    v_email TEXT;
+BEGIN
+    v_clean_mobile := REGEXP_REPLACE(p_mobile_number, '\D', '', 'g');
+    IF LENGTH(v_clean_mobile) > 10 THEN
+        v_clean_mobile := RIGHT(v_clean_mobile, 10);
+    END IF;
+
+    IF LENGTH(v_clean_mobile) <> 10 THEN
+        RETURN jsonb_build_object('success', false, 'error', 'कृपया वैध १०-अंकी मोबाईल नंबर टाका.');
+    END IF;
+
+    IF p_new_password IS NULL OR LENGTH(TRIM(p_new_password)) < 6 THEN
+        RETURN jsonb_build_object('success', false, 'error', 'पासवर्ड किमान ६ अक्षरांचा असावा.');
+    END IF;
+
+    -- 1. Find profile by mobile number
+    SELECT id, email INTO v_user_id, v_email FROM public.profiles WHERE mobile_number = v_clean_mobile LIMIT 1;
+
+    -- 2. If not in profiles, check auth.users by email
+    IF v_user_id IS NULL THEN
+        v_email := 'user_' || v_clean_mobile || '@vargani.app';
+        SELECT id INTO v_user_id FROM auth.users WHERE LOWER(email) = LOWER(v_email) LIMIT 1;
+    END IF;
+
+    IF v_user_id IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'error', 'मोबाईल नंबर ' || v_clean_mobile || ' कोणत्याही मंडळात आढळला नाही. कृपया ॲडमिनने तुम्हाला जोडले आहे का ते तपासा किंवा नवीन नोंदणी करा.');
+    END IF;
+
+    -- 3. Update password in auth.users
+    UPDATE auth.users
+    SET encrypted_password = crypt(TRIM(p_new_password), gen_salt('bf')),
+        email_confirmed_at = COALESCE(email_confirmed_at, NOW()),
+        updated_at = NOW()
+    WHERE id = v_user_id;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'email', v_email,
+        'message', 'पासवर्ड यशस्वीपणे सेट झाला आहे!'
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION public.set_member_password(TEXT, TEXT) TO anon, authenticated, service_role;
