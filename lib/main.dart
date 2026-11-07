@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/constants/app_strings.dart';
 import 'core/routing/app_router.dart';
+import 'core/services/admob_service.dart';
 import 'core/services/supabase_service.dart';
 import 'core/theme/app_theme.dart';
 import 'features/settings/screens/settings_screen.dart';
@@ -12,6 +13,13 @@ void main() async {
 
   // Initialize Supabase backend
   await SupabaseService.initialize();
+
+  // Safely initialize AdMob (never blocks Supabase or crashes startup)
+  try {
+    await AdMobService.initialize();
+  } catch (e) {
+    debugPrint('AdMob initialization warning: $e');
+  }
 
   runApp(
     const ProviderScope(

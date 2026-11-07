@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
+import '../../../core/widgets/home_banner_ad.dart';
 import '../../../core/widgets/responsive_container.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../collection/providers/collection_provider.dart';
@@ -90,6 +91,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   // 6. QUICK ACTIONS GRID
                   _buildQuickActions(context, lang),
                   const SizedBox(height: 16),
+
+                  // 6.1 GOOGLE ADMOB ANCHORED ADAPTIVE BANNER (HOME DASHBOARD ONLY)
+                  const HomeBannerAd(),
 
                   // 7. MANDAL INVITE CODE STRIP
                   if (activeMandal != null) ...[

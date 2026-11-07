@@ -431,10 +431,8 @@ class MandalNotifier extends StateNotifier<MandalState> {
       await loadUserMandals();
 
       // 6. Explicitly select the newly joined mandal so user immediately enters it
-      final newlyJoined = state.userMandals.firstWhere(
-        (m) => m.id == mandalId,
-        orElse: () => state.userMandals.isNotEmpty ? state.userMandals.first : null,
-      );
+      final newlyJoined = state.userMandals.where((m) => m.id == mandalId).firstOrNull ??
+          (state.userMandals.isNotEmpty ? state.userMandals.first : null);
       if (newlyJoined != null) {
         await selectMandal(newlyJoined);
       }

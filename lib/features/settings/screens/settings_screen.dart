@@ -493,6 +493,27 @@ class SettingsScreen extends ConsumerWidget {
                       onTap: () => context.push('/super-admin-tickets'),
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F5E9),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: const Color(0xFF81C784).withOpacity(0.4)),
+                    ),
+                    child: ListTile(
+                      leading: const Icon(Icons.monetization_on_rounded, color: Color(0xFF2E7D32), size: 28),
+                      title: Text(
+                        lang.tr('सुपर ॲडमिन: Google AdMob व्यवस्थापन', 'Super Admin: Google AdMob Settings'),
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2E7D32)),
+                      ),
+                      subtitle: Text(
+                        lang.tr('डॅशबोर्ड बॅनर जाहिराती, टेस्ट मोड व ॲड युनिट आयडी सेट करा', 'Manage dashboard banner ads, test mode & ad units'),
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFF2E7D32)),
+                      onTap: () => context.push('/ad-settings'),
+                    ),
+                  ),
                   const SizedBox(height: 14),
                 ],
 

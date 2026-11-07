@@ -28,6 +28,7 @@ import '../../features/mandal/screens/manage_members_screen.dart';
 import '../../features/support/screens/report_issue_screen.dart';
 import '../../features/support/screens/my_tickets_screen.dart';
 import '../../features/support/screens/super_admin_tickets_screen.dart';
+import '../../features/settings/screens/ad_settings_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -152,6 +153,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/super-admin-tickets',
       builder: (context, state) => const SuperAdminTicketsScreen(),
+    ),
+    GoRoute(
+      path: '/ad-settings',
+      builder: (context, state) => const AdSettingsScreen(),
     ),
   ],
 );

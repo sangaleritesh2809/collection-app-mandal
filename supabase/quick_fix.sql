@@ -559,3 +559,43 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION public.set_member_password(TEXT, TEXT) TO anon, authenticated, service_role;
+
+-- ==============================================================================
+-- 12. ADMOB BANNER ADS CONFIGURATION TABLE & RLS POLICIES
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.ad_settings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    is_ads_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    is_test_mode BOOLEAN NOT NULL DEFAULT TRUE,
+    app_id_android TEXT NOT NULL DEFAULT 'ca-app-pub-3940256099942544~3347511713',
+    banner_ad_unit_id_android TEXT NOT NULL DEFAULT 'ca-app-pub-3940256099942544/6300978111',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_by UUID REFERENCES public.profiles(id)
+);
+
+-- Ensure a single default row exists
+INSERT INTO public.ad_settings (
+    is_ads_enabled,
+    is_test_mode,
+    app_id_android,
+    banner_ad_unit_id_android,
+    updated_at
+)
+SELECT TRUE, TRUE, 'ca-app-pub-3940256099942544~3347511713', 'ca-app-pub-3940256099942544/6300978111', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM public.ad_settings);
+
+-- RLS Configuration
+ALTER TABLE public.ad_settings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone authenticated can view ad settings" ON public.ad_settings;
+CREATE POLICY "Anyone authenticated can view ad settings" ON public.ad_settings
+FOR SELECT USING (auth.role() = 'authenticated' OR public.is_super_admin());
+
+DROP POLICY IF EXISTS "Super Admin can update ad settings" ON public.ad_settings;
+CREATE POLICY "Super Admin can update ad settings" ON public.ad_settings
+FOR UPDATE USING (public.is_super_admin());
+
+DROP POLICY IF EXISTS "Super Admin can insert ad settings" ON public.ad_settings;
+CREATE POLICY "Super Admin can insert ad settings" ON public.ad_settings
+FOR INSERT WITH CHECK (public.is_super_admin());
