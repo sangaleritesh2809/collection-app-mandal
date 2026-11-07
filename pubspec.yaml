@@ -2,7 +2,7 @@ name: vargani_collection
 description: "Vargani Collection – Complete Mandal Management Application"
 publish_to: 'none'
 
-version: 1.0.12+13
+version: 1.0.13+14
 
 environment:
   sdk: ^3.13.5
@@ -30,7 +30,7 @@ dependencies:
   image_picker: ^1.1.2
   excel: ^4.0.6
   qr_flutter: ^4.1.0
-  google_mobile_ads: ^5.2.0
+  google_mobile_ads: ^9.2.0
 
 dev_dependencies:
   flutter_test:
