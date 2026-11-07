@@ -229,7 +229,7 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
                 ),
         ),
       ),
-      bottomNavigationBar: const AppBottomNav(currentIndex: 4),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 3),
     );
   }
 

@@ -23,15 +23,12 @@ class AppBottomNav extends ConsumerWidget {
         context.go('/collections');
         break;
       case 2:
-        context.go('/families');
-        break;
-      case 3:
         context.go('/expenses');
         break;
-      case 4:
+      case 3:
         context.go('/deposits');
         break;
-      case 5:
+      case 4:
         context.go('/settings');
         break;
     }
@@ -63,10 +60,9 @@ class AppBottomNav extends ConsumerWidget {
             children: [
               _buildNavItem(context, 0, Icons.home_rounded, Icons.home_outlined, lang.tr('मुख्य', 'Home')),
               _buildNavItem(context, 1, Icons.payments_rounded, Icons.payments_outlined, lang.tr('वर्गणी', 'Vargani')),
-              _buildNavItem(context, 2, Icons.people_alt_rounded, Icons.people_alt_outlined, lang.tr('कुटुंबे', 'Families')),
-              _buildNavItem(context, 3, Icons.money_off_rounded, Icons.money_off_outlined, lang.tr('खर्च', 'Expense')),
-              _buildNavItem(context, 4, Icons.account_balance_wallet_rounded, Icons.account_balance_wallet_outlined, lang.tr('डिपॉझिट', 'Deposit')),
-              _buildNavItem(context, 5, Icons.person_rounded, Icons.person_outline_rounded, lang.tr('प्रोफाइल', 'Profile')),
+              _buildNavItem(context, 2, Icons.money_off_rounded, Icons.money_off_outlined, lang.tr('खर्च', 'Expense')),
+              _buildNavItem(context, 3, Icons.account_balance_wallet_rounded, Icons.account_balance_wallet_outlined, lang.tr('डिपॉझिट', 'Deposit')),
+              _buildNavItem(context, 4, Icons.person_rounded, Icons.person_outline_rounded, lang.tr('प्रोफाइल', 'Profile')),
             ],
           ),
         ),

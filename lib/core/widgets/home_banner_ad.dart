@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/admob_service.dart';
@@ -30,6 +31,7 @@ class _HomeBannerAdState extends State<HomeBannerAd> {
   }
 
   Future<void> _loadAd() async {
+    if (kIsWeb) return;
     // If ads are disabled remotely, do not load
     if (!AdMobService.isAdsEnabled) {
       if (mounted) setState(() => _isAdLoaded = false);
@@ -114,8 +116,8 @@ class _HomeBannerAdState extends State<HomeBannerAd> {
 
   @override
   Widget build(BuildContext context) {
-    // Graceful fallback: collapse completely to 0 height if disabled, failed, or not loaded
-    if (!AdMobService.isAdsEnabled || !_isAdLoaded || _bannerAd == null || _adSize == null) {
+    // Graceful fallback: collapse completely to 0 height if disabled, failed, or not loaded (or on Web)
+    if (kIsWeb || !AdMobService.isAdsEnabled || !_isAdLoaded || _bannerAd == null || _adSize == null) {
       return const SizedBox.shrink();
     }
 

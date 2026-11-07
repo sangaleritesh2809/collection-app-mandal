@@ -132,7 +132,7 @@ class SettingsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(lang.tr('माझे खाते व सेटिंग्ज', 'My Profile & Settings')),
       ),
-      bottomNavigationBar: const AppBottomNav(currentIndex: 5),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 4),
       body: SafeArea(
         child: SingleChildScrollView(
           child: ResponsiveContainer(

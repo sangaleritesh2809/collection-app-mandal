@@ -28,7 +28,7 @@ class FamiliesListScreen extends ConsumerWidget {
           ),
         ],
       ),
-      bottomNavigationBar: const AppBottomNav(currentIndex: 2),
+      bottomNavigationBar: const AppBottomNav(currentIndex: -1),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/add-family'),
         backgroundColor: AppColors.primaryPurple,

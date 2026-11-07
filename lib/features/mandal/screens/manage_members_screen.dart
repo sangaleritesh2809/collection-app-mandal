@@ -1245,13 +1245,6 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
                     ],
                   ),
                 ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showAddMemberDialog,
-        backgroundColor: AppColors.primaryPurple,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.person_add_rounded),
-        label: Text(lang.tr('सदस्य जोडा', 'Add Member')),
-      ),
     );
   }
 }

@@ -17,7 +17,7 @@ class AdMobService {
   /// Safely initialize Google Mobile Ads SDK and request UMP consent.
   /// Won't crash or block app startup / Supabase flow if offline or if SDK fails.
   static Future<void> initialize() async {
-    if (_initialized) return;
+    if (kIsWeb || _initialized) return;
 
     try {
       // 1. Initialize Google Mobile Ads SDK
