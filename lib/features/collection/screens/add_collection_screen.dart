@@ -15,6 +15,7 @@ import '../../family/providers/family_provider.dart';
 import '../../mandal/providers/mandal_provider.dart';
 import '../../vargani_config/models/vargani_config.dart';
 import '../../vargani_config/providers/vargani_config_provider.dart';
+import '../models/bank_transaction.dart';
 import '../providers/collection_provider.dart';
 
 class AddCollectionScreen extends ConsumerStatefulWidget {
@@ -49,6 +50,7 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
 
   String? _utrError;
   bool _isCheckingUtr = false;
+  BankTransaction? _verifiedBankTxn;
 
   AppLanguage get lang => ref.watch(languageProvider);
 
@@ -186,9 +188,44 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                 '⚠️ हा UTR नंबर आधीच पावती [$rct] ${fName.isNotEmpty ? "($fName)" : ""} साठी नोंदवला आहे! डुप्लिकेट UTR चालणार नाही.',
                 '⚠️ This UTR number is already registered in receipt [$rct] ${fName.isNotEmpty ? "($fName)" : ""}! Duplicate UTR not allowed.',
               );
+              _verifiedBankTxn = null;
             });
           } else {
             if (_utrError != null) setState(() => _utrError = null);
+
+            // 3. Real-Time Bank SMS Verification Check
+            try {
+              final bankRes = await SupabaseService.client
+                  .from('bank_transactions')
+                  .select('*')
+                  .eq('utr_number', clean)
+                  .limit(1);
+
+              if (mounted) {
+                if ((bankRes as List).isNotEmpty) {
+                  final b = BankTransaction.fromJson(bankRes.first);
+                  final lang = ref.read(languageProvider);
+                  if (b.isClaimed) {
+                    setState(() {
+                      _utrError = lang.tr(
+                        '⚠️ हा बँक व्यवहार आधीच पावती [${b.claimedByReceipt ?? ""}] साठी वापरला आहे!',
+                        '⚠️ This bank deposit was already claimed by receipt [${b.claimedByReceipt ?? ""}]!',
+                      );
+                      _verifiedBankTxn = null;
+                    });
+                  } else {
+                    setState(() {
+                      _verifiedBankTxn = b;
+                      _utrError = null;
+                    });
+                  }
+                } else {
+                  setState(() => _verifiedBankTxn = null);
+                }
+              }
+            } catch (_) {
+              if (mounted) setState(() => _verifiedBankTxn = null);
+            }
           }
         }
       } catch (_) {
@@ -319,6 +356,15 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
     if (!mounted) return;
 
     if (receipt != null) {
+      if (_verifiedBankTxn != null) {
+        try {
+          await SupabaseService.client.from('bank_transactions').update({
+            'is_claimed': true,
+            'claimed_by_receipt': receipt.receiptNumber,
+            'claimed_at': DateTime.now().toIso8601String(),
+          }).eq('id', _verifiedBankTxn!.id);
+        } catch (_) {}
+      }
       context.pushReplacement('/receipt-preview', extra: receipt);
     } else {
       final err = ref.read(collectionProvider).error;
@@ -1093,6 +1139,66 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                         fontSize: 12,
                         color: Colors.red.shade900,
                         fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // Real-Time Verified Bank Deposit Feedback Card
+          if (_verifiedBankTxn != null) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.shade500, width: 1.5),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.verified, color: Colors.green, size: 22),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          lang.tr(
+                            '✅ बँक खात्यात ₹${_verifiedBankTxn!.amount.toInt()} जमा झाल्याची पुष्टी झाली!',
+                            '✅ Bank Deposit of ₹${_verifiedBankTxn!.amount.toInt()} Verified!',
+                          ),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green.shade900),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${_verifiedBankTxn!.bankName != null ? "बँक: ${_verifiedBankTxn!.bankName} • " : ""}UTR: ${_verifiedBankTxn!.utrNumber}',
+                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondaryLight),
+                  ),
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: () {
+                      setState(() {
+                        _amountController.text = _verifiedBankTxn!.amount.toInt().toString();
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade700,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        lang.tr(
+                          '⚡ ही रक्कम ₹${_verifiedBankTxn!.amount.toInt()} वर्गणी म्हणून भरा',
+                          '⚡ Apply ₹${_verifiedBankTxn!.amount.toInt()} as Vargani Amount',
+                        ),
+                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),

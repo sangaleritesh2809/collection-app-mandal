@@ -599,3 +599,29 @@ FOR UPDATE USING (public.is_super_admin());
 DROP POLICY IF EXISTS "Super Admin can insert ad settings" ON public.ad_settings;
 CREATE POLICY "Super Admin can insert ad settings" ON public.ad_settings
 FOR INSERT WITH CHECK (public.is_super_admin());
+
+-- ==============================================================================
+-- 15. Bank Transactions Table for Automated Real-Time SMS Listener Verification
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.bank_transactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    mandal_id UUID REFERENCES public.mandals(id) ON DELETE CASCADE,
+    amount NUMERIC NOT NULL,
+    utr_number TEXT NOT NULL,
+    sender_info TEXT,
+    bank_name TEXT,
+    raw_sms TEXT,
+    is_claimed BOOLEAN DEFAULT FALSE,
+    claimed_by_receipt TEXT,
+    claimed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_bank_transactions_mandal_utr ON public.bank_transactions(mandal_id, utr_number);
+CREATE INDEX IF NOT EXISTS idx_bank_transactions_utr ON public.bank_transactions(utr_number);
+
+ALTER TABLE public.bank_transactions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Bank transactions access" ON public.bank_transactions;
+CREATE POLICY "Bank transactions access" ON public.bank_transactions
+FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'anon');
