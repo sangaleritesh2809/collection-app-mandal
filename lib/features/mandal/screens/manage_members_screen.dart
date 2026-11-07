@@ -404,6 +404,8 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -411,8 +413,12 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
         return StatefulBuilder(
           builder: (ctx, setModalState) {
             final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
-            final isAlreadyMember = foundProfile != null &&
-                _members.any((m) => m.userId == foundProfile!['id']);
+            final cleanPhone = phoneCtrl.text.replaceAll(RegExp(r'^\+91|^0|\s+'), '').trim();
+            final isSuperAdmin = cleanPhone == '9699342811' ||
+                (foundProfile != null && (foundProfile!['mobile_number'] == '9699342811' || foundProfile!['is_super_admin'] == true));
+            final isAlreadyMember = _members.any((m) =>
+                (cleanPhone.isNotEmpty && m.mobileNumber != null && m.mobileNumber!.replaceAll(RegExp(r'^\+91|^0|\s+'), '') == cleanPhone) ||
+                (foundProfile != null && m.userId == foundProfile!['id']));
 
             return Padding(
               padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset + 20),
@@ -430,12 +436,22 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
                     ),
                     const SizedBox(height: 14),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Icon(Icons.person_add_alt_1_rounded, color: AppColors.primaryPurple, size: 24),
-                        const SizedBox(width: 8),
-                        Text(
-                          lang.tr('नवीन सदस्य जोडा', 'Add Member'),
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                        Row(
+                          children: [
+                            const Icon(Icons.person_add_alt_1_rounded, color: AppColors.primaryPurple, size: 24),
+                            const SizedBox(width: 8),
+                            Text(
+                              lang.tr('नवीन सदस्य जोडा', 'Add Member'),
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary, size: 24),
+                          tooltip: lang.tr('बंद करा', 'Close'),
+                          onPressed: () => Navigator.pop(ctx),
                         ),
                       ],
                     ),
@@ -449,11 +465,78 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Phone input
+                    // Phone input with instant duplicate & Super Admin check
                     TextField(
                       controller: phoneCtrl,
                       keyboardType: TextInputType.phone,
                       maxLength: 10,
+                      onChanged: (val) async {
+                        final clean = val.replaceAll(RegExp(r'^\+91|^0|\s+'), '').trim();
+                        if (clean.length == 10) {
+                          // 1. Instant Super Admin check
+                          if (clean == '9699342811') {
+                            setModalState(() {
+                              dialogError = lang.tr(
+                                '⚠️ हा सुपर ॲडमिनचा नंबर (+91 9699342811) आहे. सुपर ॲडमिनला मंडळ सदस्य म्हणून जोडता येत नाही.',
+                                '⚠️ This is Super Admin number (+91 9699342811). Super Admin cannot be added as a member.',
+                              );
+                              hasSearched = true;
+                              foundProfile = null;
+                            });
+                            return;
+                          }
+
+                          // 2. Instant Already-a-member check
+                          final existing = _members.where((m) =>
+                              m.mobileNumber != null &&
+                              m.mobileNumber!.replaceAll(RegExp(r'^\+91|^0|\s+'), '') == clean).firstOrNull;
+
+                          if (existing != null) {
+                            setModalState(() {
+                              dialogError = lang.tr(
+                                '⚠️ हा नंबर (+91 $clean) आधीच "${existing.fullName}" (${_getRoleMarathiName(existing.roleName)}) म्हणून या मंडळात जोडलेला आहे.',
+                                '⚠️ Mobile +91 $clean is already a member as "${existing.fullName}" (${existing.roleName}) in this mandal.',
+                              );
+                              hasSearched = true;
+                              foundProfile = null;
+                            });
+                            return;
+                          }
+
+                          // 3. Search profile from Supabase
+                          setModalState(() {
+                            isSearching = true;
+                            dialogError = null;
+                          });
+
+                          try {
+                            final res = await SupabaseService.client
+                                .from('profiles')
+                                .select('id, full_name, mobile_number, email')
+                                .eq('mobile_number', clean)
+                                .maybeSingle();
+
+                            setModalState(() {
+                              isSearching = false;
+                              hasSearched = true;
+                              foundProfile = res;
+                            });
+                          } catch (e) {
+                            setModalState(() {
+                              isSearching = false;
+                              dialogError = 'शोधताना त्रुटी आली: $e';
+                            });
+                          }
+                        } else {
+                          if (dialogError != null || foundProfile != null || hasSearched) {
+                            setModalState(() {
+                              dialogError = null;
+                              foundProfile = null;
+                              hasSearched = false;
+                            });
+                          }
+                        }
+                      },
                       decoration: InputDecoration(
                         labelText: lang.tr('मोबाईल नंबर', 'Mobile Number'),
                         hintText: lang.tr('१० अंकी मोबाईल नंबर टाका', 'Enter 10-digit mobile number'),
@@ -477,6 +560,34 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
                                     setModalState(() {
                                       dialogError = lang.tr('कृपया वैध १०-अंकी मोबाईल नंबर टाका.', 'Please enter valid 10-digit mobile number.');
                                       hasSearched = false;
+                                      foundProfile = null;
+                                    });
+                                    return;
+                                  }
+
+                                  if (clean == '9699342811') {
+                                    setModalState(() {
+                                      dialogError = lang.tr(
+                                        '⚠️ हा सुपर ॲडमिनचा नंबर (+91 9699342811) आहे. सुपर ॲडमिनला मंडळ सदस्य म्हणून जोडता येत नाही.',
+                                        '⚠️ This is Super Admin number (+91 9699342811). Super Admin cannot be added as a member.',
+                                      );
+                                      hasSearched = true;
+                                      foundProfile = null;
+                                    });
+                                    return;
+                                  }
+
+                                  final existing = _members.where((m) =>
+                                      m.mobileNumber != null &&
+                                      m.mobileNumber!.replaceAll(RegExp(r'^\+91|^0|\s+'), '') == clean).firstOrNull;
+
+                                  if (existing != null) {
+                                    setModalState(() {
+                                      dialogError = lang.tr(
+                                        '⚠️ हा नंबर (+91 $clean) आधीच "${existing.fullName}" (${_getRoleMarathiName(existing.roleName)}) म्हणून या मंडळात जोडलेला आहे.',
+                                        '⚠️ Mobile +91 $clean is already a member as "${existing.fullName}" (${existing.roleName}) in this mandal.',
+                                      );
+                                      hasSearched = true;
                                       foundProfile = null;
                                     });
                                     return;
@@ -511,8 +622,33 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
                     ),
 
                     if (dialogError != null) ...[
-                      const SizedBox(height: 8),
-                      Text(dialogError!, style: const TextStyle(color: AppColors.error, fontSize: 12)),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.red.shade300, width: 1.2),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 22),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                dialogError!,
+                                style: const TextStyle(
+                                  color: AppColors.error,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
 
                     const SizedBox(height: 14),
@@ -779,12 +915,34 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
                                         setModalState(() => dialogError = lang.tr('पासवर्ड किमान ६ अक्षरांचा असावा.', 'Password must be at least 6 chars.'));
                                         return;
                                       }
+                                      final clean = phoneCtrl.text.replaceAll(RegExp(r'^\+91|^0|\s+'), '').trim();
+                                      if (clean == '9699342811') {
+                                        setModalState(() {
+                                          dialogError = lang.tr(
+                                            '⚠️ हा सुपर ॲडमिनचा नंबर (+91 9699342811) आहे. सुपर ॲडमिनला मंडळ सदस्य म्हणून जोडता येत नाही.',
+                                            '⚠️ This is Super Admin number (+91 9699342811). Super Admin cannot be added as a member.',
+                                          );
+                                        });
+                                        return;
+                                      }
+                                      final existing = _members.where((m) =>
+                                          m.mobileNumber != null &&
+                                          m.mobileNumber!.replaceAll(RegExp(r'^\+91|^0|\s+'), '') == clean).firstOrNull;
+                                      if (existing != null) {
+                                        setModalState(() {
+                                          dialogError = lang.tr(
+                                            '⚠️ हा नंबर (+91 $clean) आधीच "${existing.fullName}" (${_getRoleMarathiName(existing.roleName)}) म्हणून या मंडळात जोडलेला आहे.',
+                                            '⚠️ Mobile +91 $clean is already a member as "${existing.fullName}" (${existing.roleName}) in this mandal.',
+                                          );
+                                        });
+                                        return;
+                                      }
+
                                       setModalState(() {
                                         isAdding = true;
                                         dialogError = null;
                                       });
                                       try {
-                                        final clean = phoneCtrl.text.replaceAll(RegExp(r'^\+91|^0|\s+'), '').trim();
                                         await SupabaseService.client.rpc('add_manual_member', params: {
                                           'p_mandal_id': mandal.id,
                                           'p_full_name': name,

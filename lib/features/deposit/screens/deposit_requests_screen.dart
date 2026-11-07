@@ -7,6 +7,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/responsive_container.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../mandal/providers/mandal_provider.dart';
 import '../models/deposit_request.dart';
 import '../providers/deposit_provider.dart';
 
@@ -46,7 +47,10 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
           ],
         ),
         content: Text(
-          'कार्यकर्ता ${req.collectorName ?? 'कार्यकर्ता'} यांच्याकडून आलेली ${AppFormatters.formatCurrency(req.amount)} ची ठेव खजिन्यात जमा म्हणून निश्चित करण्यात येईल.',
+          lang.tr(
+            'कार्यकर्ता ${req.collectorName ?? "कार्यकर्ता"} यांच्याकडून आलेली ${AppFormatters.formatCurrency(req.amount)} ची ठेव खजिन्यात जमा म्हणून निश्चित करण्यात येईल.',
+            'Deposit of ${AppFormatters.formatCurrency(req.amount)} from worker ${req.collectorName ?? "worker"} will be marked as deposited into treasury.',
+          ),
           style: const TextStyle(fontSize: 13, color: AppColors.textPrimary, height: 1.4),
         ),
         actions: [
@@ -78,7 +82,7 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
                     ),
                   );
                 } else {
-                  final err = ref.read(depositProvider).error ?? 'मंजूर करताना अडचण आली.';
+                  final err = ref.read(depositProvider).error ?? lang.tr('मंजूर करताना अडचण आली.', 'Failed to approve request.');
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       backgroundColor: AppColors.error,
@@ -121,7 +125,7 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
               controller: reasonCtrl,
               maxLines: 2,
               decoration: InputDecoration(
-                labelText: lang.tr('नाकारण्याचे कारण (अनिवार्य) *', 'Rejection Reason (Required) *'),
+                labelText: lang.tr('नाकारण्याचे कारण *', 'Rejection Reason *'),
                 hintText: lang.tr('नाकारण्याचे कारण टाका', 'Enter reason for rejection'),
               ),
             ),
@@ -142,23 +146,22 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
             icon: const Icon(Icons.close_rounded, size: 18),
             label: Text(lang.tr('नाकारा', 'Reject'), style: const TextStyle(fontWeight: FontWeight.bold)),
             onPressed: () async {
-              if (reasonCtrl.text.trim().isEmpty) return;
               Navigator.pop(ctx);
               final success = await ref.read(depositProvider.notifier).processRequest(
                 requestId: req.id,
                 action: 'rejected',
-                rejectionReason: reasonCtrl.text.trim(),
+                rejectionReason: reasonCtrl.text.trim().isNotEmpty ? reasonCtrl.text.trim() : null,
               );
               if (mounted) {
                 if (success) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      backgroundColor: AppColors.error,
+                      backgroundColor: AppColors.warning,
                       content: Text(lang.tr('ठेव विनंती नाकारली गेली.', 'Deposit request rejected.')),
                     ),
                   );
                 } else {
-                  final err = ref.read(depositProvider).error ?? 'नाकारताना अडचण आली.';
+                  final err = ref.read(depositProvider).error ?? lang.tr('नाकारताना अडचण आली.', 'Failed to reject request.');
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       backgroundColor: AppColors.error,
@@ -179,6 +182,7 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
     final lang = ref.watch(languageProvider);
     final depositState = ref.watch(depositProvider);
     final currentUserId = ref.watch(authProvider).userProfile?.id;
+    final mandalState = ref.watch(mandalProvider);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -211,7 +215,7 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
         foregroundColor: Colors.white,
         elevation: 4,
         icon: const Icon(Icons.add_circle_outline_rounded),
-        label: const Text('नवीन ठेव विनंती', style: TextStyle(fontWeight: FontWeight.bold)),
+        label: Text(lang.tr('नवीन ठेव विनंती', 'New Deposit Request'), style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: SafeArea(
         child: ResponsiveContainer(
@@ -222,9 +226,9 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
               : TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildRequestsList(depositState.pendingRequests, currentUserId),
-                    _buildRequestsList(depositState.approvedRequests, currentUserId),
-                    _buildRequestsList(depositState.rejectedRequests, currentUserId),
+                    _buildRequestsList(depositState.pendingRequests, currentUserId, mandalState),
+                    _buildRequestsList(depositState.approvedRequests, currentUserId, mandalState),
+                    _buildRequestsList(depositState.rejectedRequests, currentUserId, mandalState),
                   ],
                 ),
         ),
@@ -233,7 +237,9 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
     );
   }
 
-  Widget _buildRequestsList(List<DepositRequest> list, String? currentUserId) {
+  Widget _buildRequestsList(List<DepositRequest> list, String? currentUserId, MandalState mandalState) {
+    final lang = ref.watch(languageProvider);
+
     if (list.isEmpty) {
       return Center(
         child: Column(
@@ -241,11 +247,13 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
           children: [
             Icon(Icons.inbox_rounded, size: 56, color: AppColors.textMuted.withOpacity(0.5)),
             const SizedBox(height: 12),
-            const Text('कोणत्याही ठेव विनंत्या नाहीत', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+            Text(lang.tr('कोणत्याही ठेव विनंत्या नाहीत', 'No deposit requests found'), style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
           ],
         ),
       );
     }
+
+    final currentRole = mandalState.selectedMandal?.userRole ?? '';
 
     return RefreshIndicator(
       color: AppColors.primaryPurple,
@@ -256,7 +264,14 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
         itemBuilder: (context, index) {
           final req = list[index];
           final isPending = req.isPending;
-          final isOwnRequest = currentUserId == req.collectorId && currentUserId != 'demo-user-id';
+          final isOwnRequest = currentUserId != null && currentUserId == req.collectorId;
+
+          // Check if this user is authorized to approve/reject
+          final canDecide = currentRole == 'Mandal Admin' ||
+              currentRole == 'Super Admin' ||
+              currentRole == 'Treasurer' ||
+              (currentUserId != null && currentUserId == req.designatedTreasurerId) ||
+              mandalState.hasPermission('approve_deposit_request');
 
           return Container(
             margin: const EdgeInsets.only(bottom: 12),
@@ -298,7 +313,7 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('जमा करायची रक्कम', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                        Text(lang.tr('जमा करायची रक्कम', 'Deposit Amount'), style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                         const SizedBox(height: 2),
                         Text(
                           AppFormatters.formatCurrency(req.amount),
@@ -309,7 +324,7 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        const Text('विनंती दिनांक', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                        Text(lang.tr('विनंती दिनांक', 'Request Date'), style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                         const SizedBox(height: 2),
                         Text(AppFormatters.formatDate(req.requestDate), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary)),
                       ],
@@ -322,7 +337,7 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
                   children: [
                     const Icon(Icons.person_pin_rounded, size: 16, color: AppColors.primaryPurple),
                     const SizedBox(width: 6),
-                    Text('गोळा करणारा: ${req.collectorName ?? 'कार्यकर्ता'}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                    Text('${lang.tr("गोळा करणारा:", "Collector:")} ${req.collectorName ?? lang.tr("कार्यकर्ता", "Worker")}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -330,12 +345,12 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
                   children: [
                     const Icon(Icons.account_balance_rounded, size: 16, color: AppColors.royalBlue),
                     const SizedBox(width: 6),
-                    Text('खजिनदार: ${req.treasurerName ?? 'खजिनदार'}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                    Text('${lang.tr("खजिनदार:", "Treasurer:")} ${req.treasurerName ?? lang.tr("खजिनदार", "Treasurer")}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
                   ],
                 ),
                 if (req.description != null && req.description!.isNotEmpty) ...[
                   const SizedBox(height: 6),
-                  Text('तपशील: ${req.description!}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  Text('${lang.tr("तपशील:", "Details:")} ${req.description!}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                 ],
 
                 // Approved status card (Shows WHO approved it & date)
@@ -357,12 +372,12 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'मंजूर करणारा: ${req.deciderName ?? req.treasurerName ?? "खजिनदार"}',
+                                '${lang.tr("मंजूर करणारा:", "Approved by:")} ${req.deciderName ?? req.treasurerName ?? lang.tr("खजिनदार", "Treasurer")}',
                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.success),
                               ),
                               if (req.decisionDate != null)
                                 Text(
-                                  'मंजूर दिनांक: ${AppFormatters.formatDate(req.decisionDate!)}',
+                                  '${lang.tr("मंजूर दिनांक:", "Approval Date:")} ${AppFormatters.formatDate(req.decisionDate!)}',
                                   style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
                                 ),
                             ],
@@ -392,17 +407,17 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'नाकारणारा: ${req.deciderName ?? req.treasurerName ?? "खजिनदार"}',
+                                '${lang.tr("नाकारणारा:", "Rejected by:")} ${req.deciderName ?? req.treasurerName ?? lang.tr("खजिनदार", "Treasurer")}',
                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.error),
                               ),
                               if (req.rejectionReason != null && req.rejectionReason!.isNotEmpty)
                                 Text(
-                                  'कारण: ${req.rejectionReason}',
+                                  '${lang.tr("कारण:", "Reason:")} ${req.rejectionReason}',
                                   style: const TextStyle(fontSize: 11, color: AppColors.error, fontWeight: FontWeight.w600),
                                 ),
                               if (req.decisionDate != null)
                                 Text(
-                                  'नाकारल्याचा दिनांक: ${AppFormatters.formatDate(req.decisionDate!)}',
+                                  '${lang.tr("नाकारल्याचा दिनांक:", "Rejection Date:")} ${AppFormatters.formatDate(req.decisionDate!)}',
                                   style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
                                 ),
                             ],
@@ -413,31 +428,11 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
                   ),
                 ],
 
-                // Approval Actions for Designated Treasurer / Admins
+                // Approval Actions for Designated Treasurer / Admins / Collector
                 if (isPending) ...[
                   const SizedBox(height: 14),
-                  if (isOwnRequest)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.shade50,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.amber.shade300),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.hourglass_top_rounded, size: 18, color: Color(0xFFB45309)),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'तुमच्या या ठेव विनंतीवर खजिनदाराची (${req.treasurerName ?? "खजिनदार"}) मंजुरी प्रलंबित आहे.',
-                              style: const TextStyle(fontSize: 12, color: Color(0xFF92400E), fontWeight: FontWeight.w600),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else ...[
+                  if (canDecide) ...[
+                    // Authorized Admin / Treasurer can approve or reject
                     Row(
                       children: [
                         Expanded(
@@ -450,7 +445,7 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
                             ),
                             icon: const Icon(Icons.close_rounded, size: 18),
                             onPressed: () => _showRejectDialog(context, req),
-                            label: Text(ref.watch(languageProvider).tr('नाकारा', 'Reject'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                            label: Text(lang.tr('नाकारा', 'Reject'), style: const TextStyle(fontWeight: FontWeight.bold)),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -465,10 +460,43 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
                             ),
                             icon: const Icon(Icons.check_rounded, size: 18),
                             onPressed: () => _showApproveDialog(context, req),
-                            label: Text(ref.watch(languageProvider).tr('मंजूर करा', 'Approve'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                            label: Text(lang.tr('मंजूर करा', 'Approve'), style: const TextStyle(fontWeight: FontWeight.bold)),
                           ),
                         ),
                       ],
+                    ),
+                  ] else if (isOwnRequest) ...[
+                    // Collector sees status reminder and has option to cancel their pending request
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.amber.shade300),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.hourglass_top_rounded, size: 18, color: Color(0xFFB45309)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              lang.tr(
+                                'तुमच्या या ठेव विनंतीवर खजिनदाराची (${req.treasurerName ?? "खजिनदार"}) मंजुरी प्रलंबित आहे.',
+                                'Waiting for treasurer (${req.treasurerName ?? "Treasurer"}) approval.',
+                              ),
+                              style: const TextStyle(fontSize: 12, color: Color(0xFF92400E), fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          TextButton(
+                            style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                            onPressed: () => _showRejectDialog(context, req),
+                            child: Text(
+                              lang.tr('रद्द करा', 'Cancel'),
+                              style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ],
@@ -493,7 +521,7 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
     } else if (status == 'rejected') {
       bg = AppColors.errorLight;
       text = AppColors.error;
-      label = lang.tr('नाकारले', 'Rejected');
+      label = lang.tr('नाकारलेले', 'Rejected');
     } else {
       bg = AppColors.warningLight;
       text = const Color(0xFFB45309);
@@ -504,10 +532,16 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: text.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(8),
       ),
-      child: Text(label, style: TextStyle(color: text, fontWeight: FontWeight.bold, fontSize: 11)),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: text,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }

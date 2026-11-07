@@ -40,7 +40,7 @@ class ExpensesListScreen extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.file_download_outlined),
-            tooltip: 'खर्च Excel अहवाल डाउनलोड करा',
+            tooltip: lang.tr('खर्च Excel अहवाल डाउनलोड करा', 'Download Expenses Excel Report'),
             onPressed: () async {
               if (expenseState.expenses.isEmpty) return;
               await ExcelService.exportExpensesExcel(
@@ -61,7 +61,7 @@ class ExpensesListScreen extends ConsumerWidget {
           ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'रिफ्रेश करा',
+            tooltip: lang.tr('रिफ्रेश करा', 'Refresh'),
             onPressed: () => ref.read(expenseProvider.notifier).loadExpenses(),
           ),
         ],
@@ -72,7 +72,7 @@ class ExpensesListScreen extends ConsumerWidget {
         foregroundColor: Colors.white,
         elevation: 4,
         icon: const Icon(Icons.add_circle_outline_rounded),
-        label: const Text('नवीन खर्च नोंदवा', style: TextStyle(fontWeight: FontWeight.bold)),
+        label: Text(lang.tr('नवीन खर्च नोंदवा', 'Add Expense'), style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: SafeArea(
         child: ResponsiveContainer(
@@ -96,7 +96,7 @@ class ExpensesListScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('एकूण मंजूर खर्च', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                          Text(lang.tr('एकूण मंजूर खर्च', 'Approved Expenses'), style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                           const SizedBox(height: 3),
                           Text(
                             AppFormatters.formatCurrency(expenseState.totalApprovedExpenses),
@@ -134,7 +134,7 @@ class ExpensesListScreen extends ConsumerWidget {
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: ChoiceChip(
-                        label: Text(cat == 'All' ? 'सर्व खर्च' : cat),
+                        label: Text(cat == 'All' ? lang.tr('सर्व खर्च', 'All Expenses') : cat),
                         selected: isSelected,
                         onSelected: (_) => ref.read(expenseProvider.notifier).filterCategory(cat),
                         selectedColor: AppColors.primaryPurple.withOpacity(0.14),
@@ -163,7 +163,10 @@ class ExpensesListScreen extends ConsumerWidget {
                               children: [
                                 Icon(Icons.money_off_rounded, size: 56, color: AppColors.textMuted.withOpacity(0.5)),
                                 const SizedBox(height: 12),
-                                Text(AppStrings.tr(BuildContextKey.emptyList, lang), style: const TextStyle(color: AppColors.textSecondary)),
+                                Text(
+                                  lang.tr('कोणतेही खर्च सापडले नाहीत', 'No records found'),
+                                  style: const TextStyle(color: AppColors.textSecondary),
+                                ),
                               ],
                             ),
                           )
@@ -227,13 +230,13 @@ class ExpensesListScreen extends ConsumerWidget {
                                       Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          Text('स्वीकारणारा: ${item.paidTo}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                                          Text('${lang.tr("स्वीकारणारा:", "Paid to:")} ${item.paidTo}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
                                           Text(AppFormatters.formatDate(item.expenseDate), style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                                         ],
                                       ),
                                       if (item.description != null && item.description!.isNotEmpty) ...[
                                         const SizedBox(height: 4),
-                                        Text('नोंद: ${item.description!}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                                        Text('${lang.tr("नोंद:", "Note:")} ${item.description!}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                                       ],
                                       const Divider(height: 16),
 
@@ -241,7 +244,7 @@ class ExpensesListScreen extends ConsumerWidget {
                                         children: [
                                           const Icon(Icons.person_outline, size: 14, color: AppColors.textSecondary),
                                           const SizedBox(width: 4),
-                                          Text('खर्च देणारा: ${item.paidBy}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                                          Text('${lang.tr("खर्च देणारा:", "Paid by:")} ${item.paidBy}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                                           const Spacer(),
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

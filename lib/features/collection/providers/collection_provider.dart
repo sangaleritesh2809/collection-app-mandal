@@ -78,7 +78,7 @@ class CollectionNotifier extends StateNotifier<CollectionState> {
           .from('collections')
           .select('''
             *,
-            family:families (family_name, family_head_name),
+            family:families (family_name, family_head_name, mobile_number),
             collector:profiles (full_name)
           ''')
           .eq('mandal_id', mandalId!)

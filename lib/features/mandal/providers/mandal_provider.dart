@@ -388,13 +388,11 @@ class MandalNotifier extends StateNotifier<MandalState> {
 
       final mandalId = mandalRes['id'] as String;
 
-      // 2. Fetch 'Collector' or default 'Member' role
+      // 2. Fetch default 'Member' role for new invite-code joins
       final roleRes = await SupabaseService.client
           .from('roles')
           .select('id')
-          .or('name.eq.Collector,name.eq.Member')
-          .order('name')
-          .limit(1)
+          .eq('name', 'Member')
           .maybeSingle();
 
       final roleId = roleRes?['id'] as String?;

@@ -548,11 +548,11 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                   ],
                                 ),
                                 const SizedBox(height: 12),
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: Column(
+                                LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final isNarrow = constraints.maxWidth < 360;
+                                    if (isNarrow) {
+                                      return Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           FormLabel(lang.tr('सवलत (₹)', 'Discount (₹)')),
@@ -572,14 +572,7 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                             },
                                             onChanged: (_) => setState(() {}),
                                           ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
+                                          const SizedBox(height: 12),
                                           FormLabel(lang.tr('विशेष देणगी (₹)', 'Special Contribution (₹)')),
                                           TextFormField(
                                             controller: _specialContributionController,
@@ -598,9 +591,63 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                                             onChanged: (_) => setState(() {}),
                                           ),
                                         ],
-                                      ),
-                                    ),
-                                  ],
+                                      );
+                                    }
+                                    return Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              FormLabel(lang.tr('सवलत (₹)', 'Discount (₹)')),
+                                              TextFormField(
+                                                controller: _discountController,
+                                                enabled: isDiscountEditing,
+                                                keyboardType: TextInputType.number,
+                                                decoration: InputDecoration(
+                                                  hintText: lang.tr('सवलत रक्कम टाका', 'Enter discount amount'),
+                                                  prefixIcon: const Icon(Icons.discount_outlined),
+                                                ),
+                                                validator: (val) {
+                                                  if (val != null && val.trim().isNotEmpty) {
+                                                    return AppValidators.amount(val, min: 0, fieldName: lang.tr('सवलत', 'Discount'));
+                                                  }
+                                                  return null;
+                                                },
+                                                onChanged: (_) => setState(() {}),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              FormLabel(lang.tr('विशेष देणगी (₹)', 'Special Contribution (₹)')),
+                                              TextFormField(
+                                                controller: _specialContributionController,
+                                                enabled: isDiscountEditing,
+                                                keyboardType: TextInputType.number,
+                                                decoration: InputDecoration(
+                                                  hintText: lang.tr('देणगी रक्कम टाका', 'Enter contribution amount'),
+                                                  prefixIcon: const Icon(Icons.add_circle_outline),
+                                                ),
+                                                validator: (val) {
+                                                  if (val != null && val.trim().isNotEmpty) {
+                                                    return AppValidators.amount(val, min: 0, fieldName: lang.tr('विशेष देणगी', 'Special Contribution'));
+                                                  }
+                                                  return null;
+                                                },
+                                                onChanged: (_) => setState(() {}),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
                                 ),
                                 if (hasExistingConfig && isDiscountEditing) ...[
                                   const SizedBox(height: 16),
@@ -667,24 +714,30 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    lang.tr('४ सदस्यांच्या कुटुंबाची अपेक्षित वर्गणी:', 'Expected for family with 4 members:'),
-                                    style: const TextStyle(fontSize: 13),
+                                  Expanded(
+                                    child: Text(
+                                      lang.tr('४ सदस्यांच्या कुटुंबाची अपेक्षित वर्गणी:', 'Expected for family with 4 members:'),
+                                      style: const TextStyle(fontSize: 13),
+                                    ),
                                   ),
+                                  const SizedBox(width: 8),
                                   Text(
                                     AppFormatters.formatCurrency(_getCalculatedSample(4)),
                                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primaryPurple),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 6),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    lang.tr('१ सदस्याच्या कुटुंबाची अपेक्षित वर्गणी:', 'Expected for family with 1 member:'),
-                                    style: const TextStyle(fontSize: 13),
+                                  Expanded(
+                                    child: Text(
+                                      lang.tr('१ सदस्याच्या कुटुंबाची अपेक्षित वर्गणी:', 'Expected for family with 1 member:'),
+                                      style: const TextStyle(fontSize: 13),
+                                    ),
                                   ),
+                                  const SizedBox(width: 8),
                                   Text(
                                     AppFormatters.formatCurrency(_getCalculatedSample(1)),
                                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),

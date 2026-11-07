@@ -16,6 +16,7 @@ class CollectionRecord {
   final String? depositRequestId;
   final String? familyName;
   final String? familyHeadName;
+  final String? mobileNumber;
   final String? collectorName;
   final DateTime createdAt;
 
@@ -37,6 +38,7 @@ class CollectionRecord {
     this.depositRequestId,
     this.familyName,
     this.familyHeadName,
+    this.mobileNumber,
     this.collectorName,
     required this.createdAt,
   });
@@ -62,6 +64,7 @@ class CollectionRecord {
       depositRequestId: json['deposit_request_id'] as String?,
       familyName: json['family']?['family_name'] as String? ?? json['family_name'] as String?,
       familyHeadName: json['family']?['family_head_name'] as String? ?? json['family_head_name'] as String?,
+      mobileNumber: json['family']?['mobile_number'] as String? ?? json['mobile_number'] as String?,
       collectorName: json['collector']?['full_name'] as String? ?? json['collector_name'] as String?,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)

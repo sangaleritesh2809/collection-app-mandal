@@ -8,6 +8,7 @@ import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../core/widgets/responsive_container.dart';
 import '../../../core/services/excel_service.dart';
 import '../../../core/services/pdf_service.dart';
+import '../../family/providers/family_provider.dart';
 import '../../mandal/providers/mandal_provider.dart';
 import '../providers/collection_provider.dart';
 
@@ -25,13 +26,22 @@ class _CollectionsListScreenState extends ConsumerState<CollectionsListScreen> {
   Widget build(BuildContext context) {
     final lang = ref.watch(languageProvider);
     final collectionState = ref.watch(collectionProvider);
+    final familyState = ref.watch(familyProvider);
     final mandal = ref.watch(mandalProvider).selectedMandal;
 
     final filtered = collectionState.collections.where((c) {
       if (_search.isEmpty) return true;
-      final q = _search.toLowerCase();
-      return (c.familyName?.toLowerCase().contains(q) ?? false) ||
-             (c.familyHeadName?.toLowerCase().contains(q) ?? false) ||
+      final q = _search.trim().toLowerCase();
+
+      // Check family record for fallback mobile if not directly on collection
+      final fam = familyState.families.where((f) => f.id == c.familyId).firstOrNull;
+      final mobile = (c.mobileNumber ?? fam?.mobileNumber ?? '').toLowerCase();
+      final familyName = (c.familyName ?? fam?.familyName ?? '').toLowerCase();
+      final headName = (c.familyHeadName ?? fam?.familyHeadName ?? '').toLowerCase();
+
+      return familyName.contains(q) ||
+             headName.contains(q) ||
+             mobile.contains(q) ||
              c.receiptNumber.toLowerCase().contains(q) ||
              c.transactionNumber.toLowerCase().contains(q);
     }).toList();
@@ -43,7 +53,7 @@ class _CollectionsListScreenState extends ConsumerState<CollectionsListScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.file_download_outlined),
-            tooltip: 'Excel अहवाल डाउनलोड करा',
+            tooltip: lang.tr('Excel अहवाल डाउनलोड करा', 'Download Excel Report'),
             onPressed: () async {
               if (collectionState.collections.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -71,7 +81,7 @@ class _CollectionsListScreenState extends ConsumerState<CollectionsListScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'रिफ्रेश करा',
+            tooltip: lang.tr('रिफ्रेश करा', 'Refresh'),
             onPressed: () => ref.read(collectionProvider.notifier).loadCollections(),
           ),
         ],
@@ -83,7 +93,7 @@ class _CollectionsListScreenState extends ConsumerState<CollectionsListScreen> {
         foregroundColor: Colors.white,
         elevation: 4,
         icon: const Icon(Icons.add_circle_outline_rounded),
-        label: const Text('वर्गणी पावती फाडा', style: TextStyle(fontWeight: FontWeight.bold)),
+        label: Text(lang.tr('वर्गणी पावती फाडा', 'Collect Vargani'), style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: SafeArea(
         child: ResponsiveContainer(
@@ -107,7 +117,7 @@ class _CollectionsListScreenState extends ConsumerState<CollectionsListScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('एकूण संकलित वर्गणी', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                          Text(lang.tr('एकूण संकलित वर्गणी', 'Total Collections'), style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                           const SizedBox(height: 3),
                           Text(
                             AppFormatters.formatCurrency(collectionState.totalCollected),
@@ -122,7 +132,7 @@ class _CollectionsListScreenState extends ConsumerState<CollectionsListScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('जमा करायची बाकी ठेव', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                          Text(lang.tr('जमा करायची बाकी ठेव', 'Awaiting Deposit'), style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                           const SizedBox(height: 3),
                           Text(
                             AppFormatters.formatCurrency(collectionState.undepositedAmount),
@@ -135,13 +145,13 @@ class _CollectionsListScreenState extends ConsumerState<CollectionsListScreen> {
                 ),
               ),
 
-              // Search Box
+              // Search Box (Name & Number Search)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: TextField(
                   onChanged: (val) => setState(() => _search = val),
                   decoration: InputDecoration(
-                    hintText: lang.tr('पावती क्रमांक किंवा कुटुंबाचे नाव शोधा...', 'Search receipt number or family name...'),
+                    hintText: lang.tr('नाव, मोबाईल नंबर किंवा पावती क्र. शोधा...', 'Search name, mobile, or receipt no...'),
                     prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primaryPurple),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     suffixIcon: _search.isNotEmpty
@@ -163,7 +173,7 @@ class _CollectionsListScreenState extends ConsumerState<CollectionsListScreen> {
                               children: [
                                 Icon(Icons.receipt_long_rounded, size: 60, color: AppColors.textMuted.withOpacity(0.5)),
                                 const SizedBox(height: 12),
-                                Text(AppStrings.tr(BuildContextKey.emptyList, lang), style: const TextStyle(color: AppColors.textSecondary)),
+                                Text(lang.tr('कोणतीही वर्गणी नोंद सापडली नाही', 'No records found'), style: const TextStyle(color: AppColors.textSecondary)),
                               ],
                             ),
                           )
@@ -175,6 +185,10 @@ class _CollectionsListScreenState extends ConsumerState<CollectionsListScreen> {
                               padding: const EdgeInsets.only(bottom: 90, top: 4, left: 16, right: 16),
                               itemBuilder: (context, index) {
                                 final item = filtered[index];
+                                final fam = familyState.families.where((f) => f.id == item.familyId).firstOrNull;
+                                final mobile = item.mobileNumber ?? fam?.mobileNumber;
+                                final displayName = item.familyHeadName ?? item.familyName ?? lang.tr('वर्गणीदार', 'Contributor');
+
                                 return Container(
                                   margin: const EdgeInsets.only(bottom: 10),
                                   decoration: BoxDecoration(
@@ -198,7 +212,7 @@ class _CollectionsListScreenState extends ConsumerState<CollectionsListScreen> {
                                       children: [
                                         Expanded(
                                           child: Text(
-                                            item.familyName ?? 'कुटुंब',
+                                            displayName,
                                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary),
                                           ),
                                         ),
@@ -213,7 +227,7 @@ class _CollectionsListScreenState extends ConsumerState<CollectionsListScreen> {
                                       children: [
                                         const SizedBox(height: 3),
                                         Text(
-                                          '${item.familyHeadName ?? ''} • ${AppFormatters.formatDate(item.collectionDate)}',
+                                          '${mobile != null && mobile.isNotEmpty ? "+91 $mobile • " : ""}${AppFormatters.formatDate(item.collectionDate)}',
                                           style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                                         ),
                                         const SizedBox(height: 6),
@@ -235,19 +249,19 @@ class _CollectionsListScreenState extends ConsumerState<CollectionsListScreen> {
                                             ),
                                             const Spacer(),
                                             if (item.isDeposited)
-                                              const Row(
+                                              Row(
                                                 children: [
-                                                  Icon(Icons.check_circle_rounded, size: 13, color: AppColors.success),
-                                                  SizedBox(width: 3),
-                                                  Text('ठेव जमा', style: TextStyle(fontSize: 11, color: AppColors.success, fontWeight: FontWeight.bold)),
+                                                  const Icon(Icons.check_circle_rounded, size: 13, color: AppColors.success),
+                                                  const SizedBox(width: 3),
+                                                  Text(lang.tr('ठेव जमा', 'Deposited'), style: const TextStyle(fontSize: 11, color: AppColors.success, fontWeight: FontWeight.bold)),
                                                 ],
                                               )
                                             else
-                                              const Row(
+                                              Row(
                                                 children: [
-                                                  Icon(Icons.access_time_rounded, size: 13, color: AppColors.accentOrange),
-                                                  SizedBox(width: 3),
-                                                  Text('ठेव बाकी', style: TextStyle(fontSize: 11, color: AppColors.accentOrange, fontWeight: FontWeight.bold)),
+                                                  const Icon(Icons.access_time_rounded, size: 13, color: AppColors.accentOrange),
+                                                  const SizedBox(width: 3),
+                                                  Text(lang.tr('ठेव बाकी', 'Pending Deposit'), style: const TextStyle(fontSize: 11, color: AppColors.accentOrange, fontWeight: FontWeight.bold)),
                                                 ],
                                               ),
                                           ],
@@ -262,14 +276,16 @@ class _CollectionsListScreenState extends ConsumerState<CollectionsListScreen> {
                                         receiptNumber: item.receiptNumber,
                                         transactionNumber: item.transactionNumber,
                                         date: item.collectionDate,
-                                        familyName: item.familyName ?? 'कुटुंब',
-                                        familyHead: item.familyHeadName ?? '',
-                                        totalMembers: 4,
+                                        familyName: displayName,
+                                        familyHead: displayName,
+                                        houseNumber: fam?.houseNumber,
+                                        mobile: mobile,
+                                        totalMembers: fam?.totalMembers ?? 1,
                                         amountPaid: item.amount,
                                         totalVargani: item.amount,
                                         pendingAmount: 0.0,
                                         paymentMode: item.paymentMode,
-                                        collectorName: item.collectorName ?? 'कार्यकर्ता',
+                                        collectorName: item.collectorName ?? lang.tr('कार्यकर्ता', 'Worker'),
                                         notes: item.notes,
                                       );
                                       context.push('/receipt-preview', extra: receiptData);
