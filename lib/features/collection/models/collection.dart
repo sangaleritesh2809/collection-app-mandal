@@ -43,6 +43,10 @@ class CollectionRecord {
     required this.createdAt,
   });
 
+  String get contributorDisplayName => (familyHeadName != null && familyHeadName!.isNotEmpty)
+      ? familyHeadName!
+      : (familyName ?? 'वर्गणीदार');
+
   factory CollectionRecord.fromJson(Map<String, dynamic> json) {
     return CollectionRecord(
       id: json['id'] as String,
