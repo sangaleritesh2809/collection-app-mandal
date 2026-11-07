@@ -267,10 +267,39 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
                     ),
                     child: ListTile(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                      title: Text(opt['title']!, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: isCurrent ? AppColors.primaryPurple : AppColors.textPrimary)),
+                      title: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              opt['title']!,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: isCurrent ? AppColors.primaryPurple : AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          if (isCurrent)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryPurple.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                lang.tr('सध्याची भूमिका', 'Current'),
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primaryPurple,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                       subtitle: Text(opt['desc']!, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                       trailing: isCurrent
-                          ? const Icon(Icons.check_circle, color: AppColors.primaryPurple)
+                          ? const Icon(Icons.check_circle_rounded, color: AppColors.primaryPurple)
                           : const Icon(Icons.circle_outlined, color: Colors.grey),
                       onTap: () {
                         Navigator.pop(ctx);
@@ -589,31 +618,20 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
                                       if (!isSelf)
                                         PopupMenuButton<String>(
                                           icon: const Icon(Icons.more_vert, size: 20, color: AppColors.textSecondary),
+                                          tooltip: lang.tr('पर्याय', 'Options'),
                                           onSelected: (val) {
-                                            if (val == 'role') {
-                                              _showRoleChangeBottomSheet(member);
-                                            } else if (val == 'remove') {
+                                            if (val == 'remove') {
                                               _removeMember(member);
                                             }
                                           },
                                           itemBuilder: (ctx) => [
-                                            PopupMenuItem(
-                                              value: 'role',
-                                              child: Row(
-                                                children: [
-                                                  const Icon(Icons.manage_accounts_rounded, size: 18, color: AppColors.primaryPurple),
-                                                  const SizedBox(width: 8),
-                                                  Text(lang.tr('भूमिका (Role) बदला', 'Change Role')),
-                                                ],
-                                              ),
-                                            ),
                                             PopupMenuItem(
                                               value: 'remove',
                                               child: Row(
                                                 children: [
                                                   const Icon(Icons.person_remove_rounded, size: 18, color: AppColors.error),
                                                   const SizedBox(width: 8),
-                                                  Text(lang.tr('काढून टाका', 'Remove Member'), style: const TextStyle(color: AppColors.error)),
+                                                  Text(lang.tr('मंडळातून काढून टाका', 'Remove Member'), style: const TextStyle(color: AppColors.error)),
                                                 ],
                                               ),
                                             ),
@@ -627,37 +645,41 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: roleColor.withOpacity(0.12),
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(color: roleColor.withOpacity(0.3)),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              member.roleName == 'Treasurer'
-                                                  ? Icons.account_balance_wallet_rounded
-                                                  : member.roleName == 'Mandal Admin'
-                                                      ? Icons.shield_rounded
-                                                      : Icons.badge_outlined,
-                                              size: 13,
-                                              color: roleColor,
-                                            ),
-                                            const SizedBox(width: 5),
-                                            Text(
-                                              lang == AppLanguage.marathi
-                                                  ? _getRoleMarathiName(member.roleName)
-                                                  : member.roleName,
-                                              style: TextStyle(
+                                      InkWell(
+                                        onTap: isSelf ? null : () => _showRoleChangeBottomSheet(member),
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: roleColor.withOpacity(0.12),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: roleColor.withOpacity(0.3)),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                member.roleName == 'Treasurer'
+                                                    ? Icons.account_balance_wallet_rounded
+                                                    : member.roleName == 'Mandal Admin'
+                                                        ? Icons.shield_rounded
+                                                        : Icons.badge_outlined,
+                                                size: 13,
                                                 color: roleColor,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 11,
                                               ),
-                                            ),
-                                          ],
+                                              const SizedBox(width: 5),
+                                              Text(
+                                                lang == AppLanguage.marathi
+                                                    ? _getRoleMarathiName(member.roleName)
+                                                    : member.roleName,
+                                                style: TextStyle(
+                                                  color: roleColor,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
 
