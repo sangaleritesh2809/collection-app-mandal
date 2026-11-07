@@ -158,10 +158,8 @@ class _ReceiptPreviewScreenState extends ConsumerState<ReceiptPreviewScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Family details
-                      _receiptRow('कुटुंबाचे नाव:', receiptData.familyName, isBold: true),
-                      const SizedBox(height: 8),
-                      _receiptRow('कुटुंब प्रमुख:', receiptData.familyHead),
+                      // Contributor details
+                      _receiptRow('वर्गणीदाराचे नाव:', receiptData.familyHead.isNotEmpty ? receiptData.familyHead : receiptData.familyName, isBold: true),
                       if (receiptData.houseNumber != null) ...[
                         const SizedBox(height: 8),
                         _receiptRow('घर क्र:', receiptData.houseNumber!),

@@ -138,9 +138,7 @@ class PdfService {
                   ),
                   child: pw.Column(
                     children: [
-                      _buildRow(font, boldFont, 'कुटुंबाचे नाव / Family:', data.familyName),
-                      pw.SizedBox(height: 4),
-                      _buildRow(font, boldFont, 'कुटुंब प्रमुख / Head:', data.familyHead),
+                      _buildRow(font, boldFont, 'वर्गणीदाराचे नाव / Contributor:', data.familyHead.isNotEmpty ? data.familyHead : data.familyName),
                       pw.SizedBox(height: 4),
                       _buildRow(font, boldFont, 'घर नंबर / House No:', data.houseNumber ?? '-'),
                       pw.SizedBox(height: 4),

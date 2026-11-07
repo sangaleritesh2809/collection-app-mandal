@@ -147,7 +147,7 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: AppColors.error,
-          content: Text(lang.tr('कृपया कुटुंब प्रमुखाचे नाव टाका.', 'Please enter family head name.')),
+          content: Text(lang.tr('कृपया वर्गणीदाराचे नाव टाका.', 'Please enter contributor name.')),
         ),
       );
       return;
@@ -367,8 +367,8 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                         ],
                         const SizedBox(height: 14),
 
-                        // Head of Family Name (with quick Autocomplete from existing families)
-                        FormLabel(lang.tr('कुटुंब प्रमुखाचे नाव', 'Family Head Name'), isRequired: true),
+                        // Contributor Name (with quick Autocomplete from existing families)
+                        FormLabel(lang.tr('वर्गणीदाराचे नाव', 'Contributor Name'), isRequired: true),
                         RawAutocomplete<Family>(
                           textEditingController: _headNameController,
                           focusNode: _headNameFocusNode,
@@ -392,7 +392,7 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                               controller: controller,
                               focusNode: focusNode,
                               decoration: InputDecoration(
-                                hintText: lang.tr('उदा. रमेश तानाजी कदम (किंवा शोधा)', 'e.g. Ramesh Tanaji Kadam (or search)'),
+                                hintText: lang.tr('वर्गणीदाराचे नाव टाका', 'Enter contributor name'),
                                 prefixIcon: const Icon(Icons.person),
                               ),
                               onChanged: (val) {
@@ -402,7 +402,7 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                               },
                               validator: (val) {
                                 if (val == null || val.trim().isEmpty) {
-                                  return 'कुटुंब प्रमुखाचे नाव टाकणे आवश्यक आहे';
+                                  return 'वर्गणीदाराचे नाव टाकणे आवश्यक आहे';
                                 }
                                 return null;
                               },

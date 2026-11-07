@@ -16,7 +16,7 @@ class ShareService {
 पावती क्रमांक: *${data.receiptNumber}*
 तारीख: *${AppFormatters.formatDate(data.date)}*
 
-प्रिय *${data.familyName}* (${data.familyHead}),
+प्रिय *${data.familyHead.isNotEmpty ? data.familyHead : data.familyName}*,
 आपली वर्गणी खालीलप्रमाणे यशस्वीपणे जमा झाली आहे:
 
 • एकूण ठरलेली वर्गणी: *${AppFormatters.formatCurrency(data.totalVargani)}*
