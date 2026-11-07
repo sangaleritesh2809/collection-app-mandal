@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/services/supabase_service.dart';
 import '../../mandal/providers/mandal_provider.dart';
 import '../../family/providers/family_provider.dart';
 import '../../collection/providers/collection_provider.dart';
@@ -34,7 +35,11 @@ final dashboardProvider = Provider<DashboardSummary>((ref) {
 
   // 3. Deposits calculations
   final totalDeposited = depositState.totalDeposited;
-  final pendingDepositsCount = depositState.pendingRequests.length;
+  final currentUserId = SupabaseService.currentUserId;
+  // Only show review notification banner for requests from other members that this user can actually review & approve
+  final pendingDepositsCount = depositState.requests
+      .where((r) => r.isPending && (currentUserId == null || r.collectorId != currentUserId))
+      .length;
 
   // 4. Expenses calculations
   final approvedExpenses = expenseState.totalApprovedExpenses;

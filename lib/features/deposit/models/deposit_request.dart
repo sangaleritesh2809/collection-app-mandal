@@ -14,6 +14,7 @@ class DepositRequest {
   final String? rejectionReason;
   final String? collectorName;
   final String? treasurerName;
+  final String? deciderName;
   final DateTime createdAt;
 
   DepositRequest({
@@ -32,6 +33,7 @@ class DepositRequest {
     this.rejectionReason,
     this.collectorName,
     this.treasurerName,
+    this.deciderName,
     required this.createdAt,
   });
 
@@ -56,6 +58,7 @@ class DepositRequest {
       rejectionReason: json['rejection_reason'] as String?,
       collectorName: json['collector']?['full_name'] as String? ?? json['collector_name'] as String?,
       treasurerName: json['treasurer']?['full_name'] as String? ?? json['treasurer_name'] as String?,
+      deciderName: json['decider']?['full_name'] as String? ?? json['decider_name'] as String?,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),

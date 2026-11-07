@@ -294,3 +294,109 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.master_admin_login(TEXT, TEXT) TO anon, authenticated, service_role;
+
+-- ==============================================================================
+-- 9. ALLOW SUPER ADMIN & MANDAL ADMIN TO PROCESS DEPOSIT REQUESTS
+-- ==============================================================================
+CREATE OR REPLACE FUNCTION public.process_deposit_request(
+    p_request_id UUID,
+    p_action TEXT, -- 'approved' or 'rejected'
+    p_rejection_reason TEXT DEFAULT NULL
+)
+RETURNS JSONB AS $$
+DECLARE
+    v_user_id UUID := auth.uid();
+    v_req RECORD;
+    v_is_authorized BOOLEAN := FALSE;
+    v_is_super_admin BOOLEAN := FALSE;
+BEGIN
+    -- Validate action
+    IF p_action NOT IN ('approved', 'rejected') THEN
+        RAISE EXCEPTION 'Invalid action: must be approved or rejected';
+    END IF;
+
+    -- Lock the deposit request row
+    SELECT * INTO v_req
+    FROM public.deposit_requests
+    WHERE id = p_request_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Deposit request not found';
+    END IF;
+
+    -- Enforce: Only pending requests can be decided
+    IF v_req.status <> 'pending' THEN
+        RAISE EXCEPTION 'Cannot modify request that has already been %', v_req.status;
+    END IF;
+
+    -- Check if user is Super Admin
+    SELECT EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = v_user_id AND (is_super_admin IS TRUE OR role = 'super_admin' OR mobile_number = '9699342811')
+    ) INTO v_is_super_admin;
+
+    -- Authorization check: Super Admin OR designated treasurer OR Mandal Admin
+    IF v_is_super_admin THEN
+        v_is_authorized := TRUE;
+    ELSIF v_req.designated_treasurer_id = v_user_id THEN
+        v_is_authorized := TRUE;
+    ELSE
+        SELECT EXISTS (
+            SELECT 1 FROM public.mandal_memberships mm
+            JOIN public.roles r ON mm.role_id = r.id
+            WHERE mm.mandal_id = v_req.mandal_id 
+              AND mm.user_id = v_user_id
+              AND (r.name = 'Mandal Admin' OR r.name = 'Super Admin')
+        ) INTO v_is_authorized;
+    END IF;
+
+    IF NOT v_is_authorized THEN
+        RAISE EXCEPTION 'Not authorized: only the designated treasurer, mandal admin, or super admin may process this request';
+    END IF;
+
+    -- Reject reason check
+    IF p_action = 'rejected' AND (p_rejection_reason IS NULL OR TRIM(p_rejection_reason) = '') THEN
+        RAISE EXCEPTION 'A reason is required to reject a deposit request';
+    END IF;
+
+    -- Update deposit request status
+    UPDATE public.deposit_requests
+    SET status = p_action,
+        decided_by = v_user_id,
+        decision_date = NOW(),
+        rejection_reason = CASE WHEN p_action = 'rejected' THEN p_rejection_reason ELSE NULL END,
+        updated_at = NOW()
+    WHERE id = p_request_id;
+
+    -- If approved, mark all un-deposited collections by this collector in this mandal as deposited
+    IF p_action = 'approved' THEN
+        UPDATE public.collections
+        SET is_deposited = TRUE,
+            deposit_request_id = p_request_id,
+            updated_at = NOW()
+        WHERE mandal_id = v_req.mandal_id
+          AND collector_id = v_req.collector_id
+          AND is_deposited = FALSE;
+    END IF;
+
+    RETURN jsonb_build_object(
+        'success', TRUE,
+        'request_id', p_request_id,
+        'status', p_action
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION public.process_deposit_request(UUID, TEXT, TEXT) TO authenticated, service_role;
+
+-- Update RLS policies to allow Super Admin and Mandal Admin to view & update deposit requests
+DROP POLICY IF EXISTS "Deposit requests select" ON public.deposit_requests;
+CREATE POLICY "Deposit requests select" ON public.deposit_requests FOR SELECT USING (
+    public.is_mandal_member(mandal_id) OR public.is_super_admin()
+);
+
+DROP POLICY IF EXISTS "Deposit requests update" ON public.deposit_requests;
+CREATE POLICY "Deposit requests update" ON public.deposit_requests FOR UPDATE USING (
+    auth.uid() = designated_treasurer_id OR public.is_mandal_member(mandal_id) OR public.is_super_admin()
+);

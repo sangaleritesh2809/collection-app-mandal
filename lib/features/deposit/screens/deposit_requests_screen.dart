@@ -69,10 +69,23 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
                 requestId: req.id,
                 action: 'approved',
               );
-              if (success && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(lang.tr('ठेव विनंती यशस्वीपणे मंजूर झाली!', 'Deposit request approved successfully!'))),
-                );
+              if (mounted) {
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      backgroundColor: AppColors.success,
+                      content: Text(lang.tr('ठेव विनंती यशस्वीपणे मंजूर झाली!', 'Deposit request approved successfully!')),
+                    ),
+                  );
+                } else {
+                  final err = ref.read(depositProvider).error ?? 'मंजूर करताना अडचण आली.';
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      backgroundColor: AppColors.error,
+                      content: Text(err),
+                    ),
+                  );
+                }
               }
             },
           ),
@@ -136,10 +149,23 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
                 action: 'rejected',
                 rejectionReason: reasonCtrl.text.trim(),
               );
-              if (success && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(lang.tr('ठेव विनंती नाकारली गेली.', 'Deposit request rejected.'))),
-                );
+              if (mounted) {
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      backgroundColor: AppColors.error,
+                      content: Text(lang.tr('ठेव विनंती नाकारली गेली.', 'Deposit request rejected.')),
+                    ),
+                  );
+                } else {
+                  final err = ref.read(depositProvider).error ?? 'नाकारताना अडचण आली.';
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      backgroundColor: AppColors.error,
+                      content: Text(err),
+                    ),
+                  );
+                }
               }
             },
           ),
@@ -311,32 +337,104 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
                   const SizedBox(height: 6),
                   Text('तपशील: ${req.description!}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                 ],
-                if (req.rejectionReason != null && req.rejectionReason!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
+
+                // Approved status card (Shows WHO approved it & date)
+                if (req.isApproved) ...[
+                  const SizedBox(height: 10),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: AppColors.errorLight,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                      color: AppColors.successLight,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.success.withOpacity(0.3)),
                     ),
-                    child: Text('नाकारण्याचे कारण: ${req.rejectionReason}', style: const TextStyle(fontSize: 11, color: AppColors.error, fontWeight: FontWeight.w600)),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.success),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'मंजूर करणारा: ${req.deciderName ?? req.treasurerName ?? "खजिनदार"}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.success),
+                              ),
+                              if (req.decisionDate != null)
+                                Text(
+                                  'मंजूर दिनांक: ${AppFormatters.formatDate(req.decisionDate!)}',
+                                  style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
 
-                // Approval Actions for Designated Treasurer
+                // Rejected status card (Shows WHO rejected it, reason & date)
+                if (req.isRejected) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.errorLight,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.cancel_rounded, size: 18, color: AppColors.error),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'नाकारणारा: ${req.deciderName ?? req.treasurerName ?? "खजिनदार"}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.error),
+                              ),
+                              if (req.rejectionReason != null && req.rejectionReason!.isNotEmpty)
+                                Text(
+                                  'कारण: ${req.rejectionReason}',
+                                  style: const TextStyle(fontSize: 11, color: AppColors.error, fontWeight: FontWeight.w600),
+                                ),
+                              if (req.decisionDate != null)
+                                Text(
+                                  'नाकारल्याचा दिनांक: ${AppFormatters.formatDate(req.decisionDate!)}',
+                                  style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                // Approval Actions for Designated Treasurer / Admins
                 if (isPending) ...[
                   const SizedBox(height: 14),
                   if (isOwnRequest)
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       decoration: BoxDecoration(
-                        color: AppColors.warningLight,
-                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.amber.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.amber.shade300),
                       ),
-                      child: const Text(
-                        'ℹ️ तुम्ही स्वतः तयार केलेली विनंती तुम्ही स्वतः मंजूर करू शकत नाही.',
-                        style: TextStyle(fontSize: 11, color: Color(0xFF92400E), fontWeight: FontWeight.w500),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.hourglass_top_rounded, size: 18, color: Color(0xFFB45309)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'तुमच्या या ठेव विनंतीवर खजिनदाराची (${req.treasurerName ?? "खजिनदार"}) मंजुरी प्रलंबित आहे.',
+                              style: const TextStyle(fontSize: 12, color: Color(0xFF92400E), fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ],
                       ),
                     )
                   else ...[

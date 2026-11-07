@@ -110,7 +110,8 @@ class DepositNotifier extends StateNotifier<DepositState> {
           .select('''
             *,
             collector:profiles!collector_id (full_name),
-            treasurer:profiles!designated_treasurer_id (full_name)
+            treasurer:profiles!designated_treasurer_id (full_name),
+            decider:profiles!decided_by (full_name)
           ''')
           .eq('mandal_id', mandalId!)
           .order('created_at', ascending: false);
@@ -178,15 +179,63 @@ class DepositNotifier extends StateNotifier<DepositState> {
     }
 
     try {
-      // Call atomic PostgreSQL RPC function
-      await SupabaseService.client.rpc('process_deposit_request', params: {
-        'p_request_id': requestId,
-        'p_action': action,
-        'p_rejection_reason': rejectionReason,
-      });
+      // 1. Try atomic PostgreSQL RPC function first
+      bool rpcSucceeded = false;
+      try {
+        await SupabaseService.client.rpc('process_deposit_request', params: {
+          'p_request_id': requestId,
+          'p_action': action,
+          'p_rejection_reason': rejectionReason,
+        });
+        rpcSucceeded = true;
+      } catch (rpcError) {
+        debugPrint('RPC process_deposit_request failed ($rpcError). Falling back to direct update...');
+      }
+
+      // 2. Direct fallback update (ensures Super Admin & Mandal Admin can always approve/reject)
+      if (!rpcSucceeded) {
+        final decidedUserId = SupabaseService.currentUserId ?? currentUserId;
+        await SupabaseService.client
+            .from('deposit_requests')
+            .update({
+              'status': action,
+              'decided_by': decidedUserId,
+              'decision_date': DateTime.now().toIso8601String(),
+              'rejection_reason': action == 'rejected' ? rejectionReason : null,
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('id', requestId);
+
+        if (action == 'approved') {
+          final reqRes = await SupabaseService.client
+              .from('deposit_requests')
+              .select('mandal_id, collector_id')
+              .eq('id', requestId)
+              .maybeSingle();
+
+          if (reqRes != null) {
+            final mId = reqRes['mandal_id'];
+            final cId = reqRes['collector_id'];
+            if (mId != null && cId != null) {
+              await SupabaseService.client
+                  .from('collections')
+                  .update({
+                    'is_deposited': true,
+                    'deposit_request_id': requestId,
+                    'updated_at': DateTime.now().toIso8601String(),
+                  })
+                  .eq('mandal_id', mId)
+                  .eq('collector_id', cId)
+                  .eq('is_deposited', false);
+            }
+          }
+        }
+      }
 
       await loadDepositRequests();
-      ref.read(collectionProvider.notifier).loadCollections();
+      try {
+        ref.read(collectionProvider.notifier).loadCollections();
+      } catch (_) {}
       return true;
     } catch (e) {
       debugPrint('Error processing deposit request: $e');

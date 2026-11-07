@@ -110,6 +110,18 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
     if (roleId == null) return;
 
     final lang = ref.read(languageProvider);
+    final currentUserId = SupabaseService.currentUserId;
+    if (member.userId == currentUserId) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.error,
+            content: Text(lang.tr('तुम्ही स्वतःचा रोल बदलू शकत नाही.', 'You cannot change your own role.')),
+          ),
+        );
+      }
+      return;
+    }
 
     try {
       await SupabaseService.client
@@ -144,6 +156,18 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
 
   Future<void> _removeMember(MandalMember member) async {
     final lang = ref.read(languageProvider);
+    final currentUserId = SupabaseService.currentUserId;
+    if (member.userId == currentUserId) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.error,
+            content: Text(lang.tr('तुम्ही स्वतःचा रोल बदलू शकत नाही.', 'You cannot change your own role.')),
+          ),
+        );
+      }
+      return;
+    }
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -198,6 +222,18 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
 
   void _showRoleChangeBottomSheet(MandalMember member) {
     final lang = ref.read(languageProvider);
+    final currentUserId = SupabaseService.currentUserId;
+    if (member.userId == currentUserId) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.error,
+            content: Text(lang.tr('तुम्ही स्वतःचा रोल बदलू शकत नाही.', 'You cannot change your own role.')),
+          ),
+        );
+      }
+      return;
+    }
 
     final List<Map<String, String>> roleOptions = [
       {
@@ -346,6 +382,323 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
       default:
         return Colors.blueGrey;
     }
+  }
+
+  void _showAddMemberDialog() {
+    final lang = ref.read(languageProvider);
+    final mandal = ref.read(mandalProvider).selectedMandal;
+    if (mandal == null) return;
+
+    final phoneCtrl = TextEditingController();
+    bool isSearching = false;
+    bool isAdding = false;
+    Map<String, dynamic>? foundProfile;
+    bool hasSearched = false;
+    String? dialogError;
+    String selectedRole = 'Collector';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
+            final isAlreadyMember = foundProfile != null &&
+                _members.any((m) => m.userId == foundProfile!['id']);
+
+            return Padding(
+              padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset + 20),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(4)),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        const Icon(Icons.person_add_alt_1_rounded, color: AppColors.primaryPurple, size: 24),
+                        const SizedBox(width: 8),
+                        Text(
+                          lang.tr('नवीन सदस्य जोडा', 'Add Member'),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      lang.tr(
+                        'कार्यकर्त्याचा १०-अंकी मोबाईल नंबर टाकून त्याला थेट मंडळात जोडा.',
+                        'Enter 10-digit mobile number to add worker directly.',
+                      ),
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Phone input
+                    TextField(
+                      controller: phoneCtrl,
+                      keyboardType: TextInputType.phone,
+                      maxLength: 10,
+                      decoration: InputDecoration(
+                        labelText: lang.tr('मोबाईल नंबर', 'Mobile Number'),
+                        hintText: lang.tr('१० अंकी मोबाईल नंबर टाका', 'Enter 10-digit mobile number'),
+                        prefixText: '+91 ',
+                        prefixIcon: const Icon(Icons.phone_android_rounded, color: AppColors.primaryPurple),
+                        counterText: '',
+                        suffixIcon: IconButton(
+                          icon: isSearching
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryPurple),
+                                )
+                              : const Icon(Icons.search_rounded, color: AppColors.primaryPurple),
+                          tooltip: lang.tr('शोधा', 'Search'),
+                          onPressed: isSearching
+                              ? null
+                              : () async {
+                                  final clean = phoneCtrl.text.replaceAll(RegExp(r'^\+91|^0|\s+'), '').trim();
+                                  if (clean.length != 10) {
+                                    setModalState(() {
+                                      dialogError = lang.tr('कृपया वैध १०-अंकी मोबाईल नंबर टाका.', 'Please enter valid 10-digit mobile number.');
+                                      hasSearched = false;
+                                      foundProfile = null;
+                                    });
+                                    return;
+                                  }
+
+                                  setModalState(() {
+                                    isSearching = true;
+                                    dialogError = null;
+                                  });
+
+                                  try {
+                                    final res = await SupabaseService.client
+                                        .from('profiles')
+                                        .select('id, full_name, mobile_number, email')
+                                        .eq('mobile_number', clean)
+                                        .maybeSingle();
+
+                                    setModalState(() {
+                                      isSearching = false;
+                                      hasSearched = true;
+                                      foundProfile = res;
+                                    });
+                                  } catch (e) {
+                                    setModalState(() {
+                                      isSearching = false;
+                                      dialogError = 'शोधताना त्रुटी आली: $e';
+                                    });
+                                  }
+                                },
+                        ),
+                      ),
+                    ),
+
+                    if (dialogError != null) ...[
+                      const SizedBox(height: 8),
+                      Text(dialogError!, style: const TextStyle(color: AppColors.error, fontSize: 12)),
+                    ],
+
+                    const SizedBox(height: 14),
+
+                    // Result card if found
+                    if (foundProfile != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: isAlreadyMember ? Colors.orange.shade50 : Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isAlreadyMember ? Colors.orange.shade300 : Colors.green.shade300,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                CircleAvatar(
+                                  backgroundColor: isAlreadyMember ? Colors.orange.shade200 : Colors.green.shade200,
+                                  child: Text(
+                                    (foundProfile!['full_name'] as String? ?? 'U').substring(0, 1).toUpperCase(),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: isAlreadyMember ? Colors.orange.shade900 : Colors.green.shade900,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        foundProfile!['full_name'] ?? 'User',
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                      ),
+                                      Text(
+                                        '+91 ${foundProfile!['mobile_number'] ?? ''}',
+                                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (isAlreadyMember) ...[
+                              const SizedBox(height: 10),
+                              Text(
+                                lang.tr('⚠️ हा वापरकर्ता आधीच या मंडळाचा सदस्य आहे.', '⚠️ User is already a member of this mandal.'),
+                                style: TextStyle(color: Colors.orange.shade900, fontSize: 12, fontWeight: FontWeight.bold),
+                              ),
+                            ] else ...[
+                              const SizedBox(height: 14),
+                              Text(
+                                lang.tr('या सदस्याची भूमिका (Role) निवडा:', 'Assign Role:'),
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 8),
+                              DropdownButtonFormField<String>(
+                                value: selectedRole,
+                                decoration: InputDecoration(
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                  fillColor: Colors.white,
+                                  filled: true,
+                                ),
+                                items: [
+                                  DropdownMenuItem(value: 'Collector', child: Text(lang.tr('📝 वर्गणी संकलक / कार्यकर्ता', '📝 Collector / Worker'))),
+                                  DropdownMenuItem(value: 'Treasurer', child: Text(lang.tr('💰 खजिनदार', '💰 Treasurer'))),
+                                  DropdownMenuItem(value: 'Mandal Admin', child: Text(lang.tr('🚩 मंडळ ॲडमिन', '🚩 Mandal Admin'))),
+                                  DropdownMenuItem(value: 'Member', child: Text(lang.tr('👥 सभासद', '👥 Member'))),
+                                ],
+                                onChanged: (val) {
+                                  if (val != null) setModalState(() => selectedRole = val);
+                                },
+                              ),
+                              const SizedBox(height: 14),
+                              ElevatedButton(
+                                onPressed: isAdding
+                                    ? null
+                                    : () async {
+                                        final roleId = _roleNameToId[selectedRole];
+                                        if (roleId == null) return;
+
+                                        setModalState(() => isAdding = true);
+                                        try {
+                                          await SupabaseService.client.from('mandal_memberships').insert({
+                                            'mandal_id': mandal.id,
+                                            'user_id': foundProfile!['id'],
+                                            'role_id': roleId,
+                                            'status': 'active',
+                                          });
+
+                                          if (ctx.mounted) Navigator.pop(ctx);
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                backgroundColor: AppColors.success,
+                                                content: Text(lang.tr(
+                                                  '✅ ${foundProfile!['full_name']} यांना यशस्वीपणे मंडळात जोडले आहे!',
+                                                  '✅ Added ${foundProfile!['full_name']} to mandal successfully!',
+                                                )),
+                                              ),
+                                            );
+                                            await _loadMembersAndRoles();
+                                          }
+                                        } catch (e) {
+                                          setModalState(() {
+                                            isAdding = false;
+                                            dialogError = 'सदस्य जोडताना त्रुटी आली: $e';
+                                          });
+                                        }
+                                      },
+                                child: isAdding
+                                    ? const SizedBox(
+                                        height: 18,
+                                        width: 18,
+                                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                      )
+                                    : Text(lang.tr('मंडळात सामील करा', 'Add to Mandal')),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ] else if (hasSearched && foundProfile == null) ...[
+                      // Not registered yet -> Share WhatsApp invite
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade50,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.amber.shade300),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.info_outline_rounded, color: Colors.amber.shade900, size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    lang.tr('हा मोबाईल नंबर अद्याप ॲपवर नोंदणीकृत नाही.', 'This mobile number is not registered on the app yet.'),
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.amber.shade900),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              lang.tr(
+                                'त्यांना ॲप इन्स्टॉल करण्यास सांगा किंवा खालील बटण दाबून WhatsApp वर थेट आमंत्रण पाठवा:',
+                                'Ask them to install the app or share WhatsApp invite code:',
+                              ),
+                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                            ),
+                            const SizedBox(height: 12),
+                            OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.green.shade800,
+                                side: BorderSide(color: Colors.green.shade700),
+                              ),
+                              icon: const Icon(Icons.share, size: 16),
+                              label: Text(lang.tr('WhatsApp वर आमंत्रण कोड पाठवा', 'Share WhatsApp Invite')),
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                Share.share(
+                                  '🚩 *${mandal.name}* मध्ये सामील व्हा!\n'
+                                  'वर्गणी कलेक्शन ॲपमध्ये सामील होण्यासाठी आमचा आमंत्रण कोड वापरा:\n\n'
+                                  '👉 कोड: *${mandal.invitationCode}*\n\n'
+                                  'ॲप उघडून "मंडळात सामील व्हा" वर क्लिक करा व वरील कोड टाका.',
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -499,6 +852,19 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
                           Text(
                             lang.tr('सामील झालेले सदस्य (${_members.length})', 'Joined Members (${_members.length})'),
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: _showAddMemberDialog,
+                            icon: const Icon(Icons.person_add_rounded, size: 16),
+                            label: Text(lang.tr('+ सदस्य जोडा', '+ Add Member')),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryPurple,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              elevation: 0,
+                            ),
                           ),
                         ],
                       ),
@@ -683,28 +1049,29 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
                                         ),
                                       ),
 
-                                      // Change Role Button
-                                      InkWell(
-                                        onTap: () => _showRoleChangeBottomSheet(member),
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                          child: Row(
-                                            children: [
-                                              const Icon(Icons.edit_outlined, size: 14, color: AppColors.primaryPurple),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                lang.tr('रोल बदला', 'Change Role'),
-                                                style: const TextStyle(
-                                                  color: AppColors.primaryPurple,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 12,
+                                      // Change Role Button (Never shown for self)
+                                      if (!isSelf)
+                                        InkWell(
+                                          onTap: () => _showRoleChangeBottomSheet(member),
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            child: Row(
+                                              children: [
+                                                const Icon(Icons.edit_outlined, size: 14, color: AppColors.primaryPurple),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  lang.tr('रोल बदला', 'Change Role'),
+                                                  style: const TextStyle(
+                                                    color: AppColors.primaryPurple,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                  ),
                                                 ),
-                                              ),
-                                            ],
+                                              ],
+                                            ),
                                           ),
                                         ),
-                                      ),
                                     ],
                                   ),
                                 ],
@@ -715,6 +1082,13 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
                     ],
                   ),
                 ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showAddMemberDialog,
+        backgroundColor: AppColors.primaryPurple,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.person_add_rounded),
+        label: Text(lang.tr('सदस्य जोडा', 'Add Member')),
+      ),
     );
   }
 }
