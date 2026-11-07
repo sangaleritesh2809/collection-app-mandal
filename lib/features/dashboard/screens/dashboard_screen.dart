@@ -101,11 +101,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     const SizedBox(height: 16),
                   ],
 
-                  // 8. MANDAL RATE SUMMARY STRIP
-                  _buildVarganiRateStrip(context, configState, lang),
-                  const SizedBox(height: 20),
-
-                  // 9. RECENT TRANSACTIONS (COLLECTIONS & EXPENSES)
+                  // 8. RECENT TRANSACTIONS (COLLECTIONS & EXPENSES)
                   _buildRecentTransactionsSection(context, collectionState, expenseState, lang),
                   const SizedBox(height: 24),
                 ],
