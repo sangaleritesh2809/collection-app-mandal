@@ -724,6 +724,30 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
                                 if (val != null) setModalState(() => selectedRole = val);
                               },
                             ),
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.blue.shade200),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.key_rounded, size: 16, color: AppColors.royalBlue),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      lang.tr(
+                                        '💡 या सदस्याचा सुरुवातीचा लॉगिन पासवर्ड Mandal@123 असेल. (लॉगिन झाल्यावर ते स्वतःचा पासवर्ड बदलू शकतात.)',
+                                        '💡 Initial login password will be Mandal@123 (they can change it anytime after login).',
+                                      ),
+                                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, height: 1.3),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                             const SizedBox(height: 14),
                             ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
@@ -759,8 +783,8 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
                                             SnackBar(
                                               backgroundColor: AppColors.success,
                                               content: Text(lang.tr(
-                                                '✅ $name यांना मॅन्युअली मंडळात जोडले आहे!',
-                                                '✅ Added $name manually to mandal!',
+                                                '✅ $name यांना जोडले आहे! सुरुवातीचा पासवर्ड: Mandal@123',
+                                                '✅ Added $name! Initial password: Mandal@123',
                                               )),
                                             ),
                                           );
