@@ -37,19 +37,19 @@ class AppValidators {
   }
 
   /// Currency / Amount validation
-  static String? amount(String? value, {double min = 1, double? max, String fieldName = 'रक्कम'}) {
+  static String? amount(String? value, {double min = 1, double? max, String fieldName = 'रक्कम', bool isEnglish = false}) {
     if (value == null || value.trim().isEmpty) {
-      return '$fieldName आवश्यक आहे.';
+      return isEnglish ? '$fieldName is required.' : '$fieldName आवश्यक आहे.';
     }
     final num = double.tryParse(value.trim());
     if (num == null) {
-      return 'कृपया फक्त वैध आकडा (Number) टाका.';
+      return isEnglish ? 'Please enter a valid numeric amount.' : 'कृपया फक्त वैध आकडा (Number) टाका.';
     }
     if (num < min) {
-      return '$fieldName किमान ₹$min असावी.';
+      return isEnglish ? '$fieldName must be at least ₹$min.' : '$fieldName किमान ₹$min असावी.';
     }
     if (max != null && num > max) {
-      return '$fieldName ₹$max पेक्षा जास्त असू शकत नाही.';
+      return isEnglish ? '$fieldName cannot exceed ₹$max.' : '$fieldName ₹$max पेक्षा जास्त असू शकत नाही.';
     }
     return null;
   }

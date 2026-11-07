@@ -466,6 +466,7 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
                     const SizedBox(height: 16),
 
                     // Phone input with instant duplicate & Super Admin check
+                    FormLabel(lang.tr('मोबाईल नंबर', 'Mobile Number'), isRequired: true),
                     TextField(
                       controller: phoneCtrl,
                       keyboardType: TextInputType.phone,
@@ -538,9 +539,7 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
                         }
                       },
                       decoration: InputDecoration(
-                        labelText: lang.tr('मोबाईल नंबर', 'Mobile Number'),
                         hintText: lang.tr('१० अंकी मोबाईल नंबर टाका', 'Enter 10-digit mobile number'),
-                        prefixText: '+91 ',
                         prefixIcon: const Icon(Icons.phone_android_rounded, color: AppColors.primaryPurple),
                         counterText: '',
                         suffixIcon: IconButton(
@@ -827,10 +826,10 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
                               style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                             ),
                             const SizedBox(height: 12),
+                            FormLabel(lang.tr('सदस्याचे पूर्ण नाव', 'Full Name'), isRequired: true),
                             TextField(
                               controller: manualNameCtrl,
                               decoration: InputDecoration(
-                                labelText: lang.tr('सदस्याचे पूर्ण नाव', 'Full Name'),
                                 hintText: lang.tr('उदा. संतोष कदम', 'e.g. Santosh Kadam'),
                                 prefixIcon: const Icon(Icons.badge_outlined, color: AppColors.royalBlue),
                                 filled: true,

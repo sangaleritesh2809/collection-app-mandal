@@ -149,6 +149,27 @@ class CollectionNotifier extends StateNotifier<CollectionState> {
       final userId = SupabaseService.currentUserId ?? currentUserId;
       if (userId == null) throw Exception('User not authenticated');
 
+      // Check for duplicate UTR number in this mandal
+      if (utrNumber != null && utrNumber.trim().isNotEmpty) {
+        final cleanUtr = utrNumber.trim();
+        try {
+          final dupCheck = await SupabaseService.client
+              .from('collections')
+              .select('receipt_number')
+              .eq('mandal_id', mandalId!)
+              .or('utr_number.eq.$cleanUtr,notes.ilike.%$cleanUtr%')
+              .limit(1);
+
+          if ((dupCheck as List).isNotEmpty) {
+            final dupRct = dupCheck.first['receipt_number'] ?? '';
+            throw Exception('हा UTR ($cleanUtr) आधीच पावती $dupRct मध्ये वापरला आहे. डुप्लिकेट UTR चालणार नाही.');
+          }
+        } catch (dupEx) {
+          if (dupEx.toString().contains('डुप्लिकेट UTR')) rethrow;
+          debugPrint('Duplicate UTR query check warning: $dupEx');
+        }
+      }
+
       final insertPayload = <String, dynamic>{
         'mandal_id': mandalId,
         'family_id': familyId,

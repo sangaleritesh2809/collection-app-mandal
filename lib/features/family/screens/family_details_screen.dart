@@ -7,6 +7,7 @@ import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/services/share_service.dart';
 import '../../../core/services/pdf_service.dart';
+import '../../../core/widgets/form_label.dart';
 import '../../collection/providers/collection_provider.dart';
 import '../../mandal/providers/mandal_provider.dart';
 import '../models/family.dart';
@@ -61,15 +62,18 @@ class _FamilyDetailsScreenState extends ConsumerState<FamilyDetailsScreen> {
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                FormLabel(lang.tr('सदस्याचे नाव', 'Member Name'), isRequired: true),
                 TextField(
                   controller: nameCtrl,
                   decoration: InputDecoration(
-                    labelText: lang.tr('सदस्याचे नाव *', 'Member Name *'),
+                    hintText: lang.tr('सदस्याचे पूर्ण नाव टाका', 'Enter full name'),
                     prefixIcon: const Icon(Icons.person),
                   ),
                 ),
                 const SizedBox(height: 12),
+                FormLabel(lang.tr('मोबाईल नंबर', 'Mobile Number')),
                 TextField(
                   controller: mobileCtrl,
                   keyboardType: TextInputType.phone,
@@ -80,7 +84,7 @@ class _FamilyDetailsScreenState extends ConsumerState<FamilyDetailsScreen> {
                     LengthLimitingTextInputFormatter(10),
                   ],
                   decoration: InputDecoration(
-                    labelText: lang.tr('मोबाईल नंबर', 'Mobile Number'),
+                    hintText: lang.tr('१० अंकी मोबाईल नंबर टाका', 'Enter 10-digit mobile number'),
                     prefixIcon: const Icon(Icons.phone),
                     prefixText: '+91 ',
                   ),
@@ -89,26 +93,37 @@ class _FamilyDetailsScreenState extends ConsumerState<FamilyDetailsScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: TextField(
-                        controller: ageCtrl,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: lang.tr('वय', 'Age'),
-                          prefixIcon: const Icon(Icons.calendar_today),
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          FormLabel(lang.tr('वय', 'Age')),
+                          TextField(
+                            controller: ageCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              hintText: lang.tr('वय', 'Age'),
+                              prefixIcon: const Icon(Icons.calendar_today),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: gender,
-                        decoration: InputDecoration(labelText: lang.tr('लिंग', 'Gender')),
-                        items: [
-                          DropdownMenuItem(value: 'Male', child: Text(lang.tr('पुरुष', 'Male'))),
-                          DropdownMenuItem(value: 'Female', child: Text(lang.tr('स्त्री', 'Female'))),
-                          DropdownMenuItem(value: 'Other', child: Text(lang.tr('इतर', 'Other'))),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          FormLabel(lang.tr('लिंग', 'Gender')),
+                          DropdownButtonFormField<String>(
+                            value: gender,
+                            items: [
+                              DropdownMenuItem(value: 'Male', child: Text(lang.tr('पुरुष', 'Male'))),
+                              DropdownMenuItem(value: 'Female', child: Text(lang.tr('स्त्री', 'Female'))),
+                              DropdownMenuItem(value: 'Other', child: Text(lang.tr('इतर', 'Other'))),
+                            ],
+                            onChanged: (val) => setDialogState(() => gender = val ?? 'Male'),
+                          ),
                         ],
-                        onChanged: (val) => setDialogState(() => gender = val ?? 'Male'),
                       ),
                     ),
                   ],

@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/responsive_container.dart';
+import '../../../core/widgets/form_label.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../mandal/providers/mandal_provider.dart';
@@ -121,11 +122,11 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
               style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 14),
+            FormLabel(lang.tr('नाकारण्याचे कारण', 'Rejection Reason'), isRequired: true),
             TextField(
               controller: reasonCtrl,
               maxLines: 2,
               decoration: InputDecoration(
-                labelText: lang.tr('नाकारण्याचे कारण *', 'Rejection Reason *'),
                 hintText: lang.tr('नाकारण्याचे कारण टाका', 'Enter reason for rejection'),
               ),
             ),

@@ -6,6 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/services/supabase_service.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/form_label.dart';
@@ -45,6 +46,9 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
   final _membersCountController = TextEditingController(text: '1');
   bool _useCustomVargani = false;
   final _customVarganiController = TextEditingController();
+
+  String? _utrError;
+  bool _isCheckingUtr = false;
 
   AppLanguage get lang => ref.watch(languageProvider);
 
@@ -128,10 +132,96 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
     setState(() {});
   }
 
+  Future<void> _checkDuplicateUtr(String val) async {
+    final clean = val.trim();
+    if (clean.isEmpty) {
+      if (_utrError != null) setState(() => _utrError = null);
+      return;
+    }
+
+    if (clean.length < 6) {
+      if (_utrError != null) setState(() => _utrError = null);
+      return;
+    }
+
+    // 1. Check local loaded collections first (instant)
+    final collections = ref.read(collectionProvider).collections;
+    for (final c in collections) {
+      final cUtr = c.utrNumber?.trim();
+      final hasMatchingUtr = cUtr != null && cUtr.isNotEmpty && cUtr.toLowerCase() == clean.toLowerCase();
+      final hasMatchingNotes = c.notes != null && c.notes!.toLowerCase().contains('utr: ${clean.toLowerCase()}');
+
+      if (hasMatchingUtr || hasMatchingNotes) {
+        final lang = ref.read(languageProvider);
+        setState(() {
+          _utrError = lang.tr(
+            '⚠️ हा UTR नंबर आधीच पावती [${c.receiptNumber}] (${c.contributorDisplayName}) साठी वापरला आहे!',
+            '⚠️ This UTR number is already used for receipt [${c.receiptNumber}] (${c.contributorDisplayName})!',
+          );
+        });
+        return;
+      }
+    }
+
+    // 2. Query Supabase for duplicate UTR in the active mandal
+    final mandalId = ref.read(mandalProvider).selectedMandal?.id;
+    if (mandalId != null && SupabaseService.isInitialized) {
+      setState(() => _isCheckingUtr = true);
+      try {
+        final res = await SupabaseService.client
+            .from('collections')
+            .select('id, receipt_number, amount, family:families(family_head_name)')
+            .eq('mandal_id', mandalId)
+            .or('utr_number.eq.$clean,notes.ilike.%$clean%')
+            .limit(1);
+
+        if (mounted) {
+          if ((res as List).isNotEmpty) {
+            final dup = res.first;
+            final rct = dup['receipt_number'] ?? '';
+            final fName = dup['family']?['family_head_name'] ?? '';
+            final lang = ref.read(languageProvider);
+            setState(() {
+              _utrError = lang.tr(
+                '⚠️ हा UTR नंबर आधीच पावती [$rct] ${fName.isNotEmpty ? "($fName)" : ""} साठी नोंदवला आहे! डुप्लिकेट UTR चालणार नाही.',
+                '⚠️ This UTR number is already registered in receipt [$rct] ${fName.isNotEmpty ? "($fName)" : ""}! Duplicate UTR not allowed.',
+              );
+            });
+          } else {
+            if (_utrError != null) setState(() => _utrError = null);
+          }
+        }
+      } catch (_) {
+        // Fallback safely if network issue
+      } finally {
+        if (mounted) setState(() => _isCheckingUtr = false);
+      }
+    }
+  }
+
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
     final lang = ref.read(languageProvider);
+
+    // If payment is UPI, verify duplicate UTR
+    if (_paymentMode == 'upi') {
+      final utr = _utrController.text.trim();
+      if (utr.isNotEmpty) {
+        await _checkDuplicateUtr(utr);
+        if (_utrError != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: AppColors.error,
+              content: Text(_utrError!),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+          return;
+        }
+      }
+    }
+
     setState(() => _isSubmitting = true);
 
     final headName = _headNameController.text.trim();
@@ -243,6 +333,7 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
   }
 
   void _showEnlargedQrImage(BuildContext context, String imageUrl) {
+    final lang = ref.read(languageProvider);
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
@@ -252,11 +343,11 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Row(
+              Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('मंडळाचा QR कोड', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  CloseButton(),
+                  Text(lang.tr('मंडळाचा QR कोड', 'Mandal QR Code'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const CloseButton(),
                 ],
               ),
               const SizedBox(height: 12),
@@ -271,7 +362,7 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              const Text('स्कॅन करून पेमेंट करा', style: TextStyle(fontSize: 12, color: AppColors.textSecondaryLight)),
+              Text(lang.tr('स्कॅन करून पेमेंट करा', 'Scan to make payment'), style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryLight)),
             ],
           ),
         ),
@@ -357,7 +448,7 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    '${_selectedFamily!.familyHeadName} (बाकी वर्गणी: ${AppFormatters.formatCurrency(_selectedFamily!.pendingAmount)})',
+                                    '${_selectedFamily!.familyHeadName} (${lang.tr("बाकी वर्गणी", "Pending")}: ${AppFormatters.formatCurrency(_selectedFamily!.pendingAmount)})',
                                     style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryPurple),
                                   ),
                                 ),
@@ -402,7 +493,7 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                               },
                               validator: (val) {
                                 if (val == null || val.trim().isEmpty) {
-                                  return 'वर्गणीदाराचे नाव टाकणे आवश्यक आहे';
+                                  return lang.tr('वर्गणीदाराचे नाव टाकणे आवश्यक आहे', 'Contributor name is required');
                                 }
                                 return null;
                               },
@@ -438,11 +529,13 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                                         ),
                                         title: Text(option.familyHeadName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                                         subtitle: Text(
-                                          option.mobileNumber != null ? '+91 ${option.mobileNumber}' : '${option.totalMembers} व्यक्ती',
+                                          option.mobileNumber != null
+                                              ? '+91 ${option.mobileNumber}'
+                                              : '${option.totalMembers} ${lang.tr("व्यक्ती", "members")}',
                                           style: const TextStyle(fontSize: 11),
                                         ),
                                         trailing: Text(
-                                          'बाकी: ₹${option.pendingAmount.toInt()}',
+                                          '${lang.tr("बाकी", "Pending")}: ₹${option.pendingAmount.toInt()}',
                                           style: const TextStyle(color: AppColors.royalBlue, fontWeight: FontWeight.bold, fontSize: 12),
                                         ),
                                         onTap: () => onSelected(option),
@@ -464,7 +557,6 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                           maxLength: 10,
                           decoration: InputDecoration(
                             hintText: lang.tr('१० अंकी मोबाईल नंबर टाका', '10-digit mobile number'),
-                            prefixText: '+91 ',
                             prefixIcon: const Icon(Icons.phone),
                             counterText: '',
                           ),
@@ -556,7 +648,7 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                                           },
                                           validator: (val) {
                                             if (val == null || val.trim().isEmpty) {
-                                              return 'सदस्य संख्या टाका';
+                                              return lang.tr('सदस्य संख्या टाका', 'Please enter member count');
                                             }
                                             return null;
                                           },
@@ -569,9 +661,9 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Text(
-                                          'ठरलेली वर्गणी',
-                                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                                        Text(
+                                          lang.tr('ठरलेली वर्गणी', 'Expected Vargani'),
+                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
@@ -582,7 +674,10 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                                         ),
                                         if (activeConfig != null)
                                           Text(
-                                            'दर: ₹${activeConfig.perMemberAmount.toInt()}/व्यक्ती',
+                                            lang.tr(
+                                              'दर: ₹${activeConfig.perMemberAmount.toInt()}/व्यक्ती',
+                                              'Rate: ₹${activeConfig.perMemberAmount.toInt()}/member',
+                                            ),
                                             style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
                                           ),
                                       ],
@@ -634,7 +729,7 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                   // ==============================================================================
                   // 3. वर्गणी पावती भरण्याचा भाग (Vargani Amount & Receipt Fields)
                   // ==============================================================================
-                  const FormLabel('वर्गणी रक्कम (₹)', isRequired: true),
+                  FormLabel(lang.tr('वर्गणी रक्कम (₹)', 'Vargani Amount (₹)'), isRequired: true),
                   TextFormField(
                     controller: _amountController,
                     keyboardType: TextInputType.number,
@@ -644,24 +739,27 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                       hintText: lang.tr('रक्कम टाका', 'Enter amount'),
                     ),
                     onChanged: (_) => setState(() {}),
-                    validator: (val) => AppValidators.amount(val, fieldName: 'वर्गणी रक्कम'),
+                    validator: (val) => AppValidators.amount(
+                      val,
+                      fieldName: lang.tr('वर्गणी रक्कम', 'Vargani amount'),
+                      isEnglish: lang.isEnglish,
+                    ),
                   ),
                   const SizedBox(height: 16),
 
                   // Payment Mode Dropdown
-                  const FormLabel('पेमेंट पद्धत', isRequired: true),
+                  FormLabel(lang.tr('पेमेंट पद्धत', 'Payment Mode'), isRequired: true),
                   DropdownButtonFormField<String>(
                     value: _paymentMode,
-                    decoration: const InputDecoration(
-                      hintText: 'पेमेंट पद्धत निवडा',
-                      prefixIcon: Icon(Icons.payment),
+                    decoration: InputDecoration(
+                      hintText: lang.tr('पेमेंट पद्धत निवडा', 'Select payment mode'),
+                      prefixIcon: const Icon(Icons.payment),
                     ),
                     items: [
                       DropdownMenuItem(value: 'cash', child: Text(lang.tr('रोख', 'Cash'))),
                       DropdownMenuItem(value: 'upi', child: Text(lang.tr('📱 ऑनलाइन / UPI QR', '📱 Online / UPI QR'))),
                       DropdownMenuItem(value: 'bank_transfer', child: Text(lang.tr('बँक ट्रान्सफर', 'Bank Transfer (NEFT/RTGS)'))),
                       DropdownMenuItem(value: 'cheque', child: Text(lang.tr('धनादेश / चेक', 'Cheque'))),
-                      DropdownMenuItem(value: 'other', child: Text(lang.tr('इतर', 'Other'))),
                     ],
                     onChanged: (val) => setState(() => _paymentMode = val ?? 'cash'),
                   ),
@@ -696,11 +794,11 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                   const SizedBox(height: 16),
 
                   // Notes
-                  FormLabel(lang.tr('काही विशेष नोंद (ऐच्छिक)', 'Special Notes (Optional)')),
+                  FormLabel(lang.tr('विशेष नोंद', 'Special Notes')),
                   TextFormField(
                     controller: _notesController,
                     decoration: InputDecoration(
-                      hintText: lang.tr('काही विशेष नोंद असल्यास टाका', 'Enter special notes (optional)'),
+                      hintText: lang.tr('काही विशेष नोंद असल्यास टाका', 'Enter special notes'),
                       prefixIcon: const Icon(Icons.notes),
                     ),
                   ),
@@ -764,7 +862,9 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
               const Icon(Icons.qr_code_scanner, color: Colors.green, size: 24),
               const SizedBox(width: 8),
               Text(
-                amountVal > 0 ? 'स्कॅन करून ₹${amountVal.toInt()} भरा' : 'स्कॅन करून वर्गणी भरा',
+                amountVal > 0
+                    ? lang.tr('स्कॅन करून ₹${amountVal.toInt()} भरा', 'Scan & Pay ₹${amountVal.toInt()}')
+                    : lang.tr('स्कॅन करून वर्गणी भरा', 'Scan & Pay Vargani'),
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green),
               ),
             ],
@@ -795,12 +895,15 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Row(
+                    Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.fullscreen, size: 16, color: Colors.green),
-                        SizedBox(width: 4),
-                        Text('मोठा पाहण्यासाठी टॅप करा', style: TextStyle(fontSize: 11, color: Colors.green)),
+                        const Icon(Icons.fullscreen, size: 16, color: Colors.green),
+                        const SizedBox(width: 4),
+                        Text(
+                          lang.tr('मोठा पाहण्यासाठी टॅप करा', 'Tap to view full QR'),
+                          style: const TextStyle(fontSize: 11, color: Colors.green),
+                        ),
                       ],
                     ),
                   ],
@@ -839,15 +942,18 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                 children: [
                   const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 36),
                   const SizedBox(height: 6),
-                  const Text(
-                    'या मंडळासाठी अद्याप QR कोड किंवा UPI ID जोडलेला नाही.',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  Text(
+                    lang.tr('या मंडळासाठी अद्याप QR कोड किंवा UPI ID जोडलेला नाही.', 'No QR code or UPI ID linked for this mandal yet.'),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'मंडळ ॲडमिन सेटिंग्जमधून अधिकृत QR कोडचा फोटो किंवा UPI ID जोडू शकतात.',
-                    style: TextStyle(fontSize: 11, color: AppColors.textSecondaryLight),
+                  Text(
+                    lang.tr(
+                      'मंडळ ॲडमिन सेटिंग्जमधून अधिकृत QR कोडचा फोटो किंवा UPI ID जोडू शकतात.',
+                      'Mandal Admin can configure official QR code or UPI ID in settings.',
+                    ),
+                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondaryLight),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 10),
@@ -855,7 +961,7 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade700),
                     onPressed: () => context.push('/mandal-payment-settings'),
                     icon: const Icon(Icons.add_photo_alternate, size: 18),
-                    label: const Text('QR कोड / UPI ID जोडा'),
+                    label: Text(lang.tr('QR कोड / UPI ID जोडा', 'Add QR Code / UPI ID')),
                   ),
                 ],
               ),
@@ -879,18 +985,21 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('मंडळाचा UPI ID:', style: TextStyle(fontSize: 10, color: AppColors.textSecondaryLight)),
+                        Text(
+                          lang.tr('मंडळाचा UPI ID:', 'Mandal UPI ID:'),
+                          style: const TextStyle(fontSize: 10, color: AppColors.textSecondaryLight),
+                        ),
                         Text(upiId, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green)),
                       ],
                     ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.copy, size: 18, color: Colors.green),
-                    tooltip: 'UPI ID कॉपी करा',
+                    tooltip: lang.tr('UPI ID कॉपी करा', 'Copy UPI ID'),
                     onPressed: () {
                       Clipboard.setData(ClipboardData(text: upiId));
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('UPI ID कॉपी झाला!')),
+                        SnackBar(content: Text(lang.tr('UPI ID कॉपी झाला!', 'UPI ID copied!'))),
                       );
                     },
                   ),
@@ -913,7 +1022,7 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                     Clipboard.setData(ClipboardData(text: upiId));
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('UPI ॲप उघडता आले नाही. UPI ID कॉपी केला आहे.')),
+                        SnackBar(content: Text(lang.tr('UPI ॲप उघडता आले नाही. UPI ID कॉपी केला आहे.', 'Could not open UPI app. UPI ID copied.'))),
                       );
                     }
                   }
@@ -922,26 +1031,75 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                 }
               },
               icon: const Icon(Icons.open_in_new, size: 18),
-              label: const Text('GPay / PhonePe / Paytm मध्ये उघडा'),
+              label: Text(lang.tr('GPay / PhonePe / Paytm मध्ये उघडा', 'Open in GPay / PhonePe / Paytm')),
             ),
             const SizedBox(height: 12),
           ],
 
           // UTR / Transaction Reference Number Input
-          const Align(
+          Align(
             alignment: Alignment.centerLeft,
-            child: FormLabel('UTR / ऑनलाइन ट्रान्झॅक्शन नंबर (ऐच्छिक)', subtitle: 'GPay/PhonePe मधील १२ अंकी UTR नंबर टाका'),
+            child: FormLabel(
+              lang.tr('UTR / ऑनलाइन ट्रान्झॅक्शन नंबर (ऐच्छिक)', 'UTR / Transaction Reference (Optional)'),
+              subtitle: lang.tr('GPay/PhonePe मधील १२ अंकी UTR नंबर टाका', 'Enter 12-digit UTR from GPay/PhonePe'),
+            ),
           ),
           TextFormField(
             controller: _utrController,
-            validator: (val) => AppValidators.utrNumber(val, isRequired: false),
+            validator: (val) {
+              final err = AppValidators.utrNumber(val, isRequired: false);
+              if (err != null) return err;
+              if (_utrError != null) return _utrError;
+              return null;
+            },
+            onChanged: (val) => _checkDuplicateUtr(val),
             decoration: InputDecoration(
               hintText: lang.tr('UTR / ट्रान्झॅक्शन नंबर टाका', 'Enter UTR / Transaction number'),
               prefixIcon: const Icon(Icons.receipt_outlined),
+              suffixIcon: _isCheckingUtr
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryPurple),
+                      ),
+                    )
+                  : (_utrController.text.trim().length >= 6 && _utrError == null
+                      ? const Icon(Icons.check_circle, color: AppColors.success, size: 20)
+                      : null),
               fillColor: Colors.white,
               filled: true,
             ),
           ),
+          if (_utrError != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.red.shade300),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _utrError!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.red.shade900,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
