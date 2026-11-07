@@ -400,3 +400,91 @@ DROP POLICY IF EXISTS "Deposit requests update" ON public.deposit_requests;
 CREATE POLICY "Deposit requests update" ON public.deposit_requests FOR UPDATE USING (
     auth.uid() = designated_treasurer_id OR public.is_mandal_member(mandal_id) OR public.is_super_admin()
 );
+
+-- ==============================================================================
+-- 10. RPC TO MANUALLY ADD A MEMBER TO A MANDAL
+-- ==============================================================================
+CREATE OR REPLACE FUNCTION public.add_manual_member(
+    p_mandal_id UUID,
+    p_full_name TEXT,
+    p_mobile_number TEXT,
+    p_role_name TEXT DEFAULT 'Collector'
+)
+RETURNS JSONB AS $$
+DECLARE
+    v_clean_mobile TEXT;
+    v_target_user_id UUID;
+    v_target_email TEXT;
+    v_role_id UUID;
+BEGIN
+    -- 1. Clean mobile number to 10 digits
+    v_clean_mobile := REGEXP_REPLACE(p_mobile_number, '\D', '', 'g');
+    IF LENGTH(v_clean_mobile) > 10 THEN
+        v_clean_mobile := RIGHT(v_clean_mobile, 10);
+    END IF;
+
+    IF LENGTH(v_clean_mobile) <> 10 THEN
+        RAISE EXCEPTION 'Invalid mobile: must be 10 digits';
+    END IF;
+
+    IF p_full_name IS NULL OR TRIM(p_full_name) = '' THEN
+        RAISE EXCEPTION 'Name is required';
+    END IF;
+
+    -- 2. Find profile by mobile
+    SELECT id INTO v_target_user_id FROM public.profiles WHERE mobile_number = v_clean_mobile LIMIT 1;
+
+    -- If not found, create in auth.users & profiles
+    IF v_target_user_id IS NULL THEN
+        v_target_email := 'user_' || v_clean_mobile || '@vargani.app';
+        SELECT id INTO v_target_user_id FROM auth.users WHERE LOWER(email) = LOWER(v_target_email) LIMIT 1;
+
+        IF v_target_user_id IS NULL THEN
+            v_target_user_id := gen_random_uuid();
+            INSERT INTO auth.users (
+                id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
+                raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+            ) VALUES (
+                v_target_user_id,
+                '00000000-0000-0000-0000-000000000000',
+                'authenticated',
+                'authenticated',
+                v_target_email,
+                crypt('Mandal@123', gen_salt('bf')),
+                NOW(),
+                '{"provider":"email","providers":["email"]}'::jsonb,
+                jsonb_build_object('full_name', TRIM(p_full_name), 'mobile_number', v_clean_mobile),
+                NOW(),
+                NOW()
+            );
+        END IF;
+
+        INSERT INTO public.profiles (id, full_name, email, mobile_number, is_super_admin, role, created_at, updated_at)
+        VALUES (v_target_user_id, TRIM(p_full_name), v_target_email, v_clean_mobile, (v_clean_mobile = '9699342811'), CASE WHEN v_clean_mobile = '9699342811' THEN 'super_admin' ELSE 'member' END, NOW(), NOW())
+        ON CONFLICT (id) DO UPDATE
+        SET full_name = EXCLUDED.full_name, mobile_number = EXCLUDED.mobile_number, updated_at = NOW();
+    END IF;
+
+    -- 3. Find Role ID
+    SELECT id INTO v_role_id FROM public.roles WHERE name = p_role_name LIMIT 1;
+    IF v_role_id IS NULL THEN
+        SELECT id INTO v_role_id FROM public.roles WHERE name = 'Collector' LIMIT 1;
+    END IF;
+
+    -- 4. Insert or update membership
+    INSERT INTO public.mandal_memberships (mandal_id, user_id, role_id, status, joined_at)
+    VALUES (p_mandal_id, v_target_user_id, v_role_id, 'active', NOW())
+    ON CONFLICT (mandal_id, user_id) DO UPDATE
+    SET role_id = EXCLUDED.role_id, status = 'active';
+
+    RETURN jsonb_build_object(
+        'success', TRUE,
+        'user_id', v_target_user_id,
+        'full_name', TRIM(p_full_name),
+        'mobile_number', v_clean_mobile,
+        'role_name', p_role_name
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION public.add_manual_member(UUID, TEXT, TEXT, TEXT) TO authenticated, service_role;

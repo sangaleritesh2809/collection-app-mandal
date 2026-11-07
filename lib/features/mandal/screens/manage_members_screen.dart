@@ -390,6 +390,7 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
     if (mandal == null) return;
 
     final phoneCtrl = TextEditingController();
+    final manualNameCtrl = TextEditingController();
     bool isSearching = false;
     bool isAdding = false;
     Map<String, dynamic>? foundProfile;
@@ -598,12 +599,29 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
 
                                         setModalState(() => isAdding = true);
                                         try {
-                                          await SupabaseService.client.from('mandal_memberships').insert({
-                                            'mandal_id': mandal.id,
-                                            'user_id': foundProfile!['id'],
-                                            'role_id': roleId,
-                                            'status': 'active',
-                                          });
+                                          final existing = await SupabaseService.client
+                                              .from('mandal_memberships')
+                                              .select('id')
+                                              .eq('mandal_id', mandal.id)
+                                              .eq('user_id', foundProfile!['id'])
+                                              .maybeSingle();
+
+                                          if (existing != null) {
+                                            await SupabaseService.client
+                                                .from('mandal_memberships')
+                                                .update({
+                                                  'role_id': roleId,
+                                                  'status': 'active',
+                                                })
+                                                .eq('id', existing['id']);
+                                          } else {
+                                            await SupabaseService.client.from('mandal_memberships').insert({
+                                              'mandal_id': mandal.id,
+                                              'user_id': foundProfile!['id'],
+                                              'role_id': roleId,
+                                              'status': 'active',
+                                            });
+                                          }
 
                                           if (ctx.mounted) Navigator.pop(ctx);
                                           if (mounted) {
@@ -638,25 +656,25 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
                         ),
                       ),
                     ] else if (hasSearched && foundProfile == null) ...[
-                      // Not registered yet -> Share WhatsApp invite
+                      // Manual Add Member Option (when user not in profiles)
                       Container(
-                        padding: const EdgeInsets.all(14),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.amber.shade50,
+                          color: Colors.blue.shade50,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.amber.shade300),
+                          border: Border.all(color: Colors.blue.shade200),
                         ),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.info_outline_rounded, color: Colors.amber.shade900, size: 20),
+                                const Icon(Icons.person_add_alt_1_rounded, color: AppColors.royalBlue, size: 22),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    lang.tr('हा मोबाईल नंबर अद्याप ॲपवर नोंदणीकृत नाही.', 'This mobile number is not registered on the app yet.'),
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.amber.shade900),
+                                    lang.tr('मॅन्युअली सदस्य जोडा', 'Add Member Manually'),
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.royalBlue),
                                   ),
                                 ),
                               ],
@@ -664,16 +682,120 @@ class _ManageMembersScreenState extends ConsumerState<ManageMembersScreen> {
                             const SizedBox(height: 6),
                             Text(
                               lang.tr(
-                                'त्यांना ॲप इन्स्टॉल करण्यास सांगा किंवा खालील बटण दाबून WhatsApp वर थेट आमंत्रण पाठवा:',
-                                'Ask them to install the app or share WhatsApp invite code:',
+                                'हा नंबर ॲपवर नोंदणीकृत नाही. तुम्ही त्यांचे पूर्ण नाव टाकून थेट या मंडळात सामील करू शकता:',
+                                'This number is not registered yet. Enter full name to add directly to this mandal:',
                               ),
                               style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                             ),
                             const SizedBox(height: 12),
+                            TextField(
+                              controller: manualNameCtrl,
+                              decoration: InputDecoration(
+                                labelText: lang.tr('सदस्याचे पूर्ण नाव', 'Full Name'),
+                                hintText: lang.tr('उदा. संतोष कदम', 'e.g. Santosh Kadam'),
+                                prefixIcon: const Icon(Icons.badge_outlined, color: AppColors.royalBlue),
+                                filled: true,
+                                fillColor: Colors.white,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              lang.tr('या सदस्याची भूमिका (Role) निवडा:', 'Assign Role:'),
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 6),
+                            DropdownButtonFormField<String>(
+                              value: selectedRole,
+                              decoration: InputDecoration(
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                fillColor: Colors.white,
+                                filled: true,
+                              ),
+                              items: [
+                                DropdownMenuItem(value: 'Collector', child: Text(lang.tr('📝 वर्गणी संकलक / कार्यकर्ता', '📝 Collector / Worker'))),
+                                DropdownMenuItem(value: 'Treasurer', child: Text(lang.tr('💰 खजिनदार', '💰 Treasurer'))),
+                                DropdownMenuItem(value: 'Mandal Admin', child: Text(lang.tr('🚩 मंडळ ॲडमिन', '🚩 Mandal Admin'))),
+                                DropdownMenuItem(value: 'Member', child: Text(lang.tr('👥 सभासद', '👥 Member'))),
+                              ],
+                              onChanged: (val) {
+                                if (val != null) setModalState(() => selectedRole = val);
+                              },
+                            ),
+                            const SizedBox(height: 14),
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryPurple,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              onPressed: isAdding
+                                  ? null
+                                  : () async {
+                                      final name = manualNameCtrl.text.trim();
+                                      if (name.isEmpty) {
+                                        setModalState(() => dialogError = lang.tr('कृपया सदस्याचे पूर्ण नाव टाका.', 'Please enter full name.'));
+                                        return;
+                                      }
+                                      setModalState(() {
+                                        isAdding = true;
+                                        dialogError = null;
+                                      });
+                                      try {
+                                        final clean = phoneCtrl.text.replaceAll(RegExp(r'^\+91|^0|\s+'), '').trim();
+                                        await SupabaseService.client.rpc('add_manual_member', params: {
+                                          'p_mandal_id': mandal.id,
+                                          'p_full_name': name,
+                                          'p_mobile_number': clean,
+                                          'p_role_name': selectedRole,
+                                        });
+
+                                        if (ctx.mounted) Navigator.pop(ctx);
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              backgroundColor: AppColors.success,
+                                              content: Text(lang.tr(
+                                                '✅ $name यांना मॅन्युअली मंडळात जोडले आहे!',
+                                                '✅ Added $name manually to mandal!',
+                                              )),
+                                            ),
+                                          );
+                                          await _loadMembersAndRoles();
+                                        }
+                                      } catch (e) {
+                                        setModalState(() {
+                                          isAdding = false;
+                                          dialogError = 'सदस्य जोडताना अडचण आली: $e';
+                                        });
+                                      }
+                                    },
+                              icon: isAdding
+                                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  : const Icon(Icons.person_add_rounded, size: 18),
+                              label: Text(lang.tr('➕ मॅन्युअली सदस्य जोडा', '➕ Add Member Manually')),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                const Expanded(child: Divider()),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  child: Text(lang.tr('किंवा', 'OR'), style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                                ),
+                                const Expanded(child: Divider()),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
                             OutlinedButton.icon(
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.green.shade800,
                                 side: BorderSide(color: Colors.green.shade700),
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               ),
                               icon: const Icon(Icons.share, size: 16),
                               label: Text(lang.tr('WhatsApp वर आमंत्रण कोड पाठवा', 'Share WhatsApp Invite')),

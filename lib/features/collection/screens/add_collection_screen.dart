@@ -12,6 +12,8 @@ import '../../../core/widgets/form_label.dart';
 import '../../family/models/family.dart';
 import '../../family/providers/family_provider.dart';
 import '../../mandal/providers/mandal_provider.dart';
+import '../../vargani_config/models/vargani_config.dart';
+import '../../vargani_config/providers/vargani_config_provider.dart';
 import '../providers/collection_provider.dart';
 
 class AddCollectionScreen extends ConsumerStatefulWidget {
@@ -31,6 +33,23 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
   final _utrController = TextEditingController();
   String _paymentMode = 'cash';
   DateTime _collectionDate = DateTime.now();
+
+  // ==============================================================================
+  // नवीन कुटुंब थेट याच फॉर्ममधून जोडून वर्गणी पावती तयार करण्यासाठीचे व्हेरिएबल्स
+  // (Integrated Family Registration state and controllers)
+  // ==============================================================================
+  bool _isNewFamily = false;
+  bool _isSubmitting = false;
+
+  final _headNameController = TextEditingController();
+  final _mobileController = TextEditingController();
+  final _houseNumberController = TextEditingController();
+  final _villageController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _membersCountController = TextEditingController(text: '1');
+  bool _useCustomVargani = false;
+  final _customVarganiController = TextEditingController();
+
   AppLanguage get lang => ref.watch(languageProvider);
 
   @override
@@ -47,14 +66,99 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
     _amountController.dispose();
     _notesController.dispose();
     _utrController.dispose();
+    _headNameController.dispose();
+    _mobileController.dispose();
+    _houseNumberController.dispose();
+    _villageController.dispose();
+    _addressController.dispose();
+    _membersCountController.dispose();
+    _customVarganiController.dispose();
     super.dispose();
+  }
+
+  double _getCalculatedVarganiForNewFamily(VarganiConfig? config) {
+    if (_useCustomVargani) {
+      return double.tryParse(_customVarganiController.text.trim()) ?? 0.0;
+    }
+    final membersText = _membersCountController.text.trim();
+    if (membersText.isEmpty) return 0.0;
+    final members = int.tryParse(membersText) ?? 1;
+    if (config != null) {
+      return config.calculateTotalForFamily(members);
+    }
+    return members * 500.0;
+  }
+
+  void _recalculateForNewFamily() {
+    final config = ref.read(varganiConfigProvider).activeConfig;
+    final calculated = _getCalculatedVarganiForNewFamily(config);
+    if (calculated > 0) {
+      _amountController.text = calculated.toInt().toString();
+    }
+    setState(() {});
   }
 
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedFamily == null) {
+
+    final lang = ref.read(languageProvider);
+    setState(() => _isSubmitting = true);
+
+    Family? targetFamily = _selectedFamily;
+
+    // ==============================================================================
+    // नवीन कुटुंब थेट या फॉर्ममधून जोडून डेटाबेसमध्ये जतन करण्याचा कोड (Integrated Family Creation)
+    // ==============================================================================
+    if (_isNewFamily) {
+      final headName = _headNameController.text.trim();
+      final mobile = _mobileController.text.trim();
+      final members = int.tryParse(_membersCountController.text.trim()) ?? 1;
+      final customAmount = _useCustomVargani ? double.tryParse(_customVarganiController.text.trim()) : null;
+
+      if (headName.isEmpty) {
+        setState(() => _isSubmitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.error,
+            content: Text(lang.tr('कृपया कुटुंब प्रमुखाचे नाव टाका.', 'Please enter family head name.')),
+          ),
+        );
+        return;
+      }
+
+      targetFamily = await ref.read(familyProvider.notifier).addFamilyAndReturn(
+        familyName: headName,
+        familyHeadName: headName,
+        houseNumber: _houseNumberController.text.trim().isNotEmpty ? _houseNumberController.text.trim() : null,
+        address: _addressController.text.trim().isNotEmpty ? _addressController.text.trim() : null,
+        village: _villageController.text.trim().isNotEmpty ? _villageController.text.trim() : null,
+        mobileNumber: mobile.isNotEmpty ? mobile : null,
+        initialMembersCount: members,
+        customTotalVargani: customAmount,
+      );
+
+      if (targetFamily == null) {
+        setState(() => _isSubmitting = false);
+        final err = ref.read(familyProvider).error;
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: AppColors.error,
+              content: Text(err != null ? 'कुटुंब जोडताना त्रुटी: $err' : 'नवीन कुटुंब जतन करताना त्रुटी आली.'),
+            ),
+          );
+        }
+        return;
+      }
+    }
+
+    if (targetFamily == null) {
+      setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('कृपया कुटुंब निवडा')),
+        SnackBar(
+          backgroundColor: AppColors.error,
+          content: Text(lang.tr('कृपया कुटुंब निवडा किंवा नवीन कुटुंब नोंदवा', 'Please select or add family')),
+        ),
       );
       return;
     }
@@ -62,20 +166,22 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
     final amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
 
     final receipt = await ref.read(collectionProvider.notifier).submitCollection(
-      familyId: _selectedFamily!.id,
+      familyId: targetFamily.id,
       amount: amount,
       paymentMode: _paymentMode,
       utrNumber: _utrController.text.trim().isNotEmpty ? _utrController.text.trim() : null,
       collectionDate: _collectionDate,
       notes: _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
-      familyName: _selectedFamily!.familyName,
-      familyHeadName: _selectedFamily!.familyHeadName,
-      houseNumber: _selectedFamily!.houseNumber,
-      mobileNumber: _selectedFamily!.mobileNumber,
-      totalMembers: _selectedFamily!.totalMembers,
-      totalVargani: _selectedFamily!.totalVargani,
-      previousPaid: _selectedFamily!.paidAmount,
+      familyName: targetFamily.familyName,
+      familyHeadName: targetFamily.familyHeadName,
+      houseNumber: targetFamily.houseNumber,
+      mobileNumber: targetFamily.mobileNumber,
+      totalMembers: targetFamily.totalMembers,
+      totalVargani: targetFamily.totalVargani,
+      previousPaid: targetFamily.paidAmount,
     );
+
+    setState(() => _isSubmitting = false);
 
     if (!mounted) return;
 
@@ -136,7 +242,23 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
     final familyState = ref.watch(familyProvider);
     final collectionState = ref.watch(collectionProvider);
     final mandal = ref.watch(mandalProvider).selectedMandal;
+    final configState = ref.watch(varganiConfigProvider);
+    final activeConfig = configState.activeConfig;
     final amountVal = double.tryParse(_amountController.text.trim()) ?? 0.0;
+
+    // Automatically default to "Add New Family" if no families exist in the mandal
+    if (familyState.families.isEmpty && widget.initialFamily == null && !_isNewFamily && _selectedFamily == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_isNewFamily) {
+          setState(() {
+            _isNewFamily = true;
+            _recalculateForNewFamily();
+          });
+        }
+      });
+    }
+
+    final newFamilyExpectedVargani = _getCalculatedVarganiForNewFamily(activeConfig);
 
     return Scaffold(
       appBar: AppBar(
@@ -150,81 +272,420 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Family Selector Dropdown
-                  const FormLabel('कुटुंब निवडा', isRequired: true),
-                  DropdownButtonFormField<Family>(
-                    value: _selectedFamily != null
-                        ? familyState.families.firstWhere(
-                            (f) => f.id == _selectedFamily!.id,
-                            orElse: () => _selectedFamily!,
-                          )
-                        : null,
-                    decoration: InputDecoration(
-                      hintText: lang.tr('कुटुंब निवडा', 'Select family'),
-                      prefixIcon: const Icon(Icons.people),
+                  // ==============================================================================
+                  // 1. मोड सिलेक्टर: 'कुटुंब निवडा' vs '➕ नवीन कुटुंब जोडा' (Segmented Toggle)
+                  // ==============================================================================
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.grey.shade300),
                     ),
-                    items: familyState.families.map((f) {
-                      return DropdownMenuItem<Family>(
-                        value: f,
-                        child: Text('${f.familyName} (${f.familyHeadName})'),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      setState(() {
-                        _selectedFamily = val;
-                        if (val != null && val.pendingAmount > 0) {
-                          _amountController.text = val.pendingAmount.toInt().toString();
-                        }
-                      });
-                    },
-                    validator: (val) => val == null ? 'कुटुंब निवडणे आवश्यक आहे' : null,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _isNewFamily = false;
+                                if (_selectedFamily != null && _selectedFamily!.pendingAmount > 0) {
+                                  _amountController.text = _selectedFamily!.pendingAmount.toInt().toString();
+                                }
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: !_isNewFamily ? AppColors.primaryPurple : Colors.transparent,
+                                borderRadius: BorderRadius.circular(10),
+                                boxShadow: !_isNewFamily
+                                    ? [BoxShadow(color: AppColors.primaryPurple.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2))]
+                                    : null,
+                              ),
+                              child: Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.people_alt_rounded,
+                                      size: 16,
+                                      color: !_isNewFamily ? Colors.white : AppColors.textSecondary,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      lang.tr('कुटुंब निवडा', 'Select Family'),
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: !_isNewFamily ? Colors.white : AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _isNewFamily = true;
+                                _selectedFamily = null;
+                                _recalculateForNewFamily();
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: _isNewFamily ? AppColors.primaryPurple : Colors.transparent,
+                                borderRadius: BorderRadius.circular(10),
+                                boxShadow: _isNewFamily
+                                    ? [BoxShadow(color: AppColors.primaryPurple.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2))]
+                                    : null,
+                              ),
+                              child: Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.person_add_alt_1_rounded,
+                                      size: 16,
+                                      color: _isNewFamily ? Colors.white : AppColors.textSecondary,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      lang.tr('➕ नवीन कुटुंब जोडा', '+ Add Family'),
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: _isNewFamily ? Colors.white : AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 16),
 
-                  // Selected Family Summary Card
-                  if (_selectedFamily != null) ...[
-                    Card(
-                      color: Colors.orange.shade50,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: Colors.orange.shade200),
+                  // ==============================================================================
+                  // 2A. अस्तित्वात असलेले कुटुंब निवडण्याचा भाग (Select Existing Family Mode)
+                  // ==============================================================================
+                  if (!_isNewFamily) ...[
+                    const FormLabel('कुटुंब निवडा', isRequired: true),
+                    DropdownButtonFormField<Family>(
+                      value: _selectedFamily != null
+                          ? familyState.families.firstWhere(
+                              (f) => f.id == _selectedFamily!.id,
+                              orElse: () => _selectedFamily!,
+                            )
+                          : null,
+                      decoration: InputDecoration(
+                        hintText: lang.tr('कुटुंब निवडा', 'Select family'),
+                        prefixIcon: const Icon(Icons.people),
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  _selectedFamily!.familyName,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                                ),
-                                Text(
-                                  '${_selectedFamily!.totalMembers} व्यक्ती',
-                                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryLight),
-                                ),
-                              ],
-                            ),
-                            const Divider(height: 14),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                _infoSub('एकूण ठरलेली वर्गणी', AppFormatters.formatCurrency(_selectedFamily!.totalVargani)),
-                                _infoSub('आधी जमा रक्कम', AppFormatters.formatCurrency(_selectedFamily!.paidAmount), color: AppColors.success),
-                                _infoSub('बाकी रक्कम', AppFormatters.formatCurrency(_selectedFamily!.pendingAmount), color: AppColors.error),
-                              ],
-                            ),
-                          ],
+                      items: familyState.families.map((f) {
+                        return DropdownMenuItem<Family>(
+                          value: f,
+                          child: Text('${f.familyName} (${f.familyHeadName})'),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        setState(() {
+                          _selectedFamily = val;
+                          if (val != null && val.pendingAmount > 0) {
+                            _amountController.text = val.pendingAmount.toInt().toString();
+                          }
+                        });
+                      },
+                      validator: (val) => (!_isNewFamily && val == null) ? 'कुटुंब निवडणे आवश्यक आहे' : null,
+                    ),
+                    const SizedBox(height: 6),
+
+                    // Quick switch to new family if not found
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                        onPressed: () {
+                          setState(() {
+                            _isNewFamily = true;
+                            _selectedFamily = null;
+                            _recalculateForNewFamily();
+                          });
+                        },
+                        icon: const Icon(Icons.add_circle_outline, size: 14),
+                        label: Text(
+                          lang.tr('कुटुंब यादीत नाही? नवीन जोडा', 'Not in list? Add new'),
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
+
+                    // Selected Family Summary Card
+                    if (_selectedFamily != null) ...[
+                      Card(
+                        color: Colors.orange.shade50,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: Colors.orange.shade200),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    _selectedFamily!.familyName,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                  ),
+                                  Text(
+                                    '${_selectedFamily!.totalMembers} व्यक्ती',
+                                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryLight),
+                                  ),
+                                ],
+                              ),
+                              const Divider(height: 14),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  _infoSub('एकूण ठरलेली वर्गणी', AppFormatters.formatCurrency(_selectedFamily!.totalVargani)),
+                                  _infoSub('आधी जमा रक्कम', AppFormatters.formatCurrency(_selectedFamily!.paidAmount), color: AppColors.success),
+                                  _infoSub('बाकी रक्कम', AppFormatters.formatCurrency(_selectedFamily!.pendingAmount), color: AppColors.error),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                   ],
 
-                  // Amount Field
+                  // ==============================================================================
+                  // 2B. नवीन कुटुंब थेट फॉर्ममध्ये भरण्याचा एकात्मिक भाग (Add New Family Integrated Form)
+                  // ==============================================================================
+                  if (_isNewFamily) ...[
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      margin: const EdgeInsets.only(bottom: 20),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryPurple.withOpacity(0.04),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.primaryPurple.withOpacity(0.2)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.home_work_rounded, color: AppColors.primaryPurple, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                lang.tr('नवीन कुटुंब तपशील', 'New Family Details'),
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.primaryPurple),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Head of Family Name
+                          FormLabel(lang.tr('कुटुंब प्रमुखाचे नाव', 'Family Head Name'), isRequired: true),
+                          TextFormField(
+                            controller: _headNameController,
+                            decoration: InputDecoration(
+                              hintText: lang.tr('उदा. रमेश तानाजी कदम', 'e.g. Ramesh Tanaji Kadam'),
+                              prefixIcon: const Icon(Icons.person),
+                            ),
+                            validator: (val) {
+                              if (_isNewFamily && (val == null || val.trim().isEmpty)) {
+                                return 'कुटुंब प्रमुखाचे नाव टाकणे आवश्यक आहे';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Mobile Number
+                          FormLabel(lang.tr('मोबाईल नंबर', 'Mobile Number')),
+                          TextFormField(
+                            controller: _mobileController,
+                            keyboardType: TextInputType.phone,
+                            maxLength: 10,
+                            decoration: InputDecoration(
+                              hintText: lang.tr('१० अंकी मोबाईल नंबर टाका', '10-digit mobile number'),
+                              prefixText: '+91 ',
+                              prefixIcon: const Icon(Icons.phone),
+                              counterText: '',
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // House Number & Village Row
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    FormLabel(lang.tr('घर नंबर', 'House No.')),
+                                    TextFormField(
+                                      controller: _houseNumberController,
+                                      decoration: InputDecoration(
+                                        hintText: lang.tr('घर नंबर...', 'House No...'),
+                                        prefixIcon: const Icon(Icons.home),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    FormLabel(lang.tr('गाव / वस्ती', 'Village / Area')),
+                                    TextFormField(
+                                      controller: _villageController,
+                                      decoration: InputDecoration(
+                                        hintText: lang.tr('गाव किंवा वस्ती...', 'Village/Area...'),
+                                        prefixIcon: const Icon(Icons.location_city),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Full Address
+                          FormLabel(lang.tr('संपूर्ण पत्ता / गल्ली', 'Full Address / Street')),
+                          TextFormField(
+                            controller: _addressController,
+                            decoration: InputDecoration(
+                              hintText: lang.tr('पत्ता किंवा गल्ली टाका', 'Address or street name'),
+                              prefixIcon: const Icon(Icons.location_on),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Member Count & Vargani Calculation Card
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.amber.shade200),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  lang.tr('वर्गणी आकारणी गणित', 'Vargani Calculation'),
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.amber.shade900),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          FormLabel(lang.tr('एकूण सदस्य संख्या', 'Total Members'), isRequired: true),
+                                          TextFormField(
+                                            controller: _membersCountController,
+                                            keyboardType: TextInputType.number,
+                                            decoration: const InputDecoration(
+                                              prefixIcon: Icon(Icons.group),
+                                            ),
+                                            onChanged: (_) => _recalculateForNewFamily(),
+                                            validator: (val) {
+                                              if (_isNewFamily && (val == null || val.trim().isEmpty)) {
+                                                return 'सदस्य संख्या टाका';
+                                              }
+                                              return null;
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'ठरलेली वर्गणी',
+                                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            AppFormatters.formatCurrency(newFamilyExpectedVargani),
+                                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.royalBlue),
+                                          ),
+                                          if (activeConfig != null)
+                                            Text(
+                                              'दर: ₹${activeConfig.perMemberAmount.toInt()}/व्यक्ती',
+                                              style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                CheckboxListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  visualDensity: VisualDensity.compact,
+                                  title: Text(
+                                    lang.tr('स्वतंत्र / सवलतीची वर्गणी रक्कम ठरवा', 'Set custom vargani amount'),
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                  value: _useCustomVargani,
+                                  onChanged: (val) {
+                                    setState(() {
+                                      _useCustomVargani = val ?? false;
+                                      _recalculateForNewFamily();
+                                    });
+                                  },
+                                ),
+                                if (_useCustomVargani) ...[
+                                  const SizedBox(height: 4),
+                                  TextFormField(
+                                    controller: _customVarganiController,
+                                    keyboardType: TextInputType.number,
+                                    decoration: InputDecoration(
+                                      prefixIcon: const Icon(Icons.currency_rupee),
+                                      hintText: lang.tr('एकूण ठरलेली सवलतीची वर्गणी टाका', 'Enter custom total vargani'),
+                                    ),
+                                    onChanged: (_) => _recalculateForNewFamily(),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  // ==============================================================================
+                  // 3. वर्गणी पावती भरण्याचा भाग (Vargani Amount & Receipt Fields)
+                  // ==============================================================================
                   const FormLabel('वर्गणी रक्कम (₹)', isRequired: true),
                   TextFormField(
                     controller: _amountController,
@@ -297,14 +758,17 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                   ),
                   const SizedBox(height: 28),
 
-                  // Submit Button
+                  // ==============================================================================
+                  // 4. सबमिट बटन: कुटुंब जोडून थेट पावती फाडणे व जतन करणे
+                  // ==============================================================================
                   ElevatedButton.icon(
-                    onPressed: collectionState.isLoading ? null : _handleSubmit,
+                    onPressed: (collectionState.isLoading || _isSubmitting) ? null : _handleSubmit,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: _paymentMode == 'upi' ? Colors.green.shade700 : AppColors.primary,
+                      backgroundColor: _paymentMode == 'upi' ? Colors.green.shade700 : AppColors.primaryPurple,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    icon: collectionState.isLoading
+                    icon: (collectionState.isLoading || _isSubmitting)
                         ? const SizedBox(
                             height: 20,
                             width: 20,
@@ -312,10 +776,12 @@ class _AddCollectionScreenState extends ConsumerState<AddCollectionScreen> {
                           )
                         : Icon(_paymentMode == 'upi' ? Icons.check_circle : Icons.receipt_long),
                     label: Text(
-                      _paymentMode == 'upi'
-                          ? lang.tr('✅ पेमेंट पूर्ण झाले - पावती तयार करा', '✅ Payment Complete - Generate Receipt')
-                          : lang.tr('पावती तयार करा व जतन करा', 'Generate & Save Receipt'),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      _isNewFamily
+                          ? lang.tr('कुटुंब नोंदवून पावती तयार करा', 'Save Family & Generate Receipt')
+                          : (_paymentMode == 'upi'
+                              ? lang.tr('✅ पेमेंट पूर्ण झाले - पावती तयार करा', '✅ Payment Complete - Generate Receipt')
+                              : lang.tr('पावती तयार करा व जतन करा', 'Generate & Save Receipt')),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
                     ),
                   ),
                   const SizedBox(height: 20),

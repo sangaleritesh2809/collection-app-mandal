@@ -366,14 +366,19 @@ class MandalNotifier extends StateNotifier<MandalState> {
 
     try {
       final userId = SupabaseService.currentUserId;
-      if (userId == null) throw Exception('User not logged in');
+      if (userId == null) throw Exception('वापरकर्ता लॉगिन नाही.');
+
+      final cleanCode = invitationCode.trim().toUpperCase();
+      if (cleanCode.isEmpty) {
+        state = state.copyWith(isLoading: false, error: 'कृपया आमंत्रण कोड टाका.');
+        return false;
+      }
 
       // 1. Find mandal by invitation code
       final mandalRes = await SupabaseService.client
           .from('mandals')
-          .select('id')
-          .eq('invitation_code', invitationCode.trim().toUpperCase())
-          .eq('is_active', true)
+          .select('id, name')
+          .eq('invitation_code', cleanCode)
           .maybeSingle();
 
       if (mandalRes == null) {
@@ -387,22 +392,54 @@ class MandalNotifier extends StateNotifier<MandalState> {
       final roleRes = await SupabaseService.client
           .from('roles')
           .select('id')
-          .eq('name', 'Collector')
+          .or('name.eq.Collector,name.eq.Member')
+          .order('name')
           .limit(1)
           .maybeSingle();
 
       final roleId = roleRes?['id'] as String?;
-      if (roleId == null) throw Exception('Default role not found');
+      if (roleId == null) throw Exception('डीफॉल्ट रोल आढळला नाही.');
 
-      // 3. Insert or activate membership
-      await SupabaseService.client.from('mandal_memberships').upsert({
-        'mandal_id': mandalId,
-        'user_id': userId,
-        'role_id': roleId,
-        'status': 'active',
-      }, onConflict: 'mandal_id, user_id');
+      // 3. Check if membership already exists
+      final existing = await SupabaseService.client
+          .from('mandal_memberships')
+          .select('id, status, role_id')
+          .eq('mandal_id', mandalId)
+          .eq('user_id', userId)
+          .maybeSingle();
 
+      if (existing != null) {
+        // If already exists, activate status without overwriting existing role
+        await SupabaseService.client
+            .from('mandal_memberships')
+            .update({'status': 'active'})
+            .eq('id', existing['id']);
+      } else {
+        await SupabaseService.client.from('mandal_memberships').insert({
+          'mandal_id': mandalId,
+          'user_id': userId,
+          'role_id': roleId,
+          'status': 'active',
+        });
+      }
+
+      // 4. Save newly joined mandal as last selected mandal
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('last_selected_mandal_id', mandalId);
+
+      // 5. Reload user mandals
       await loadUserMandals();
+
+      // 6. Explicitly select the newly joined mandal so user immediately enters it
+      final newlyJoined = state.userMandals.firstWhere(
+        (m) => m.id == mandalId,
+        orElse: () => state.userMandals.isNotEmpty ? state.userMandals.first : null,
+      );
+      if (newlyJoined != null) {
+        await selectMandal(newlyJoined);
+      }
+
+      state = state.copyWith(isLoading: false);
       return true;
     } catch (e) {
       debugPrint('Error joining mandal: $e');

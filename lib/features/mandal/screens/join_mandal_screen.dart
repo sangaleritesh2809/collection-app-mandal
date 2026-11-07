@@ -31,8 +31,12 @@ class _JoinMandalScreenState extends ConsumerState<JoinMandalScreen> {
 
     final success = await ref.read(mandalProvider.notifier).joinMandal(code);
     if (success && mounted) {
+      final mandalName = ref.read(mandalProvider).selectedMandal?.name ?? 'मंडळ';
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('मंडळामध्ये सहभाग यशस्वी झाला!')),
+        SnackBar(
+          backgroundColor: AppColors.success,
+          content: Text('$mandalName मध्ये सहभाग यशस्वी झाला!'),
+        ),
       );
       context.go('/dashboard');
     }

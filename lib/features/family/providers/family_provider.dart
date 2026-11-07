@@ -156,7 +156,7 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
     }
   }
 
-  Future<bool> addFamily({
+  Future<Family?> addFamilyAndReturn({
     required String familyName,
     required String familyHeadName,
     String? houseNumber,
@@ -166,7 +166,7 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
     int initialMembersCount = 1,
     double? customTotalVargani,
   }) async {
-    if (mandalId == null) return false;
+    if (mandalId == null) return null;
     state = state.copyWith(isLoading: true, error: null);
 
     final double expectedVargani;
@@ -180,7 +180,7 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
 
     if (!SupabaseService.isInitialized) {
       state = state.copyWith(isLoading: false, error: 'डेटाबेस कनेक्शन उपलब्ध नाही');
-      return false;
+      return null;
     }
 
     try {
@@ -262,12 +262,39 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
       }
 
       await loadFamilies();
-      return true;
+      final added = state.families.firstWhere(
+        (f) => f.id == familyId,
+        orElse: () => Family.fromJson(res),
+      );
+      return added;
     } catch (e) {
       debugPrint('Error adding family: $e');
       state = state.copyWith(isLoading: false, error: e.toString());
-      return false;
+      return null;
     }
+  }
+
+  Future<bool> addFamily({
+    required String familyName,
+    required String familyHeadName,
+    String? houseNumber,
+    String? address,
+    String? village,
+    String? mobileNumber,
+    int initialMembersCount = 1,
+    double? customTotalVargani,
+  }) async {
+    final result = await addFamilyAndReturn(
+      familyName: familyName,
+      familyHeadName: familyHeadName,
+      houseNumber: houseNumber,
+      address: address,
+      village: village,
+      mobileNumber: mobileNumber,
+      initialMembersCount: initialMembersCount,
+      customTotalVargani: customTotalVargani,
+    );
+    return result != null;
   }
 
   Future<bool> updateFamily({
