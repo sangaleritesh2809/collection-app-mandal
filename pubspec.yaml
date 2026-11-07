@@ -2,7 +2,7 @@ name: vargani_collection
 description: "Vargani Collection – Complete Mandal Management Application"
 publish_to: 'none'
 
-version: 1.0.13+14
+version: 1.0.14+15
 
 environment:
   sdk: ^3.13.5

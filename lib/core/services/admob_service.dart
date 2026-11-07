@@ -36,25 +36,32 @@ class AdMobService {
   }
 
   /// Request Google UMP Consent according to official standards.
+  /// Delayed safely so Android Activity is fully mounted and active.
   static void _requestUmpConsent() {
-    try {
-      final params = ConsentRequestParameters();
-      ConsentInformation.instance.requestConsentInfoUpdate(
-        params,
-        () async {
-          ConsentForm.loadAndShowConsentFormIfRequired((formError) {
-            if (formError != null) {
-              debugPrint('⚠️ Consent form notice: ${formError.message}');
+    Future.delayed(const Duration(seconds: 2), () {
+      try {
+        final params = ConsentRequestParameters();
+        ConsentInformation.instance.requestConsentInfoUpdate(
+          params,
+          () async {
+            try {
+              ConsentForm.loadAndShowConsentFormIfRequired((formError) {
+                if (formError != null) {
+                  debugPrint('⚠️ Consent form notice: ${formError.message}');
+                }
+              });
+            } catch (e) {
+              debugPrint('⚠️ Consent form load notice: $e');
             }
-          });
-        },
-        (FormError error) {
-          debugPrint('⚠️ Consent info notice: ${error.message}');
-        },
-      );
-    } catch (e) {
-      debugPrint('⚠️ UMP Consent notice: $e');
-    }
+          },
+          (FormError error) {
+            debugPrint('⚠️ Consent info notice: ${error.message}');
+          },
+        );
+      } catch (e) {
+        debugPrint('⚠️ UMP Consent notice: $e');
+      }
+    });
   }
 
   /// Fetch remote ad settings from Supabase `ad_settings` table.

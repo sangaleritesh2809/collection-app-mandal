@@ -14,18 +14,16 @@ void main() async {
   // Initialize Supabase backend
   await SupabaseService.initialize();
 
-  // Safely initialize AdMob (never blocks Supabase or crashes startup)
-  try {
-    await AdMobService.initialize();
-  } catch (e) {
-    debugPrint('AdMob initialization warning: $e');
-  }
-
   runApp(
     const ProviderScope(
       child: VarganiCollectionApp(),
     ),
   );
+
+  // Initialize AdMob safely in background after runApp so startup is instantaneous
+  AdMobService.initialize().catchError((e) {
+    debugPrint('AdMob initialization background notice: $e');
+  });
 }
 
 class VarganiCollectionApp extends ConsumerWidget {
