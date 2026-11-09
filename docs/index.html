@@ -3,19 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Policy & Legal Terms - Vargani Collection</title>
+    <title>Privacy Policy | Vargani Collection</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #3510B8;
-            --primary-dark: #1E066E;
-            --secondary: #087BF5;
-            --accent: #FF7900;
-            --bg: #F8F9FC;
-            --surface: #FFFFFF;
-            --text-main: #1F2937;
-            --text-muted: #4B5563;
-            --border: #E5E7EB;
-            --success: #10B981;
+            --primary: #0F172A;
+            --primary-accent: #1E40AF;
+            --text-main: #1E293B;
+            --text-secondary: #475569;
+            --text-muted: #64748B;
+            --bg-body: #FFFFFF;
+            --bg-alt: #F8FAFC;
+            --border: #E2E8F0;
+            --border-subtle: #F1F5F9;
+            --font-en: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-mr: 'Noto Sans Devanagari', 'Inter', sans-serif;
         }
 
         * {
@@ -24,424 +28,780 @@
             padding: 0;
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Nirmala UI";
-            line-height: 1.7;
+            font-family: var(--font-en);
             color: var(--text-main);
-            background-color: var(--bg);
-            padding: 24px 16px;
+            background-color: var(--bg-body);
+            line-height: 1.75;
+            font-size: 15px;
+            -webkit-font-smoothing: antialiased;
         }
 
-        .container {
-            max-width: 920px;
+        /* Top Corporate Header */
+        .site-header {
+            border-bottom: 1px solid var(--border);
+            background: #FFFFFF;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .header-container {
+            max-width: 900px;
             margin: 0 auto;
-            background: var(--surface);
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
-            overflow: hidden;
-            border: 1px solid var(--border);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
-        .header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        .brand-block {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .brand-badge {
+            width: 36px;
+            height: 36px;
+            background: #0F172A;
             color: #FFFFFF;
-            padding: 44px 32px 36px 32px;
-            text-align: center;
-        }
-
-        .header .badge {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.2);
-            color: #FFD166;
-            font-size: 13px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-weight: 700;
-            padding: 6px 16px;
-            border-radius: 50px;
-            margin-bottom: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .header h1 {
-            font-size: 32px;
-            font-weight: 800;
-            margin-bottom: 8px;
+            font-size: 17px;
             letter-spacing: -0.5px;
         }
 
-        .header p {
-            font-size: 16px;
-            color: #E0E7FF;
-            max-width: 600px;
-            margin: 0 auto;
+        .brand-info h1 {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -0.3px;
+            line-height: 1.2;
         }
 
-        .meta-strip {
-            background: #EDE9FE;
-            padding: 12px 24px;
-            display: flex;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 8px;
-            font-size: 13px;
-            color: var(--primary-dark);
+        .brand-info span {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
             font-weight: 600;
-            border-bottom: 1px solid #DDD6FE;
         }
 
-        .content {
-            padding: 36px 32px;
-        }
-
-        .lang-switch {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 28px;
-            padding: 6px;
-            background: #EEF2F6;
-            border-radius: 12px;
-            width: fit-content;
+        /* Language Switcher */
+        .lang-control {
+            display: inline-flex;
+            background: var(--bg-alt);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 3px;
         }
 
         .lang-btn {
             border: none;
             background: transparent;
-            padding: 8px 18px;
-            border-radius: 8px;
-            font-weight: 700;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
             cursor: pointer;
-            font-size: 14px;
-            color: var(--text-muted);
-            transition: all 0.2s;
+            transition: all 0.15s ease;
         }
 
         .lang-btn.active {
-            background: var(--surface);
+            background: #FFFFFF;
             color: var(--primary);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
         }
 
-        h2 {
-            font-size: 22px;
+        /* Main Document Wrapper */
+        .doc-wrapper {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px 80px 20px;
+        }
+
+        /* Document Header Strip */
+        .doc-header {
+            margin-bottom: 36px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .doc-tag {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: #1E40AF;
+            background: #EFF6FF;
+            padding: 4px 10px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            border: 1px solid #DBEAFE;
+        }
+
+        .doc-title {
+            font-size: 32px;
             font-weight: 800;
             color: var(--primary);
-            margin: 32px 0 14px 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border-bottom: 2px solid #F3F4F6;
-            padding-bottom: 8px;
+            letter-spacing: -0.8px;
+            line-height: 1.25;
+            margin-bottom: 14px;
         }
 
-        h3 {
-            font-size: 17px;
+        .doc-summary {
+            font-size: 16px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        /* Metadata Table */
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            background: var(--bg-alt);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 18px;
+            font-size: 13px;
+        }
+
+        .meta-item strong {
+            display: block;
+            color: var(--text-muted);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .meta-item span {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* Document Sections */
+        .policy-section {
+            margin-top: 36px;
+        }
+
+        .section-heading {
+            font-size: 20px;
             font-weight: 700;
-            color: var(--text-main);
-            margin: 20px 0 8px 0;
+            color: var(--primary);
+            letter-spacing: -0.4px;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
         }
 
-        p, ul, ol {
-            margin-bottom: 16px;
-            color: #374151;
+        .section-num {
             font-size: 15px;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        p {
+            margin-bottom: 14px;
+            color: var(--text-secondary);
         }
 
         ul, ol {
-            padding-left: 24px;
+            margin: 12px 0 18px 24px;
+            color: var(--text-secondary);
         }
 
         li {
             margin-bottom: 8px;
         }
 
-        .highlight-card {
-            background: #F9FAFB;
-            border-left: 4px solid var(--primary);
+        li strong {
+            color: var(--primary);
+        }
+
+        /* Corporate Legal Box */
+        .legal-notice {
+            background: #F8FAFC;
+            border-left: 3px solid var(--primary);
             padding: 16px 20px;
-            border-radius: 8px;
-            margin: 20px 0;
+            margin: 18px 0;
+            font-size: 14px;
+            border-radius: 0 6px 6px 0;
             border-top: 1px solid var(--border);
             border-right: 1px solid var(--border);
             border-bottom: 1px solid var(--border);
         }
 
-        .warning-card {
-            background: #FEF3C7;
-            border-left: 4px solid var(--accent);
-            padding: 16px 20px;
-            border-radius: 8px;
-            margin: 20px 0;
-            color: #92400E;
+        .legal-notice-title {
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 4px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .success-card {
-            background: #ECFDF5;
-            border-left: 4px solid var(--success);
-            padding: 16px 20px;
-            border-radius: 8px;
+        /* Clean Corporate Table */
+        .data-table-wrapper {
+            overflow-x: auto;
             margin: 20px 0;
-            color: #065F46;
+            border: 1px solid var(--border);
+            border-radius: 6px;
         }
 
-        table {
+        .data-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
-            font-size: 14px;
-        }
-
-        table th, table td {
-            border: 1px solid var(--border);
-            padding: 12px 14px;
+            font-size: 13.5px;
             text-align: left;
         }
 
-        table th {
-            background: #F3F4F6;
-            color: var(--text-main);
+        .data-table th {
+            background: #F8FAFC;
+            padding: 12px 16px;
             font-weight: 700;
+            color: var(--primary);
+            border-bottom: 1px solid var(--border);
+            font-size: 12.5px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
         }
 
-        a {
-            color: var(--secondary);
+        .data-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+            vertical-align: top;
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .data-table tr:nth-child(even) td {
+            background: #FAFAFA;
+        }
+
+        .category-name {
+            font-weight: 600;
+            color: var(--primary);
+            white-space: nowrap;
+        }
+
+        /* Contact & Officer Box */
+        .officer-card {
+            background: var(--bg-alt);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 16px;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .officer-card strong {
+            color: var(--primary);
+        }
+
+        .officer-card a {
+            color: var(--primary-accent);
             text-decoration: none;
             font-weight: 600;
         }
 
-        a:hover {
+        .officer-card a:hover {
             text-decoration: underline;
         }
 
-        .footer {
-            background: #F9FAFB;
-            padding: 24px 32px;
+        /* Footer */
+        .site-footer {
             border-top: 1px solid var(--border);
+            background: #FFFFFF;
+            padding: 28px 20px;
             text-align: center;
             font-size: 13px;
             color: var(--text-muted);
         }
 
+        .footer-nav {
+            margin-bottom: 10px;
+        }
+
+        .footer-nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin: 0 10px;
+            font-weight: 500;
+        }
+
+        .footer-nav a:hover {
+            color: var(--primary);
+        }
+
+        /* Marathi Font Override */
+        .lang-mr {
+            font-family: var(--font-mr);
+        }
+
+        /* Print Media Support */
+        @media print {
+            .site-header, .lang-control, .site-footer {
+                display: none;
+            }
+            .doc-wrapper {
+                padding: 0;
+            }
+            body {
+                font-size: 12pt;
+                color: #000;
+            }
+        }
+
         @media (max-width: 640px) {
-            .content { padding: 24px 18px; }
-            .header { padding: 32px 18px; }
-            .header h1 { font-size: 26px; }
+            .doc-title {
+                font-size: 24px;
+            }
+            .header-container {
+                padding: 12px 16px;
+            }
+            .doc-wrapper {
+                padding: 24px 16px 60px 16px;
+            }
+            .meta-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <!-- Header -->
-    <div class="header">
-        <div class="badge">Official Legal Document</div>
-        <h1>Privacy Policy & Data Protection</h1>
-        <p>Vargani Collection – Complete Mandal & Contribution Management Application</p>
-    </div>
-
-    <!-- Meta Information -->
-    <div class="meta-strip">
-        <span>Effective Date: November 09, 2026</span>
-        <span>Developer: Ritesh Sangale</span>
-        <span>Contact: sangaleritesh2809@gmail.com</span>
-    </div>
-
-    <!-- Main Content -->
-    <div class="content">
-
-        <!-- Language Tabs -->
-        <div class="lang-switch">
-            <button class="lang-btn active" onclick="switchLang('en')">English Policy</button>
-            <button class="lang-btn" onclick="switchLang('mr')">मराठी धोरण (Marathi)</button>
+    <!-- Corporate Navbar -->
+    <header class="site-header">
+        <div class="header-container">
+            <a href="#" class="brand-block">
+                <div class="brand-badge">V</div>
+                <div class="brand-info">
+                    <h1>Vargani Collection</h1>
+                    <span>Official Legal & Privacy Documentation</span>
+                </div>
+            </a>
+            <div class="lang-control">
+                <button class="lang-btn active" id="btn-en" onclick="selectLang('en')">English</button>
+                <button class="lang-btn" id="btn-mr" onclick="selectLang('mr')">मराठी</button>
+            </div>
         </div>
+    </header>
 
-        <!-- ============================================================== -->
-        <!-- ENGLISH SECTION -->
-        <!-- ============================================================== -->
-        <div id="section-en">
-            <div class="highlight-card">
-                <strong>Overview:</strong> This Privacy Policy explains how <strong>Vargani Collection</strong> ("we", "us", "our"), developed and operated by <strong>Ritesh Sangale</strong>, collects, processes, stores, and protects personal information when you use our mobile application and related services. We are strictly committed to safeguarding user data, adhering to the <strong>Google Play Developer Policy</strong>, the <strong>Information Technology Act, 2000 (India)</strong>, and international data privacy principles.
-            </div>
+    <!-- Document Wrapper -->
+    <main class="doc-wrapper">
 
-            <h2>1. Legal Nature & Financial Disclaimer</h2>
-            <div class="warning-card">
-                <strong>IMPORTANT REGULATORY CLARIFICATION:</strong><br>
-                <strong>Vargani Collection is strictly an organization and bookkeeping record-management utility.</strong><br>
-                • We are <strong>NOT</strong> a bank, Non-Banking Financial Company (NBFC), digital wallet, money transmitter, or payment gateway.<br>
-                • We do <strong>NOT</strong> process financial loans, peer-to-peer credit, or hold public money.<br>
-                • The application only provides an electronic ledger, automated PDF receipts, and balance-sheet calculation tools for festival mandals (e.g., Ganeshotsav, Navratri, Shiv Jayanti) and community welfare groups.<br>
-                • Any payments made between contributors and mandal organizers take place entirely offline (cash) or through third-party UPI applications (e.g., Google Pay, PhonePe, Paytm). We do not store bank passwords, ATM PINs, or CVVs.
-            </div>
+        <!-- =============================================================== -->
+        <!-- ENGLISH VERSION -->
+        <!-- =============================================================== -->
+        <article id="doc-en">
+            <header class="doc-header">
+                <span class="doc-tag">Corporate Compliance Document</span>
+                <h1 class="doc-title">Privacy Policy & Data Processing Terms</h1>
+                <p class="doc-summary">
+                    This Privacy Policy defines the principles, commitments, and standards under which <strong>Vargani Collection</strong> processes user records, protects community privacy, and upholds statutory compliance under the Google Play Developer Program Policies and the Information Technology Act (India).
+                </p>
 
-            <h2>2. Information We Collect</h2>
-            <p>To provide digital receipt generation, mandal ledger maintenance, and secure authentication, we collect the following categories of data:</p>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <strong>Document Reference</strong>
+                        <span>POL-VC-2026-V1</span>
+                    </div>
+                    <div class="meta-item">
+                        <strong>Application Name</strong>
+                        <span>Vargani Collection</span>
+                    </div>
+                    <div class="meta-item">
+                        <strong>Package Identifier</strong>
+                        <span>com.vargani.vargani_collection</span>
+                    </div>
+                    <div class="meta-item">
+                        <strong>Developer / Controller</strong>
+                        <span>Ritesh Sangale</span>
+                    </div>
+                    <div class="meta-item">
+                        <strong>Effective Date</strong>
+                        <span>November 09, 2026</span>
+                    </div>
+                    <div class="meta-item">
+                        <strong>Document Status</strong>
+                        <span>Active & Binding</span>
+                    </div>
+                </div>
+            </header>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>Category</th>
-                        <th>Data Elements Collected</th>
-                        <th>Primary Purpose</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><strong>Personal Information</strong></td>
-                        <td>Full Name, Mobile Number, Email Address, Optional Profile Photo</td>
-                        <td>Account creation, worker authentication, and personalized receipt issuance.</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Mandal & Family Data</strong></td>
-                        <td>Mandal Name, Address, Contributor/Family Head Name, House Number, Member Count</td>
-                        <td>Organizing contributor directories and calculating annual contributions.</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Transaction Records</strong></td>
-                        <td>Amount Paid, Payment Mode (Cash/UPI), Date/Time, UPI UTR / Transaction Reference Number</td>
-                        <td>Generating official PDF receipts, balance sheets, and preventing duplicate payment claims.</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Expense & Voucher Data</strong></td>
-                        <td>Expense Category (Mandap, Sound, Food, etc.), Payee Name, Amount, Expense Notes</td>
-                        <td>Transparent audit reports, treasury tracking, and balance sheet exports.</td>
-                    </tr>
-                </tbody>
-            </table>
+            <!-- 1. Introduction -->
+            <section class="policy-section">
+                <h2 class="section-heading"><span class="section-num">01.</span> Overview & Scope of Application</h2>
+                <p>
+                    <strong>Vargani Collection</strong> ("we", "us", "our") is a digital record-keeping and ledger utility designed for cultural committees, Ganesh mandals, Navratri samitis, and community groups. It is operated and published by <strong>Ritesh Sangale</strong>.
+                </p>
+                <p>
+                    By downloading, installing, or registering an account on Vargani Collection, users acknowledge having reviewed, understood, and agreed to this Privacy Policy. If an organizer or individual does not agree, they must cease usage of the application.
+                </p>
 
-            <h2>3. Device Permissions & Why We Need Them</h2>
-            <p>Our Android application requests only the minimal system permissions required to deliver essential features:</p>
-            <ul>
-                <li><strong>INTERNET & ACCESS_NETWORK_STATE:</strong> Required to securely connect to our encrypted backend database (Supabase) via HTTPS to save and synchronize your records in real time.</li>
-                <li><strong>READ & WRITE_EXTERNAL_STORAGE (Android 12 and below) / Storage Access:</strong> Required strictly to download and save generated PDF receipts and Excel balance sheets to your device storage.</li>
-                <li><strong>CAMERA / PHOTO GALLERY:</strong> Used solely if the user voluntarily chooses to upload a Mandal UPI QR code image or attach an expense bill voucher. We do not access background photos or private media.</li>
-            </ul>
+                <div class="legal-notice">
+                    <div class="legal-notice-title">Statutory Non-Financial & Non-Banking Clarification</div>
+                    Vargani Collection functions solely as an administrative record-keeping ledger. It is <strong>NOT</strong> a financial institution, non-banking financial company (NBFC), digital wallet, or payment aggregator. The platform does not directly initiate, clear, settle, or hold funds. All transactions occur peer-to-peer (via cash or external UPI tools such as BHIM, Google Pay, or PhonePe). Vargani Collection generates digital receipts and computes balance sheets.
+                </div>
+            </section>
 
-            <h2>4. Third-Party Service Providers</h2>
-            <p>We work with trusted industry-leading service providers who maintain rigorous security and privacy standards:</p>
-            <ul>
-                <li><strong>Supabase Inc. (Backend Database & Authentication):</strong> All user profiles, mandal ledger entries, and receipts are stored in Supabase managed databases using TLS 1.3 encryption in transit and AES-256 encryption at rest. <a href="https://supabase.com/privacy" target="_blank" rel="noopener">Supabase Privacy Policy</a>.</li>
-                <li><strong>Google Mobile Ads / AdMob:</strong> We display banner ads to support development and free hosting. Google AdMob may collect anonymized advertising identifiers (GAID) and crash analytics. <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a> and <a href="https://support.google.com/admob/answer/6128543" target="_blank" rel="noopener">AdMob Policies</a>.</li>
-                <li><strong>Brevo (Sendinblue - Transactional Email):</strong> Used exclusively to deliver verification emails and password reset codes. <a href="https://www.brevo.com/en/legal/privacypolicy/" target="_blank" rel="noopener">Brevo Privacy Policy</a>.</li>
-            </ul>
+            <!-- 2. Data Collection -->
+            <section class="policy-section">
+                <h2 class="section-heading"><span class="section-num">02.</span> Categories of Data Collected</h2>
+                <p>
+                    In accordance with the principle of data minimization, the application collects only information strictly necessary to provide bookkeeping, member directory, and receipt generation functionalities:
+                </p>
 
-            <h2>5. Data Security Standards</h2>
-            <div class="success-card">
-                <strong>Zero Commercial Sale of Data:</strong><br>
-                We do NOT sell, rent, monetize, or trade any personal data, contributor phone numbers, or mandal financial information to telemarketers, credit bureaus, or advertising aggregators. Your mandal records belong exclusively to your mandal.
-            </div>
-            <p>We implement industry-grade technical and organizational safeguards:</p>
-            <ul>
-                <li>End-to-end encrypted transport layer (HTTPS/TLS) for all communications.</li>
-                <li>Strict Row-Level Security (RLS) policies ensuring members of one mandal cannot view or alter records of another mandal.</li>
-                <li>Bcrypt hashing for user passwords (passwords are never saved in plain text).</li>
-            </ul>
+                <div class="data-table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Data Elements Collected</th>
+                                <th>Operational Purpose</th>
+                                <th>Retention Period</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="category-name">Account & Profile</td>
+                                <td>Full name, phone number, email address, mandal/organization name.</td>
+                                <td>User authentication, account management, multi-user role access.</td>
+                                <td>Until account deletion requested by user.</td>
+                            </tr>
+                            <tr>
+                                <td class="category-name">Contributor Information</td>
+                                <td>Family head name, contact number, residential locality/wing, address.</td>
+                                <td>Generating individualized contribution receipts and mandal directory.</td>
+                                <td>Retained per mandal record cycle or until deleted.</td>
+                            </tr>
+                            <tr>
+                                <td class="category-name">Contribution Records</td>
+                                <td>Amount contributed, date, payment method (Cash / UPI), optional reference ID.</td>
+                                <td>Auditing, transparent balance-sheet calculations, duplicate avoidance.</td>
+                                <td>Maintained for financial transparency of the respective mandal.</td>
+                            </tr>
+                            <tr>
+                                <td class="category-name">Operational Expenses</td>
+                                <td>Expense category, payment recipient, voucher photos, amount expended.</td>
+                                <td>Preparation of downloadable balance sheets and financial accountability.</td>
+                                <td>Maintained for financial transparency of the respective mandal.</td>
+                            </tr>
+                            <tr>
+                                <td class="category-name">Device & Diagnostics</td>
+                                <td>Operating system version, device model, anonymized crash traces.</td>
+                                <td>Ensuring app stability, bug resolution, and security defense.</td>
+                                <td>Up to 90 days in aggregated format.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
 
-            <h2>6. User Rights & Mandatory Account Deletion</h2>
-            <p>Under Google Play policies and data protection laws, all users possess fundamental privacy rights:</p>
-            <div class="highlight-card">
-                <h3>How to Request Account & Data Deletion:</h3>
-                <p>You have the absolute right to have your profile and personal data completely wiped from our servers.</p>
-                <p><strong>Option 1 (In-App):</strong> Navigate to <em>Settings -> Help & Support -> Report Issue / Request Account Deletion</em>.</p>
-                <p><strong>Option 2 (Direct Email):</strong> Send an email to <strong>sangaleritesh2809@gmail.com</strong> with the subject line <em>"Account Deletion Request - Vargani Collection"</em> along with your registered mobile number.</p>
-                <p>Upon verification, all personal identifiers, profile credentials, and associated direct accounts will be permanently expunged within <strong>7 business days</strong>.</p>
-            </div>
+            <!-- 3. Purpose -->
+            <section class="policy-section">
+                <h2 class="section-heading"><span class="section-num">03.</span> Purpose and Legal Basis of Processing</h2>
+                <p>We process collected data exclusively under the following legal bases:</p>
+                <ul>
+                    <li><strong>Contractual & Service Fulfillment:</strong> To authenticate organizers, record incoming contributions, generate branded digital PDF receipts, and calculate committee balance sheets.</li>
+                    <li><strong>Statutory & Legal Accountability:</strong> To prevent fraud, detect duplicate financial entries, and maintain auditable bookkeeping records for cultural trusts.</li>
+                    <li><strong>Legitimate Interests:</strong> To troubleshoot crashes, optimize user interface performance, and protect server infrastructure against denial-of-service abuse.</li>
+                </ul>
+                <p>
+                    <strong>Commercial Guarantee:</strong> We enforce an unyielding policy prohibiting the sale, rental, barter, or commercialization of member names, phone numbers, or contribution records to third-party marketing brokers, loan aggregators, or unauthorized external entities.
+                </p>
+            </section>
 
-            <h2>7. Children's Privacy (COPPA & GDPR-K Compliance)</h2>
-            <p>Our application is intended solely for adults, mandal executives, and committee volunteers aged <strong>18 and older</strong>. We do not knowingly solicit, collect, or process personal data from children under the age of 13. If we discover that a child under 13 has provided personal details, we will promptly delete such records.</p>
+            <!-- 4. Third Party Partners -->
+            <section class="policy-section">
+                <h2 class="section-heading"><span class="section-num">04.</span> Third-Party Service Providers and Infrastructure</h2>
+                <p>To deliver reliable cloud services, we partner with industry-standard, security-certified cloud vendors:</p>
+                <ul>
+                    <li>
+                        <strong>Supabase Inc. (Backend Cloud & Authentication):</strong> Data is stored in secure cloud-hosted PostgreSQL instances with Row Level Security (RLS) enforcement. All transmissions are encrypted in transit via TLS 1.3 and at rest via AES-256.
+                    </li>
+                    <li>
+                        <strong>Google Play Services & Google AdMob (Google LLC):</strong> Facilitates app distribution, essential runtime libraries, and displays non-intrusive mobile banner advertisements. AdMob operates under <a href="https://policies.google.com/privacy" target="_blank" style="color: var(--primary-accent); font-weight: 600;">Google's Privacy & Terms</a>.
+                    </li>
+                    <li>
+                        <strong>Brevo (Sendinblue):</strong> Utilized solely for transactional delivery of authentication verification emails and password reset links.
+                    </li>
+                </ul>
+            </section>
 
-            <h2>8. Changes to This Policy</h2>
-            <p>We may update our Privacy Policy periodically to reflect app upgrades or statutory changes. Any updates will be published on this page with an updated "Effective Date". Continued use of the app signifies acceptance of any revisions.</p>
+            <!-- 5. Operating System Permissions -->
+            <section class="policy-section">
+                <h2 class="section-heading"><span class="section-num">05.</span> Android System Permissions</h2>
+                <p>Vargani Collection requests only operational system permissions on Android devices:</p>
+                <ul>
+                    <li><strong>INTERNET & ACCESS_NETWORK_STATE:</strong> Required to synchronize ledger records securely with cloud databases.</li>
+                    <li><strong>STORAGE / MEDIA ACCESS:</strong> Required only when the user chooses to download PDF receipts or export Excel balance sheets to local device storage.</li>
+                    <li><strong>CAMERA / PHOTO LIBRARY:</strong> Accessed solely if an administrator elects to photograph a paper expense voucher or upload a custom mandal UPI QR image.</li>
+                </ul>
+            </section>
 
-            <h2>9. Developer & Grievance Contact</h2>
-            <p>For any privacy inquiries, grievance redressal, or data removal requests, please contact:</p>
-            <ul>
-                <li><strong>Developer / Data Officer:</strong> Ritesh Sangale</li>
-                <li><strong>Official Support Email:</strong> <a href="mailto:sangaleritesh2809@gmail.com">sangaleritesh2809@gmail.com</a></li>
-                <li><strong>Application:</strong> Vargani Collection</li>
-                <li><strong>Location:</strong> Pune, Maharashtra, India</li>
-            </ul>
+            <!-- 6. Account & Data Deletion -->
+            <section class="policy-section">
+                <h2 class="section-heading"><span class="section-num">06.</span> User Rights and Data Deletion Protocol</h2>
+                <p>
+                    Under Google Play User Data Policies and the Indian Digital Personal Data Protection (DPDP) framework, users maintain the unconditional right to access, rectify, or demand total deletion of their account and associated personal data.
+                </p>
+
+                <div class="legal-notice">
+                    <div class="legal-notice-title">Data Deletion Procedure & Service Level Agreement (SLA)</div>
+                    <p style="margin-bottom: 8px;"><strong>Method A (In-App Request):</strong> Navigate to <em>Settings &gt; Support &amp; Legal &gt; Request Account Deletion</em>.</p>
+                    <p style="margin-bottom: 8px;"><strong>Method B (Direct Email Verification):</strong> Dispatch an email to <strong>sangaleritesh2809@gmail.com</strong> with the subject <em>"Account Deletion Request - Vargani Collection"</em> containing your registered phone number.</p>
+                    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 0;">
+                        <strong>Timeline:</strong> Following identity verification, all personal credentials, authentication keys, and individual profile records will be permanently erased from active production databases within <strong>7 business days</strong>.
+                    </p>
+                </div>
+            </section>
+
+            <!-- 7. Children's Privacy -->
+            <section class="policy-section">
+                <h2 class="section-heading"><span class="section-num">07.</span> Protection of Children's Privacy</h2>
+                <p>
+                    Vargani Collection is strictly intended for use by adults, committee leaders, and designated mandal trustees aged <strong>18 years or older</strong>. The application does not intentionally solicit, collect, or process personal data from minors under 13 years of age. Should we discover inadvertent submission of information pertaining to a minor, such records are expunged expeditiously.
+                </p>
+            </section>
+
+            <!-- 8. Grievance & Regulatory Contact -->
+            <section class="policy-section">
+                <h2 class="section-heading"><span class="section-num">08.</span> Grievance Redressal Officer & Legal Contact</h2>
+                <p>
+                    In compliance with the Information Technology Act, 2000, and the Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021, the designated officer for privacy and regulatory compliance is:
+                </p>
+
+                <div class="officer-card">
+                    <strong>Grievance & Data Compliance Officer:</strong> Ritesh Sangale<br>
+                    <strong>Operating Entity:</strong> Vargani Collection Technologies<br>
+                    <strong>Electronic Mail:</strong> <a href="mailto:sangaleritesh2809@gmail.com">sangaleritesh2809@gmail.com</a><br>
+                    <strong>Registered Jurisdiction:</strong> Pune, Maharashtra, Republic of India<br>
+                    <strong>Response Timeline:</strong> Within 48 business hours of written submission
+                </div>
+            </section>
+        </article>
+
+        <!-- =============================================================== -->
+        <!-- MARATHI VERSION -->
+        <!-- =============================================================== -->
+        <article id="doc-mr" class="lang-mr" style="display: none;">
+            <header class="doc-header">
+                <span class="doc-tag">अधिकृत कायदेशीर दस्तऐवज</span>
+                <h1 class="doc-title">गोपनीयता धोरण आणि डेटा प्रक्रिया नियम</h1>
+                <p class="doc-summary">
+                    हे गोपनीयता धोरण (Privacy Policy) हे स्पष्ट करते की <strong>Vargani Collection (वर्गणी कलेक्शन)</strong> हे अ‍ॅप वापरकर्त्यांची माहिती कशा प्रकारे सुरक्षित ठेवते, गुगल प्ले स्टोअरचे नियम आणि भारतीय माहिती तंत्रज्ञान कायदा (IT Act) यांनुसार पारदर्शकता कशी राखते.
+                </p>
+
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <strong>दस्तऐवज संदर्भ</strong>
+                        <span>POL-VC-2026-V1</span>
+                    </div>
+                    <div class="meta-item">
+                        <strong>अ‍ॅपचे नाव</strong>
+                        <span>Vargani Collection</span>
+                    </div>
+                    <div class="meta-item">
+                        <strong>पॅकेज आयडी</strong>
+                        <span>com.vargani.vargani_collection</span>
+                    </div>
+                    <div class="meta-item">
+                        <strong>विकसक (डेव्हलपर)</strong>
+                        <span>रितेश सांगळे (Ritesh Sangale)</span>
+                    </div>
+                    <div class="meta-item">
+                        <strong>अंमलबजावणी तारीख</strong>
+                        <span>०९ नोव्हेंबर २०२६</span>
+                    </div>
+                    <div class="meta-item">
+                        <strong>स्थिती</strong>
+                        <span>सक्रिय व बंधनकारक</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 1. Introduction -->
+            <section class="policy-section">
+                <h2 class="section-heading"><span class="section-num">०१.</span> स्वरूप आणि कायदेशीर मर्यादा</h2>
+                <p>
+                    <strong>Vargani Collection</strong> हे अ‍ॅप सार्वजनिक गणेशोत्सव मंडळे, नवरात्र उत्सव, शिवजयंती व ग्रामविकास समित्यांच्या वर्गणीचा पारदर्शक हिशोब ठेवण्यासाठी <strong>रितेश सांगळे</strong> यांनी विकसित केले आहे.
+                </p>
+
+                <div class="legal-notice">
+                    <div class="legal-notice-title">महत्त्वाचा कायदेशीर खुलासा (Non-Banking Declaration)</div>
+                    वर्गणी कलेक्शन हे अ‍ॅप कोणतीही बँक, वित्तीय संस्था (NBFC), कर्ज देणारे अ‍ॅप किंवा पेमेंट वॉलेट <strong>नाही</strong>. या अ‍ॅपमध्ये थेट पैशांची देवाणघेवाण होत नाही. सर्व व्यवहार रोख (Cash) किंवा बाहेरील UPI (Google Pay, PhonePe, Paytm) द्वारे होतात. हे अ‍ॅप केवळ डिजिटल पावती बनवणे आणि ताळेबंद तयार करण्याचे साधन आहे.
+                </div>
+            </section>
+
+            <!-- 2. Data Collection -->
+            <section class="policy-section">
+                <h2 class="section-heading"><span class="section-num">०२.</span> आम्ही गोळा करत असलेली माहिती</h2>
+                <p>
+                    मंडळाचे कामकाज सुरळीत चालण्यासाठी केवळ आवश्यक असणारीच मर्यादित माहिती घेतली जाते:
+                </p>
+
+                <div class="data-table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>माहितीचा प्रकार</th>
+                                <th>तपशील</th>
+                                <th>वापराचा उद्देश</th>
+                                <th>साठवणूक कालावधी</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="category-name">वापरकर्ता खाते</td>
+                                <td>नाव, मोबाईल नंबर, ईमेल, मंडळाचे नाव.</td>
+                                <td>सुरक्षित लॉगिन व पावतीवर मंडळाचे नाव येण्यासाठी.</td>
+                                <td>वापरकर्त्याने खाते डिलीट करेपर्यंत.</td>
+                            </tr>
+                            <tr>
+                                <td class="category-name">वर्गणीदार नोंद</td>
+                                <td>कुटुंब प्रमुखाचे नाव, संपर्क, गल्ली/पत्ता.</td>
+                                <td>वैयक्तिक पावती व कुटुंबांची यादी ठेवण्यासाठी.</td>
+                                <td>मंडळाच्या नोंदीनुसार.</td>
+                            </tr>
+                            <tr>
+                                <td class="category-name">वर्गणी हिशोब</td>
+                                <td>रक्कम, तारीख, पेमेंट प्रकार (Cash/UPI), संदर्भ क्रमांक.</td>
+                                <td>ताळेबंद तयार करण्यासाठी व हिशोबातील पारदर्शकतेसाठी.</td>
+                                <td>मंडळाच्या आर्थिक ऑडिटसाठी.</td>
+                            </tr>
+                            <tr>
+                                <td class="category-name">खर्चाची नोंद</td>
+                                <td>मंडप, ध्वनी, प्रसाद खर्च, पावती फोटो.</td>
+                                <td>मंडळाच्या जमा-खर्चाचा ताळेबंद दाखवण्यासाठी.</td>
+                                <td>मंडळाच्या आर्थिक ऑडिटसाठी.</td>
+                            </tr>
+                            <tr>
+                                <td class="category-name">तांत्रिक माहिती</td>
+                                <td>अँड्रॉइड व्हर्जन, डिव्हाइस मॉडेल, क्रॅश रिपोर्ट.</td>
+                                <td>अ‍ॅप्लिकेशनमधील त्रुटी व बग्स दूर करण्यासाठी.</td>
+                                <td>जास्तीत जास्त ९० दिवस.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- 3. Zero Sale Policy -->
+            <section class="policy-section">
+                <h2 class="section-heading"><span class="section-num">०३.</span> डेटा विक्रीवर १००% बंदीची हमी</h2>
+                <p>
+                    आम्ही वापरकर्त्यांचा, कार्यकर्त्यांचा किंवा वर्गणीदारांचा कोणताही डेटा, मोबाईल नंबर किंवा आर्थिक माहिती कोणत्याही बाहेरील जाहिरातदार, टेलिमार्केटिंग कंपनी किंवा कर्ज देणाऱ्या एजन्सीला विकत नाही, भाड्याने देत नाही किंवा शेअर करत नाही.
+                </p>
+            </section>
+
+            <!-- 4. Third-Party Infrastructure -->
+            <section class="policy-section">
+                <h2 class="section-heading"><span class="section-num">०४.</span> थर्ड-पार्टी सर्व्हिसेस व क्लाउड सुरक्षा</h2>
+                <p>डेटा सुरक्षित ठेवण्यासाठी जागतिक दर्जाच्या क्लाउड सेवांचा वापर केला जातो:</p>
+                <ul>
+                    <li><strong>Supabase Inc.:</strong> सुरक्षित PostgreSQL क्लाउड डेटाबेस (TLS 1.3 व AES-256 एन्क्रिप्शन). एका मंडळाचा डेटा इतर मंडळाला कधीही दिसत नाही (Row Level Security).</li>
+                    <li><strong>Google Play Services व Google AdMob:</strong> अ‍ॅप वितरण आणि किमान बॅनर जाहिरातींसाठी Google च्या अधिकृत नियमांनुसार काम केले जाते.</li>
+                    <li><strong>Brevo:</strong> पासवर्ड विसरल्यास अधिकृत पडताळणी ईमेल पाठवण्यासाठी.</li>
+                </ul>
+            </section>
+
+            <!-- 5. App Permissions -->
+            <section class="policy-section">
+                <h2 class="section-heading"><span class="section-num">०५.</span> मोबाईलमधील परवानग्या (Permissions)</h2>
+                <ul>
+                    <li><strong>इंटरनेट (Internet):</strong> हिशोब सुरक्षित सर्व्हरवर सेव्ह करण्यासाठी.</li>
+                    <li><strong>स्टोरेज (Storage):</strong> तयार झालेली PDF पावती किंवा Excel रिपोर्ट फोनमध्ये डाऊनलोड करण्यासाठी.</li>
+                    <li><strong>कॅमेरा / गॅलरी:</strong> मंडळाचा QR कोड किंवा खर्चाचे बिल अपलोड करण्यासाठी.</li>
+                </ul>
+            </section>
+
+            <!-- 6. Account Deletion -->
+            <section class="policy-section">
+                <h2 class="section-heading"><span class="section-num">०६.</span> खाते व डेटा कायमस्वरूपी नष्ट करण्याचा अधिकार</h2>
+                <p>
+                    गुगलच्या नियमांनुसार वापरकर्त्याला त्याचे खाते व सर्व वैयक्तिक माहिती डेटाबेसमधून पूर्णपणे डिलीट करण्याचा कायदेशीर अधिकार आहे:
+                </p>
+
+                <div class="legal-notice">
+                    <div class="legal-notice-title">खाते डिलीट करण्याची अधिकृत प्रक्रिया</div>
+                    <p style="margin-bottom: 6px;"><strong>पद्धत १ (अ‍ॅपमधून):</strong> अ‍ॅप उघडा &gt; सेटिंग्ज &gt; मदत आणि कायदेशीर &gt; "खाते हटवा (Request Account Deletion)".</p>
+                    <p style="margin-bottom: 6px;"><strong>पद्धत २ (ईमेलद्वारे):</strong> <strong>sangaleritesh2809@gmail.com</strong> या ईमेलवर तुमचा नोंदणीकृत मोबाईल नंबर लिहून ईमेल पाठवा.</p>
+                    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 0;">
+                        <strong>कालावधी:</strong> विनंतीची पडताळणी झाल्यानंतर <strong>७ कार्यालयीन दिवसांच्या आत</strong> तुमचा सर्व डेटा आमच्या सर्व्हरवरून कायमचा नष्ट केला जातो.
+                    </p>
+                </div>
+            </section>
+
+            <!-- 7. Children's Privacy -->
+            <section class="policy-section">
+                <h2 class="section-heading"><span class="section-num">०७.</span> मुलांची गोपनीयता (Children's Privacy)</h2>
+                <p>
+                    हे अ‍ॅप केवळ १८ वर्षे व त्याहून अधिक वयाच्या प्रौढ कार्यकर्त्यांसाठी आहे. आम्ही १३ वर्षांखालील मुलांची कोणतीही वैयक्तिक माहिती संकलित करत नाही.
+                </p>
+            </section>
+
+            <!-- 8. Grievance Officer -->
+            <section class="policy-section">
+                <h2 class="section-heading"><span class="section-num">०८.</span> तक्रार निवारण अधिकारी व संपर्क माहिती</h2>
+                <p>
+                    भारतीय माहिती तंत्रज्ञान कायदा (IT Act, 2000) च्या नियमांनुसार अधिकृत संपर्क तपशील खालीलप्रमाणे आहेत:
+                </p>
+
+                <div class="officer-card">
+                    <strong>डेटा व तक्रार निवारण अधिकारी:</strong> रितेश सांगळे (Ritesh Sangale)<br>
+                    <strong>संस्था / अ‍ॅप:</strong> Vargani Collection<br>
+                    <strong>ईमेल:</strong> <a href="mailto:sangaleritesh2809@gmail.com">sangaleritesh2809@gmail.com</a><br>
+                    <strong>अधिकार क्षेत्र:</strong> पुणे, महाराष्ट्र, भारत<br>
+                    <strong>उत्तर देण्याचा कालावधी:</strong> २४ ते ४८ तासांच्या आत
+                </div>
+            </section>
+        </article>
+
+    </main>
+
+    <!-- Site Footer -->
+    <footer class="site-footer">
+        <div class="footer-nav">
+            <a href="#">Privacy Policy</a> &bull;
+            <a href="#">Terms of Use</a> &bull;
+            <a href="mailto:sangaleritesh2809@gmail.com">Support Desk</a>
         </div>
+        <p>&copy; 2026 Vargani Collection. Developed by Ritesh Sangale. All rights reserved.</p>
+        <p style="font-size: 11px; margin-top: 4px; color: #94A3B8;">Compliant with Google Play Developer Policies and Indian Information Technology (IT) Rules.</p>
+    </footer>
 
-        <!-- ============================================================== -->
-        <!-- MARATHI SECTION -->
-        <!-- ============================================================== -->
-        <div id="section-mr" style="display: none;">
-            <div class="highlight-card">
-                <strong>थोडक्यात सारांश:</strong> <strong>Vargani Collection (वर्गणी कलेक्शन)</strong> हे अ‍ॅप <strong>रितेश सांगळे (Ritesh Sangale)</strong> यांनी विकसित केलेले अधिकृत मंडळ व्यवस्थापन अ‍ॅप आहे. हे धोरण स्पष्ट करते की आम्ही वापरकर्त्यांचा कोणता डेटा गोळा करतो, तो कसा सुरक्षित ठेवतो आणि वापरकर्त्यांचे कायदेशीर हक्क कोणते आहेत.
-            </div>
-
-            <h2>१. कायदेशीर स्वरूप आणि आर्थिक स्पष्टीकरण</h2>
-            <div class="warning-card">
-                <strong>अतिशय महत्त्वाचा कायदेशीर खुलासा:</strong><br>
-                <strong>वर्गणी कलेक्शन हे केवळ एक डिजिटल नोंदवही (Bookkeeping) आणि पावती व्यवस्थापन साधन आहे.</strong><br>
-                • हे अ‍ॅप कोणतीही बँक, फायनान्स कंपनी, डिजिटल वॉलेट किंवा कर्ज देणारी संस्था <strong>नाही</strong>.<br>
-                • अ‍ॅपच्या माध्यमातून थेट पैशांची देवाणघेवाण केली जात नाही. सर्व व्यवहार रोख (Cash) किंवा वापरकर्त्यांच्या स्वतःच्या UPI अ‍ॅप्सद्वारे (Google Pay, PhonePe इत्यादी) बाहेर होतात.<br>
-                • आम्ही वापरकर्त्यांचे कोणतेही बँक पासवर्ड्स, एटीएम पिन किंवा क्रेडिट कार्ड तपशील विचारत नाही आणि स्टोअर करत नाही.
-            </div>
-
-            <h2>२. आम्ही कोणती माहिती संकलित करतो</h2>
-            <ul>
-                <li><strong>वैयक्तिक माहिती:</strong> नाव, मोबाईल नंबर, ईमेल आयडी (लॉगिन आणि अधिकृत पावती बनवण्यासाठी).</li>
-                <li><strong>कुटुंब व मंडळ माहिती:</strong> मंडळाचे नाव, कुटुंब प्रमुखाचे नाव, घर क्रमांक, पत्ता आणि कुटुंब सदस्य संख्या.</li>
-                <li><strong>वर्गणी व हिशोब तपशील:</strong> जमा झालेली रक्कम, पेमेंट मोड (रोख किंवा UPI), UTR/संदर्भ क्रमांक आणि जमा तारीख.</li>
-                <li><strong>खर्च व बिले:</strong> मंडप, ध्वनिक्षेपक, महाप्रसाद अशा खर्चांचे व्हाउचर आणि बिलांचे फोटो.</li>
-            </ul>
-
-            <h2>३. अ‍ॅपच्या परवानग्या (App Permissions)</h2>
-            <ul>
-                <li><strong>इंटरनेट (Internet):</strong> डेटाबेसवर सुरक्षितपणे हिशोब सेव्ह करण्यासाठी.</li>
-                <li><strong>स्टोरेज (Storage):</strong> तयार झालेली पावती PDF किंवा Excel ताळेबंद डाऊनलोड करून फोनमध्ये सेव्ह करण्यासाठी.</li>
-                <li><strong>कॅमेरा / गॅलरी:</strong> मंडळाचा पेमेंट QR कोड किंवा खर्चाचे बिल व्हाउचर जोडण्यासाठी.</li>
-            </ul>
-
-            <h2>४. डेटा सुरक्षा आणि गोपनीयता</h2>
-            <div class="success-card">
-                <strong>डेटा विक्रीवर १००% बंदी:</strong><br>
-                आम्ही वापरकर्त्यांचा कोणताही वैयक्तिक डेटा किंवा मोबाईल क्रमांक कोणत्याही जाहिरातदार किंवा तृतीय पक्षाला विकत नाही. तुमच्या मंडळाचा हिशोब फक्त तुमच्या मंडळासाठीच सुरक्षित राहतो.
-            </div>
-            <ul>
-                <li>सर्व डेटा <strong>Supabase</strong> च्या क्लाउड सर्व्हरवर अत्यंत सुरक्षित (HTTPS / TLS 1.3 Encryption) स्वरूपात साठवला जातो.</li>
-                <li>वापरकर्त्यांचे पासवर्ड्स एन्क्रिप्टेड (Bcrypt) असतात.</li>
-            </ul>
-
-            <h2>५. खाते आणि डेटा हटवण्याचा अधिकार (Account Deletion)</h2>
-            <div class="highlight-card">
-                <h3>खाते कायमचे डिलीट कसे करावे?</h3>
-                <p>गुगलच्या नियमांनुसार वापरकर्त्याला त्याचे खाते व सर्व डेटा नष्ट करण्याचा पूर्ण हक्क आहे:</p>
-                <p><strong>पद्धत १:</strong> अ‍ॅपमधील <em>सेटिंग्ज -> संपर्क / समस्या नोंदवा</em> मधून विनंती पाठवा.</p>
-                <p><strong>पद्धत २:</strong> थेट <strong>sangaleritesh2809@gmail.com</strong> या ईमेलवर तुमचा नोंदणीकृत मोबाईल नंबर पाठवून विनंती करा.</p>
-                <p>विनंती आल्यावर ७ दिवसांच्या आत तुमचा सर्व वैयक्तिक डेटा सर्व्हरवरून पूर्णपणे नष्ट करण्यात येईल.</p>
-            </div>
-
-            <h2>६. संपर्क व तक्रार निवारण</h2>
-            <p>या धोरणाबद्दल किंवा अ‍ॅपबद्दल कोणत्याही माहितीसाठी आपण थेट संपर्क साधू शकता:</p>
-            <ul>
-                <li><strong>डेव्हलपर:</strong> रितेश सांगळे (Ritesh Sangale)</li>
-                <li><strong>ईमेल:</strong> <a href="mailto:sangaleritesh2809@gmail.com">sangaleritesh2809@gmail.com</a></li>
-                <li><strong>अ‍ॅप:</strong> Vargani Collection</li>
-                <li><strong>स्थान:</strong> पुणे, महाराष्ट्र, भारत</li>
-            </ul>
-        </div>
-
-    </div>
-
-    <!-- Footer -->
-    <div class="footer">
-        &copy; 2026 Vargani Collection by Ritesh Sangale. All rights reserved.<br>
-        Compliant with Google Play Developer Policies and IT Act 2000.
-    </div>
-</div>
-
-<script>
-    function switchLang(lang) {
-        document.getElementById('section-en').style.display = (lang === 'en') ? 'block' : 'none';
-        document.getElementById('section-mr').style.display = (lang === 'mr') ? 'block' : 'none';
-
-        const btns = document.querySelectorAll('.lang-btn');
-        btns[0].classList.toggle('active', lang === 'en');
-        btns[1].classList.toggle('active', lang === 'mr');
-    }
-</script>
-
+    <script>
+        function selectLang(lang) {
+            const isEn = (lang === 'en');
+            document.getElementById('doc-en').style.display = isEn ? 'block' : 'none';
+            document.getElementById('doc-mr').style.display = isEn ? 'none' : 'block';
+            document.getElementById('btn-en').classList.toggle('active', isEn);
+            document.getElementById('btn-mr').classList.toggle('active', !isEn);
+        }
+    </script>
 </body>
 </html>
