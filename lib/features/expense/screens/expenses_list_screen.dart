@@ -154,7 +154,7 @@ class ExpensesListScreen extends ConsumerWidget {
 
               // Expenses List
               Expanded(
-                child: expenseState.isLoading
+                child: expenseState.isLoading && expenseState.expenses.isEmpty
                     ? const Center(child: CircularProgressIndicator(color: AppColors.primaryPurple))
                     : expenseState.filteredExpenses.isEmpty
                         ? Center(

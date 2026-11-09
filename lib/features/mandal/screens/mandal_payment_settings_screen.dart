@@ -1,6 +1,6 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -26,7 +26,6 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
   String? _existingQrUrl;
   bool _isUploading = false;
   final ImagePicker _picker = ImagePicker();
-  AppLanguage get lang => ref.watch(languageProvider);
 
   @override
   void initState() {
@@ -44,7 +43,7 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
     super.dispose();
   }
 
-  Future<void> _pickImage(ImageSource source) async {
+  Future<void> _pickImage(ImageSource source, AppLanguage lang) async {
     try {
       final XFile? file = await _picker.pickImage(
         source: source,
@@ -61,13 +60,13 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('फोटो निवडताना त्रुटी आली: $e')),
+          SnackBar(content: Text('${lang.tr("फोटो निवडताना त्रुटी आली", "Error picking image")}: $e')),
         );
       }
     }
   }
 
-  Future<void> _handleSave() async {
+  Future<void> _handleSave(AppLanguage lang) async {
     if (!_formKey.currentState!.validate()) return;
     final mandal = ref.read(mandalProvider).selectedMandal;
     if (mandal == null) return;
@@ -77,16 +76,25 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
     try {
       String? finalQrUrl = _existingQrUrl;
 
-      // 1. Upload new QR photo if selected
+      // 1. Upload new QR photo if selected, with seamless base64 fallback
       if (_selectedImageBytes != null) {
         final fileName = 'qr_${mandal.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        await SupabaseService.client.storage
-            .from('qr_codes')
-            .uploadBinary(fileName, _selectedImageBytes!);
+        try {
+          await SupabaseService.client.storage
+              .from('qr_codes')
+              .uploadBinary(
+                fileName,
+                _selectedImageBytes!,
+              );
 
-        finalQrUrl = SupabaseService.client.storage
-            .from('qr_codes')
-            .getPublicUrl(fileName);
+          finalQrUrl = SupabaseService.client.storage
+              .from('qr_codes')
+              .getPublicUrl(fileName);
+        } catch (storageError) {
+          debugPrint('Storage upload fallback to base64: $storageError');
+          final base64String = base64Encode(_selectedImageBytes!);
+          finalQrUrl = 'data:image/jpeg;base64,$base64String';
+        }
       }
 
       // 2. Update Mandal record in database
@@ -101,17 +109,17 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
         setState(() => _isUploading = false);
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               backgroundColor: AppColors.success,
-              content: Text('🚩 मंडळाचे UPI व QR कोड यशस्वीपणे जतन झाले!'),
+              content: Text(lang.tr('🚩 मंडळाचे UPI व QR कोड यशस्वीपणे जतन झाले!', '🚩 Mandal UPI & QR Code saved successfully!')),
             ),
           );
           Navigator.of(context).pop();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               backgroundColor: AppColors.error,
-              content: Text('माहिती जतन करताना त्रुटी आली.'),
+              content: Text(lang.tr('माहिती जतन करताना त्रुटी आली.', 'Error saving details.')),
             ),
           );
         }
@@ -120,21 +128,41 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
       if (mounted) {
         setState(() => _isUploading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(backgroundColor: AppColors.error, content: Text('त्रुटी: $e')),
+          SnackBar(backgroundColor: AppColors.error, content: Text('${lang.tr("त्रुटी", "Error")}: $e')),
         );
       }
     }
   }
 
+  Widget _buildExistingQrImage(String url, AppLanguage lang) {
+    if (url.startsWith('data:image') || !url.startsWith('http')) {
+      try {
+        final clean = url.contains(',') ? url.split(',').last : url;
+        final bytes = base64Decode(clean);
+        return Image.memory(bytes, width: 180, height: 180, fit: BoxFit.cover);
+      } catch (_) {}
+    }
+    return Image.network(
+      url,
+      width: 180,
+      height: 180,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => const Icon(Icons.qr_code, size: 80, color: Colors.grey),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final lang = ref.watch(languageProvider);
     final mandal = ref.watch(mandalProvider).selectedMandal;
     final upiId = _upiIdController.text.trim();
-    final payeeName = _payeeNameController.text.trim().isNotEmpty ? _payeeNameController.text.trim() : (mandal?.name ?? 'Mandal');
+    final payeeName = _payeeNameController.text.trim().isNotEmpty
+        ? _payeeNameController.text.trim()
+        : (mandal?.name ?? 'Mandal');
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('मंडळाचा UPI व QR कोड सेटिंग्स'),
+        title: Text(lang.tr('मंडळाचा UPI व QR कोड सेटिंग्स', 'Mandal UPI & QR Settings')),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -162,12 +190,15 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              mandal != null ? '🚩 ${mandal.name}' : 'सक्रिय मंडळ',
+                              mandal != null ? '🚩 ${mandal.name}' : lang.tr('सक्रिय मंडळ', 'Active Mandal'),
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.primaryDark),
                             ),
-                            const Text(
-                              'वर्गणी गोळा करताना ऑनलाइन पेमेंट स्वीकारण्यासाठी येथे QR कोड किंवा UPI ID सेट करा.',
-                              style: TextStyle(fontSize: 12, color: AppColors.textSecondaryLight),
+                            Text(
+                              lang.tr(
+                                'वर्गणी गोळा करताना ऑनलाइन पेमेंट स्वीकारण्यासाठी येथे QR कोड किंवा UPI ID सेट करा.',
+                                'Configure QR code or UPI ID here to accept online payments while collecting vargani.',
+                              ),
+                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryLight),
                             ),
                           ],
                         ),
@@ -189,17 +220,25 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
+                        Row(
                           children: [
-                            Icon(Icons.photo_camera_back, color: AppColors.primary, size: 22),
-                            SizedBox(width: 8),
-                            Text('१. मंडळाचा अधिकृत QR फोटो अपलोड करा', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            const Icon(Icons.photo_camera_back, color: AppColors.primary, size: 22),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                lang.tr('१. मंडळाचा अधिकृत QR फोटो अपलोड करा', '1. Upload Mandal Official QR Photo'),
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'बँकेचा किंवा PhonePe/GPay स्टँडीचा प्रत्यक्ष फोटो असल्यास तो येथे जोडा:',
-                          style: TextStyle(fontSize: 12, color: AppColors.textSecondaryLight),
+                        Text(
+                          lang.tr(
+                            'बँकेचा किंवा PhonePe/GPay स्टँडीचा प्रत्यक्ष फोटो असल्यास तो येथे जोडा:',
+                            'Attach photo of bank QR or PhonePe/GPay standee if available:',
+                          ),
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryLight),
                         ),
                         const SizedBox(height: 12),
 
@@ -223,7 +262,10 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
                                     _selectedImageBytes = null;
                                   }),
                                   icon: const Icon(Icons.delete_outline, color: Colors.red, size: 18),
-                                  label: const Text('फोटो बदला', style: TextStyle(color: Colors.red, fontSize: 12)),
+                                  label: Text(
+                                    lang.tr('फोटो बदला', 'Change Photo'),
+                                    style: const TextStyle(color: Colors.red, fontSize: 12),
+                                  ),
                                 ),
                               ],
                             ),
@@ -234,16 +276,13 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
                               children: [
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
-                                  child: Image.network(
-                                    _existingQrUrl!,
-                                    width: 180,
-                                    height: 180,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => const Icon(Icons.qr_code, size: 80, color: Colors.grey),
-                                  ),
+                                  child: _buildExistingQrImage(_existingQrUrl!, lang),
                                 ),
                                 const SizedBox(height: 6),
-                                const Text('सध्याचा सक्रिय QR फोटो', style: TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.bold)),
+                                Text(
+                                  lang.tr('सध्याचा सक्रिय QR फोटो', 'Current Active QR Photo'),
+                                  style: const TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.bold),
+                                ),
                               ],
                             ),
                           )
@@ -255,13 +294,16 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
                             ),
-                            child: const Center(
+                            child: Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.qr_code_scanner, size: 40, color: Colors.grey),
-                                  SizedBox(height: 4),
-                                  Text('कोणताही QR फोटो जोडलेला नाही', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                  const Icon(Icons.qr_code_scanner, size: 40, color: Colors.grey),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    lang.tr('कोणताही QR फोटो जोडलेला नाही', 'No QR photo attached'),
+                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                  ),
                                 ],
                               ),
                             ),
@@ -272,17 +314,17 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
                           children: [
                             Expanded(
                               child: OutlinedButton.icon(
-                                onPressed: () => _pickImage(ImageSource.gallery),
+                                onPressed: () => _pickImage(ImageSource.gallery, lang),
                                 icon: const Icon(Icons.photo_library, size: 18),
-                                label: const Text('गॅलरीतून निवडा'),
+                                label: Text(lang.tr('गॅलरीतून निवडा', 'From Gallery')),
                               ),
                             ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: OutlinedButton.icon(
-                                onPressed: () => _pickImage(ImageSource.camera),
+                                onPressed: () => _pickImage(ImageSource.camera, lang),
                                 icon: const Icon(Icons.camera_alt, size: 18),
-                                label: const Text('कॅमेऱ्याने काढा'),
+                                label: Text(lang.tr('कॅमेऱ्याने काढा', 'Take Photo')),
                               ),
                             ),
                           ],
@@ -305,33 +347,41 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
+                        Row(
                           children: [
-                            Icon(Icons.account_balance_wallet, color: AppColors.primary, size: 22),
-                            SizedBox(width: 8),
-                            Text('२. मंडळाचा UPI ID (पर्यायी किंवा थेट)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            const Icon(Icons.account_balance_wallet, color: AppColors.primary, size: 22),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                lang.tr('२. मंडळाचा UPI ID (पर्यायी किंवा थेट)', '2. Mandal UPI ID (Optional / Direct)'),
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'UPI ID टाकल्यास ॲप आपोआप प्रत्येक पावतीसाठी थेट रकमेचा QR कोड तयार करेल:',
-                          style: TextStyle(fontSize: 12, color: AppColors.textSecondaryLight),
+                        Text(
+                          lang.tr(
+                            'UPI ID टाकल्यास ॲप आपोआप प्रत्येक पावतीसाठी थेट रकमेचा QR कोड तयार करेल:',
+                            'Entering UPI ID allows the app to automatically generate amount-specific QR codes:',
+                          ),
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryLight),
                         ),
                         const SizedBox(height: 14),
 
-                        const FormLabel('मंडळाचा UPI ID'),
+                        FormLabel(lang.tr('मंडळाचा UPI ID', 'Mandal UPI ID')),
                         TextFormField(
                           controller: _upiIdController,
                           decoration: InputDecoration(
-                            hintText: lang.tr('UPI ID टाका', 'Enter UPI ID'),
+                            hintText: lang.tr('UPI ID टाका (उदा. mandal@upi)', 'Enter UPI ID (e.g. mandal@upi)'),
                             prefixIcon: const Icon(Icons.alternate_email),
                           ),
-                          validator: (val) => AppValidators.upiId(val, isRequired: false),
+                          validator: (val) => AppValidators.upiId(val, isRequired: false, isEnglish: lang.isEnglish),
                           onChanged: (_) => setState(() {}),
                         ),
                         const SizedBox(height: 14),
 
-                        const FormLabel('खातेधारकाचे / मंडळाचे नाव'),
+                        FormLabel(lang.tr('खातेधारकाचे / मंडळाचे नाव', 'Account Holder / Mandal Name')),
                         TextFormField(
                           controller: _payeeNameController,
                           decoration: InputDecoration(
@@ -340,7 +390,12 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
                           ),
                           validator: (val) {
                             if (_upiIdController.text.trim().isNotEmpty) {
-                              return AppValidators.name(val, 'खातेधारकाचे नाव', minLength: 3);
+                              return AppValidators.name(
+                                val,
+                                lang.tr('खातेधारकाचे नाव', 'Payee Name'),
+                                minLength: 3,
+                                isEnglish: lang.isEnglish,
+                              );
                             }
                             return null;
                           },
@@ -365,12 +420,15 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         children: [
-                          const Row(
+                          Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.verified, color: Colors.green, size: 18),
-                              SizedBox(width: 6),
-                              Text('थेट UPI QR कोड पूर्वावलोकन (Preview)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryDark)),
+                              const Icon(Icons.verified, color: Colors.green, size: 18),
+                              const SizedBox(width: 6),
+                              Text(
+                                lang.tr('थेट UPI QR कोड पूर्वावलोकन (Preview)', 'Live UPI QR Code Preview'),
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryDark),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 12),
@@ -392,9 +450,12 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
                             upiId,
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryDark),
                           ),
-                          const Text(
-                            'वर्गणी जमा करताना कुटुंबाजवळ जाऊन हा QR कोड स्कॅन करता येईल.',
-                            style: TextStyle(fontSize: 11, color: AppColors.textSecondaryLight),
+                          Text(
+                            lang.tr(
+                              'वर्गणी जमा करताना कुटुंबाजवळ जाऊन हा QR कोड स्कॅन करता येईल.',
+                              'This dynamic QR code can be scanned by members to pay vargani directly.',
+                            ),
+                            style: const TextStyle(fontSize: 11, color: AppColors.textSecondaryLight),
                             textAlign: TextAlign.center,
                           ),
                         ],
@@ -406,7 +467,7 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
 
                 // Save Button
                 ElevatedButton.icon(
-                  onPressed: _isUploading ? null : _handleSave,
+                  onPressed: _isUploading ? null : () => _handleSave(lang),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -415,7 +476,9 @@ class _MandalPaymentSettingsScreenState extends ConsumerState<MandalPaymentSetti
                       ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                       : const Icon(Icons.save),
                   label: Text(
-                    _isUploading ? 'जतन होत आहे...' : 'पेमेंट QR सेटिंग्स जतन करा',
+                    _isUploading
+                        ? lang.tr('जतन होत आहे...', 'Saving...')
+                        : lang.tr('पेमेंट QR सेटिंग्स जतन करा', 'Save Payment QR Settings'),
                     style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                   ),
                 ),

@@ -8,6 +8,7 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
+      splashFactory: InkRipple.splashFactory,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primaryPurple,
         primary: AppColors.primaryPurple,
@@ -51,6 +52,7 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryPurple,
           foregroundColor: Colors.white,
+          splashFactory: InkRipple.splashFactory,
           elevation: 2,
           shadowColor: AppColors.primaryPurple.withOpacity(0.3),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
@@ -67,6 +69,7 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.primaryPurple,
+          splashFactory: InkRipple.splashFactory,
           side: const BorderSide(color: AppColors.primaryPurple, width: 1.5),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
           shape: RoundedRectangleBorder(
@@ -127,6 +130,7 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
+      splashFactory: InkRipple.splashFactory,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primaryPurple,
         primary: const Color(0xFF6340FF),
@@ -168,6 +172,7 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF6340FF),
           foregroundColor: Colors.white,
+          splashFactory: InkRipple.splashFactory,
           elevation: 2,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),

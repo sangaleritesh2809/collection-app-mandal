@@ -160,7 +160,7 @@ class VarganiConfigNotifier extends StateNotifier<VarganiConfigState> {
         savedId = inserted['id'] as String;
       }
 
-      // 2. Synchronize all families belonging ONLY to this mandal
+      // 2. Synchronize ONLY families without payments (preserve all existing payment records!)
       await _syncFamiliesForMandal(
         savedConfigId: savedId,
         calculationType: calculationType,
@@ -188,16 +188,33 @@ class VarganiConfigNotifier extends StateNotifier<VarganiConfigState> {
     required double specialContribution,
   }) async {
     try {
+      // Select families and protect any existing payment records
       final families = await SupabaseService.client
           .from('families')
-          .select('id, total_members, paid_amount')
+          .select('id, total_members, paid_amount, is_custom_vargani')
           .eq('mandal_id', mandalId!);
 
       for (final f in (families as List)) {
         final fid = f['id'] as String;
         final members = (f['total_members'] as num?)?.toInt() ?? 1;
         final paid = (f['paid_amount'] as num?)?.toDouble() ?? 0.0;
+        final isCustom = f['is_custom_vargani'] == true;
 
+        // CRITICAL: If payments have already been made (paid > 0) or family has a custom amount,
+        // DO NOT change existing records! Lock them so neither DB triggers nor updates change them.
+        if (paid > 0 || isCustom) {
+          if (!isCustom && paid > 0) {
+            try {
+              // Ensure DB trigger trg_vargani_config_apply ignores this family
+              await SupabaseService.client.from('families').update({
+                'is_custom_vargani': true,
+              }).eq('id', fid);
+            } catch (_) {}
+          }
+          continue;
+        }
+
+        // Only update unpaid families (paid == 0.0 and not custom)
         double total = 0.0;
         if (calculationType == 'per_member') {
           total = (members * perMemberAmount) - discount + specialContribution;
@@ -205,7 +222,7 @@ class VarganiConfigNotifier extends StateNotifier<VarganiConfigState> {
           total = fixedAmount - discount + specialContribution;
         }
         if (total < 0) total = 0.0;
-        final pending = (total - paid).clamp(0.0, double.infinity);
+        final pending = total;
 
         await SupabaseService.client.from('families').update({
           'vargani_config_id': savedConfigId,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/form_label.dart';
 import '../models/support_ticket.dart';
@@ -36,15 +37,16 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = ref.watch(languageProvider);
     final supportState = ref.watch(supportProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('माझ्या तक्रारी व मदत (My Tickets)'),
+        title: Text(lang.tr('माझ्या तक्रारी व मदत (My Tickets)', 'My Tickets & Support')),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: 'रिफ्रेश करा',
+            tooltip: lang.tr('रिफ्रेश करा', 'Refresh'),
             onPressed: () => ref.read(supportProvider.notifier).loadUserTickets(),
           ),
         ],
@@ -52,7 +54,7 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/report-issue'),
         icon: const Icon(Icons.add_comment),
-        label: const Text('नवीन समस्या नोंदवा'),
+        label: Text(lang.tr('नवीन समस्या नोंदवा', 'Report New Issue')),
       ),
       body: SafeArea(
         child: RefreshIndicator(
@@ -75,21 +77,21 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
                               child: const Icon(Icons.support_agent, size: 54, color: AppColors.primary),
                             ),
                             const SizedBox(height: 16),
-                            const Text(
-                              'कोणतीही तक्रार किंवा समस्या नोंदवलेली नाही',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            Text(
+                              lang.tr('कोणतीही तक्रार किंवा समस्या नोंदवलेली नाही', 'No tickets or issues reported'),
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                             ),
                             const SizedBox(height: 6),
-                            const Text(
-                              'ॲप वापरताना काहीही अडचण आल्यास तुम्ही थेट सुपर ॲडमिनला मेसेज करू शकता.',
+                            Text(
+                              lang.tr('ॲप वापरताना काहीही अडचण आल्यास तुम्ही थेट सुपर ॲडमिनला मेसेज करू शकता.', 'If you face any issues while using the app, you can message Super Admin directly.'),
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: AppColors.textSecondaryLight, fontSize: 13),
+                              style: const TextStyle(color: AppColors.textSecondaryLight, fontSize: 13),
                             ),
                             const SizedBox(height: 20),
                             ElevatedButton.icon(
                               onPressed: () => context.push('/report-issue'),
                               icon: const Icon(Icons.add),
-                              label: const Text('समस्या नोंदवा'),
+                              label: Text(lang.tr('समस्या नोंदवा', 'Report Issue')),
                             ),
                           ],
                         ),
@@ -98,7 +100,7 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
                         itemCount: supportState.userTickets.length,
                         itemBuilder: (context, index) {
                           final ticket = supportState.userTickets[index];
-                          return _buildTicketCard(ticket);
+                          return _buildTicketCard(ticket, lang);
                         },
                       ),
           ),
@@ -107,7 +109,7 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
     );
   }
 
-  Widget _buildTicketCard(SupportTicket ticket) {
+  Widget _buildTicketCard(SupportTicket ticket, AppLanguage lang) {
     final statusColor = _getStatusColor(ticket.status);
 
     return Card(
@@ -133,7 +135,7 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
-                    ticket.statusMarathi,
+                    ticket.statusLabel(lang.isEnglish),
                     style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                 ),
@@ -152,7 +154,7 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'मंडळ: ${ticket.mandalName} ${ticket.mandalCode != null ? "(${ticket.mandalCode})" : ""}',
+                    '${lang.tr("मंडळ", "Mandal")}: ${ticket.mandalName} ${ticket.mandalCode != null ? "(${ticket.mandalCode})" : ""}',
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryDark),
                   ),
                 ),
@@ -169,7 +171,7 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
 
             // Category
             Text(
-              'प्रकार: ${ticket.categoryMarathi}',
+              '${lang.tr("प्रकार", "Category")}: ${ticket.categoryLabel(lang.isEnglish)}',
               style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryLight),
             ),
             const SizedBox(height: 8),
@@ -184,7 +186,7 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
             if (ticket.screenshotUrl != null && ticket.screenshotUrl!.isNotEmpty) ...[
               const SizedBox(height: 10),
               InkWell(
-                onTap: () => _showFullImageDialog(ticket.screenshotUrl!),
+                onTap: () => _showFullImageDialog(ticket.screenshotUrl!, lang),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.network(
@@ -192,7 +194,7 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
                     height: 120,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Text('📷 फोटो उपलब्ध नाही', style: TextStyle(fontSize: 12)),
+                    errorBuilder: (_, __, ___) => Text(lang.tr('📷 फोटो उपलब्ध नाही', '📷 Image not available'), style: const TextStyle(fontSize: 12)),
                   ),
                 ),
               ),
@@ -215,9 +217,9 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
                       children: [
                         const Icon(Icons.verified_user, color: Colors.green, size: 18),
                         const SizedBox(width: 6),
-                        const Text(
-                          'सुपर ॲडमिनचे उत्तर (Admin Reply):',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green),
+                        Text(
+                          lang.tr('सुपर ॲडमिनचे उत्तर (Admin Reply):', 'Super Admin Reply:'),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green),
                         ),
                       ],
                     ),
@@ -229,7 +231,7 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
                     if (ticket.adminReplyAt != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        'उत्तर दिनांक: ${AppFormatters.formatDate(ticket.adminReplyAt!)}',
+                        '${lang.tr("उत्तर दिनांक", "Reply date")}: ${AppFormatters.formatDate(ticket.adminReplyAt!)}',
                         style: const TextStyle(fontSize: 11, color: Colors.grey),
                       ),
                     ],
@@ -238,13 +240,15 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
               ),
             ] else ...[
               const SizedBox(height: 10),
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.hourglass_top, size: 14, color: Colors.orange),
-                  SizedBox(width: 4),
-                  Text(
-                    'सुपर ॲडमिनकडून तपासणी सुरू आहे. लवकरच उत्तर मिळेल.',
-                    style: TextStyle(fontSize: 11, color: Colors.orange),
+                  const Icon(Icons.hourglass_top, size: 14, color: Colors.orange),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      lang.tr('सुपर ॲडमिनकडून तपासणी सुरू आहे. लवकरच उत्तर मिळेल.', 'Under review by Super Admin. You will receive a reply soon.'),
+                      style: const TextStyle(fontSize: 11, color: Colors.orange),
+                    ),
                   ),
                 ],
               ),
@@ -255,7 +259,7 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
     );
   }
 
-  void _showFullImageDialog(String url) {
+  void _showFullImageDialog(String url, AppLanguage lang) {
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
@@ -263,11 +267,13 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Image.network(url, fit: BoxFit.contain),
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('बंद करा')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(lang.tr('बंद करा', 'Close')),
+            ),
           ],
         ),
       ),
     );
   }
 }
-

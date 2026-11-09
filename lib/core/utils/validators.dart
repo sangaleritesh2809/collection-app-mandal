@@ -1,37 +1,38 @@
-/// Comprehensive, user-friendly Marathi validators for all form inputs
+/// Comprehensive, user-friendly Marathi and English validators for all form inputs
 class AppValidators {
   /// Required text field validation
-  static String? required(String? value, String fieldName) {
+  static String? required(String? value, String fieldName, {bool isEnglish = false}) {
     if (value == null || value.trim().isEmpty) {
-      return '$fieldName आवश्यक आहे.';
+      return isEnglish ? '$fieldName is required.' : '$fieldName आवश्यक आहे.';
     }
     return null;
   }
 
   /// Name validation (e.g., family name, person name, mandal name)
-  static String? name(String? value, String fieldName, {int minLength = 2}) {
+  static String? name(String? value, String fieldName, {int minLength = 2, bool isEnglish = false}) {
     if (value == null || value.trim().isEmpty) {
-      return '$fieldName आवश्यक आहे.';
+      return isEnglish ? '$fieldName is required.' : '$fieldName आवश्यक आहे.';
     }
     final trimmed = value.trim();
     if (trimmed.length < minLength) {
-      return '$fieldName किमान $minLength अक्षरांचे असावे.';
+      return isEnglish
+          ? '$fieldName must be at least $minLength characters.'
+          : '$fieldName किमान $minLength अक्षरांचे असावे.';
     }
     return null;
   }
 
   /// Indian Mobile Number validation (10 digits starting with 6, 7, 8, 9)
-  static String? mobile(String? value, {bool isRequired = true}) {
+  static String? mobile(String? value, {bool isRequired = true, bool isEnglish = false}) {
     if (value == null || value.trim().isEmpty) {
-      if (isRequired) return 'मोबाईल नंबर आवश्यक आहे.';
+      if (isRequired) return isEnglish ? 'Mobile number is required.' : 'मोबाईल नंबर आवश्यक आहे.';
       return null;
     }
     final trimmed = value.trim();
-    // Remove leading +91 or 0 if present
     final cleanNumber = trimmed.replaceAll(RegExp(r'^\+91|^0'), '').trim();
     
     if (!RegExp(r'^[6-9]\d{9}$').hasMatch(cleanNumber)) {
-      return 'कृपया वैध १० अंकी मोबाईल नंबर टाका.';
+      return isEnglish ? 'Please enter a valid 10-digit mobile number.' : 'कृपया वैध १० अंकी मोबाईल नंबर टाका.';
     }
     return null;
   }
@@ -55,113 +56,112 @@ class AppValidators {
   }
 
   /// Member count validation (positive integer)
-  static String? memberCount(String? value) {
+  static String? memberCount(String? value, {bool isEnglish = false}) {
     if (value == null || value.trim().isEmpty) {
-      return 'सदस्य संख्या आवश्यक आहे.';
+      return isEnglish ? 'Member count is required.' : 'सदस्य संख्या आवश्यक आहे.';
     }
     final count = int.tryParse(value.trim());
     if (count == null || count < 1) {
-      return 'किमान १ सदस्य असणे आवश्यक आहे.';
+      return isEnglish ? 'At least 1 member is required.' : 'किमान १ सदस्य असणे आवश्यक आहे.';
     }
     if (count > 50) {
-      return 'कृपया वैध सदस्य संख्या टाका (कमाल ५०).';
+      return isEnglish ? 'Please enter a valid member count (max 50).' : 'कृपया वैध सदस्य संख्या टाका (कमाल ५०).';
     }
     return null;
   }
 
   /// UPI ID validation (e.g. name@bank, 9699342811@paytm)
-  static String? upiId(String? value, {bool isRequired = false}) {
+  static String? upiId(String? value, {bool isRequired = false, bool isEnglish = false}) {
     if (value == null || value.trim().isEmpty) {
-      if (isRequired) return 'UPI ID आवश्यक आहे.';
+      if (isRequired) return isEnglish ? 'UPI ID is required.' : 'UPI ID आवश्यक आहे.';
       return null;
     }
     final trimmed = value.trim();
     if (!trimmed.contains('@') || trimmed.startsWith('@') || trimmed.endsWith('@')) {
-      return 'कृपया वैध UPI ID टाका.';
+      return isEnglish ? 'Please enter a valid UPI ID.' : 'कृपया वैध UPI ID टाका.';
     }
     if (trimmed.length < 5) {
-      return 'UPI ID किमान ५ अक्षरांचा असावा.';
+      return isEnglish ? 'UPI ID must be at least 5 characters.' : 'UPI ID किमान ५ अक्षरांचा असावा.';
     }
     return null;
   }
 
   /// UTR / Transaction Ref validation for Online Payment
-  static String? utrNumber(String? value, {bool isRequired = true}) {
+  static String? utrNumber(String? value, {bool isRequired = true, bool isEnglish = false}) {
     if (value == null || value.trim().isEmpty) {
-      if (isRequired) return 'UTR / ट्रान्झॅक्शन नंबर आवश्यक आहे.';
+      if (isRequired) return isEnglish ? 'UTR / Transaction number is required.' : 'UTR / ट्रान्झॅक्शन नंबर आवश्यक आहे.';
       return null;
     }
     final trimmed = value.trim();
     if (trimmed.length < 6) {
-      return 'UTR नंबर किमान ६ अक्षरांचा/अंकांचा असावा.';
+      return isEnglish ? 'UTR number must be at least 6 characters.' : 'UTR नंबर किमान ६ अक्षरांचा/अंकांचा असावा.';
     }
     return null;
   }
 
   /// Email address validation
-  static String? email(String? value, {bool isRequired = false}) {
+  static String? email(String? value, {bool isRequired = false, bool isEnglish = false}) {
     if (value == null || value.trim().isEmpty) {
-      if (isRequired) return 'ईमेल पत्ता आवश्यक आहे.';
+      if (isRequired) return isEnglish ? 'Email address is required.' : 'ईमेल पत्ता आवश्यक आहे.';
       return null;
     }
     final trimmed = value.trim();
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     if (!emailRegex.hasMatch(trimmed)) {
-      return 'कृपया वैध ईमेल पत्ता टाका.';
+      return isEnglish ? 'Please enter a valid email address.' : 'कृपया वैध ईमेल पत्ता टाका.';
     }
     return null;
   }
 
   /// Password validation (8 to 16 characters, no spaces allowed)
-  static String? password(String? value, {int minLength = 8, int maxLength = 16}) {
+  static String? password(String? value, {int minLength = 8, int maxLength = 16, bool isEnglish = false}) {
     if (value == null || value.isEmpty) {
-      return 'पासवर्ड आवश्यक आहे.';
+      return isEnglish ? 'Password is required.' : 'पासवर्ड आवश्यक आहे.';
     }
     if (value.contains(' ')) {
-      return 'पासवर्डमध्ये स्पेस (Space) असू नये.';
+      return isEnglish ? 'Password must not contain spaces.' : 'पासवर्डमध्ये स्पेस (Space) असू नये.';
     }
     if (value.length < minLength) {
-      return 'पासवर्ड किमान $minLength अक्षरांचा असावा.';
+      return isEnglish ? 'Password must be at least $minLength characters.' : 'पासवर्ड किमान $minLength अक्षरांचा असावा.';
     }
     if (value.length > maxLength) {
-      return 'पासवर्ड जास्तीत जास्त $maxLength अक्षरांचा असावा.';
+      return isEnglish ? 'Password must be at most $maxLength characters.' : 'पासवर्ड जास्तीत जास्त $maxLength अक्षरांचा असावा.';
     }
     return null;
   }
 
   /// Confirm Password validation
-  static String? confirmPassword(String? value, String originalPassword) {
+  static String? confirmPassword(String? value, String originalPassword, {bool isEnglish = false}) {
     if (value == null || value.isEmpty) {
-      return 'पासवर्ड पुन्हा टाका.';
+      return isEnglish ? 'Please re-enter password.' : 'पासवर्ड पुन्हा टाका.';
     }
     if (value.contains(' ')) {
-      return 'पासवर्डमध्ये स्पेस (Space) असू नये.';
+      return isEnglish ? 'Password must not contain spaces.' : 'पासवर्डमध्ये स्पेस (Space) असू नये.';
     }
     if (value.length < 8) {
-      return 'पासवर्ड किमान ८ अक्षरांचा असावा.';
+      return isEnglish ? 'Password must be at least 8 characters.' : 'पासवर्ड किमान ८ अक्षरांचा असावा.';
     }
     if (value.length > 16) {
-      return 'पासवर्ड जास्तीत जास्त १६ अक्षरांचा असावा.';
+      return isEnglish ? 'Password must be at most 16 characters.' : 'पासवर्ड जास्तीत जास्त १६ अक्षरांचा असावा.';
     }
     if (value != originalPassword) {
-      return 'दोन्ही पासवर्ड जुळत नाहीत (Passwords do not match).';
+      return isEnglish ? 'Passwords do not match.' : 'दोन्ही पासवर्ड जुळत नाहीत (Passwords do not match).';
     }
     return null;
   }
 
   /// Mandal invitation code validation (exactly 8 alphanumeric characters)
-  static String? inviteCode(String? value) {
+  static String? inviteCode(String? value, {bool isEnglish = false}) {
     if (value == null || value.trim().isEmpty) {
-      return 'आमंत्रण कोड आवश्यक आहे.';
+      return isEnglish ? 'Invite code is required.' : 'आमंत्रण कोड आवश्यक आहे.';
     }
     final trimmed = value.trim().toUpperCase();
     if (trimmed.length != 8) {
-      return 'आमंत्रण कोड बरोबर ८ अक्षरांचा असावा.';
+      return isEnglish ? 'Invite code must be exactly 8 characters.' : 'आमंत्रण कोड बरोबर ८ अक्षरांचा असावा.';
     }
     if (!RegExp(r'^[A-Z0-9]{8}$').hasMatch(trimmed)) {
-      return 'आमंत्रण कोडमध्ये फक्त इंग्रजी अक्षरे आणि अंक असावेत.';
+      return isEnglish ? 'Invite code must contain only letters and numbers.' : 'आमंत्रण कोडमध्ये फक्त इंग्रजी अक्षरे आणि अंक असावेत.';
     }
     return null;
   }
 }
-

@@ -162,7 +162,7 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
         title: Text(lang.tr('वर्गणी दर व नियम', 'Vargani Settings')),
       ),
       body: SafeArea(
-        child: configState.isLoading
+        child: configState.isLoading && configState.activeConfig == null
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
                 child: ResponsiveContainer(
@@ -234,6 +234,32 @@ class _VarganiConfigScreenState extends ConsumerState<VarganiConfigScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
+
+                        // Info note on preserving records
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.blue.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.shield_outlined, color: Colors.blue, size: 22),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  lang.tr(
+                                    'टीप: आधी झालेल्या पेमेंटचे रेकॉर्ड सुरक्षित राहतात. येथे बदल केल्यास आधीच्या रेकॉर्डमध्ये बदल होत नाही.',
+                                    'Note: Previous payment records remain protected. Changes here will not alter already collected records.',
+                                  ),
+                                  style: TextStyle(color: Colors.blue.shade900, fontSize: 12, fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
 
                         // Section 1: Campaign Details Card
                         Card(

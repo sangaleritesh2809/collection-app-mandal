@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/form_label.dart';
+import '../../../core/widgets/responsive_container.dart';
 import '../providers/mandal_provider.dart';
 
 class CreateMandalScreen extends ConsumerStatefulWidget {
@@ -24,6 +25,7 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
   final _districtController = TextEditingController();
   final _contactController = TextEditingController();
   final _emailController = TextEditingController();
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -41,22 +43,30 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
   Future<void> _handleCreate() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final success = await ref.read(mandalProvider.notifier).createMandal(
-      name: _nameController.text.trim(),
-      description: _descController.text.trim(),
-      address: _addressController.text.trim(),
-      village: _villageController.text.trim(),
-      taluka: _talukaController.text.trim(),
-      district: _districtController.text.trim(),
-      contactNumber: _contactController.text.trim(),
-      email: _emailController.text.trim(),
-    );
-
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('मंडळ यशस्वीपणे नोंदणीकृत झाले!')),
+    final lang = ref.read(languageProvider);
+    setState(() => _isSubmitting = true);
+    try {
+      final success = await ref.read(mandalProvider.notifier).createMandal(
+        name: _nameController.text.trim(),
+        description: _descController.text.trim(),
+        address: _addressController.text.trim(),
+        village: _villageController.text.trim(),
+        taluka: _talukaController.text.trim(),
+        district: _districtController.text.trim(),
+        contactNumber: _contactController.text.trim(),
+        email: _emailController.text.trim(),
       );
-      context.go('/dashboard');
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(lang.tr('मंडळ यशस्वीपणे नोंदणीकृत झाले!', 'Mandal registered successfully!'))),
+        );
+        context.go('/dashboard');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
@@ -64,6 +74,7 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
   Widget build(BuildContext context) {
     final lang = ref.watch(languageProvider);
     final mandalState = ref.watch(mandalProvider);
+    final isBusy = _isSubmitting || mandalState.isLoading;
 
     return Scaffold(
       appBar: AppBar(
@@ -90,22 +101,26 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
                   const SizedBox(height: 20),
 
                   // Mandal Name
-                  const FormLabel('मंडळाचे नाव', isRequired: true),
+                  FormLabel(lang.tr('मंडळाचे नाव', 'Mandal Name'), isRequired: true),
                   TextFormField(
                     controller: _nameController,
                     decoration: InputDecoration(
                       hintText: lang.tr('मंडळाचे नाव टाका', 'Enter mandal name'),
                       prefixIcon: const Icon(Icons.temple_hindu),
                     ),
-                    validator: (val) => AppValidators.name(val, 'मंडळाचे नाव', minLength: 3),
+                    validator: (val) => AppValidators.name(
+                      val,
+                      lang.tr('मंडळाचे नाव', 'Mandal Name'),
+                      minLength: 3,
+                      isEnglish: lang.isEnglish,
+                    ),
                   ),
                   const SizedBox(height: 14),
 
                   // Description
-                  const FormLabel('वर्णन / ब्रीदवाक्य'),
+                  FormLabel(lang.tr('वर्णन / ब्रीदवाक्य', 'Description / Slogan')),
                   TextFormField(
                     controller: _descController,
-                    maxLines: 2,
                     decoration: InputDecoration(
                       hintText: lang.tr('मंडळाचे वर्णन किंवा ब्रीदवाक्य टाका', 'Enter description or slogan'),
                       prefixIcon: const Icon(Icons.info_outline),
@@ -113,21 +128,26 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
                   ),
                   const SizedBox(height: 14),
 
-                  // Address & Village
+                  // Address & Village (Row with top alignment so errors don't misalign fields)
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const FormLabel('गाव / शहर', isRequired: true),
+                            FormLabel(lang.tr('गाव / शहर', 'Village / City'), isRequired: true),
                             TextFormField(
                               controller: _villageController,
                               decoration: InputDecoration(
                                 hintText: lang.tr('गाव किंवा शहर टाका', 'Enter village or city'),
                                 prefixIcon: const Icon(Icons.location_city),
                               ),
-                              validator: (val) => AppValidators.required(val, 'गाव / शहर'),
+                              validator: (val) => AppValidators.required(
+                                val,
+                                lang.tr('गाव / शहर', 'Village / City'),
+                                isEnglish: lang.isEnglish,
+                              ),
                             ),
                           ],
                         ),
@@ -137,7 +157,7 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const FormLabel('तालुका'),
+                            FormLabel(lang.tr('तालुका', 'Taluka')),
                             TextFormField(
                               controller: _talukaController,
                               decoration: InputDecoration(
@@ -152,19 +172,23 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
                   const SizedBox(height: 14),
 
                   // District
-                  const FormLabel('जिल्हा', isRequired: true),
+                  FormLabel(lang.tr('जिल्हा', 'District'), isRequired: true),
                   TextFormField(
                     controller: _districtController,
                     decoration: InputDecoration(
                       hintText: lang.tr('जिल्हा टाका', 'Enter district'),
                       prefixIcon: const Icon(Icons.map),
                     ),
-                    validator: (val) => AppValidators.required(val, 'जिल्हा'),
+                    validator: (val) => AppValidators.required(
+                      val,
+                      lang.tr('जिल्हा', 'District'),
+                      isEnglish: lang.isEnglish,
+                    ),
                   ),
                   const SizedBox(height: 14),
 
                   // Address
-                  const FormLabel('पत्ता / मुख्य चौक'),
+                  FormLabel(lang.tr('पत्ता / मुख्य चौक', 'Address / Main Square')),
                   TextFormField(
                     controller: _addressController,
                     decoration: InputDecoration(
@@ -175,21 +199,24 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
                   const SizedBox(height: 14),
 
                   // Contact Number
-                  const FormLabel('मंडळ संपर्क मोबाईल नंबर'),
+                  FormLabel(lang.tr('मंडळ संपर्क मोबाईल नंबर', 'Mandal Contact Mobile Number')),
                   TextFormField(
                     controller: _contactController,
                     keyboardType: TextInputType.phone,
                     decoration: InputDecoration(
                       hintText: lang.tr('मोबाईल नंबर टाका', 'Enter mobile number'),
                       prefixIcon: const Icon(Icons.phone),
-                      prefixText: '+91 ',
                     ),
-                    validator: (val) => AppValidators.mobile(val, isRequired: false),
+                    validator: (val) => AppValidators.mobile(
+                      val,
+                      isRequired: false,
+                      isEnglish: lang.isEnglish,
+                    ),
                   ),
                   const SizedBox(height: 14),
 
                   // Email
-                  const FormLabel('मंडळ ईमेल पत्ता'),
+                  FormLabel(lang.tr('मंडळ ईमेल पत्ता', 'Mandal Email Address')),
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
@@ -197,14 +224,18 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
                       hintText: lang.tr('ईमेल पत्ता टाका', 'Enter email address'),
                       prefixIcon: const Icon(Icons.email_outlined),
                     ),
-                    validator: (val) => AppValidators.email(val, isRequired: false),
+                    validator: (val) => AppValidators.email(
+                      val,
+                      isRequired: false,
+                      isEnglish: lang.isEnglish,
+                    ),
                   ),
                   const SizedBox(height: 28),
 
                   // Submit
                   ElevatedButton(
-                    onPressed: mandalState.isLoading ? null : _handleCreate,
-                    child: mandalState.isLoading
+                    onPressed: isBusy ? null : _handleCreate,
+                    child: isBusy
                         ? const SizedBox(
                             height: 20,
                             width: 20,
@@ -221,4 +252,3 @@ class _CreateMandalScreenState extends ConsumerState<CreateMandalScreen> {
     );
   }
 }
-

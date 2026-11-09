@@ -195,6 +195,15 @@ class CollectionNotifier extends StateNotifier<CollectionState> {
         await SupabaseService.client.from('collections').insert(insertPayload);
       }
 
+      // Lock family record so future global vargani rate updates preserve this paid family's record!
+      try {
+        await SupabaseService.client.from('families').update({
+          'is_custom_vargani': true,
+        }).eq('id', familyId);
+      } catch (lockErr) {
+        debugPrint('Preserve paid family lock flag warning: $lockErr');
+      }
+
       // Insert audit log (non-critical so wrapped safely)
       try {
         await SupabaseService.client.from('audit_logs').insert({
@@ -224,4 +233,3 @@ class CollectionNotifier extends StateNotifier<CollectionState> {
     }
   }
 }
-

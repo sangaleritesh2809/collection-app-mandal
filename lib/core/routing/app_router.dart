@@ -53,9 +53,26 @@ final appRouter = GoRouter(
       path: '/register',
       builder: (context, state) => const RegisterScreen(),
     ),
+    // Bottom navigation tabs with NoTransitionPage for ultra-smooth instantaneous switching
     GoRoute(
       path: '/dashboard',
-      builder: (context, state) => const DashboardScreen(),
+      pageBuilder: (context, state) => const NoTransitionPage(child: DashboardScreen()),
+    ),
+    GoRoute(
+      path: '/collections',
+      pageBuilder: (context, state) => const NoTransitionPage(child: CollectionsListScreen()),
+    ),
+    GoRoute(
+      path: '/expenses',
+      pageBuilder: (context, state) => const NoTransitionPage(child: ExpensesListScreen()),
+    ),
+    GoRoute(
+      path: '/deposits',
+      pageBuilder: (context, state) => const NoTransitionPage(child: DepositRequestsScreen()),
+    ),
+    GoRoute(
+      path: '/settings',
+      pageBuilder: (context, state) => const NoTransitionPage(child: SettingsScreen()),
     ),
     GoRoute(
       path: '/mandal-selection',
@@ -93,10 +110,6 @@ final appRouter = GoRouter(
       },
     ),
     GoRoute(
-      path: '/collections',
-      builder: (context, state) => const CollectionsListScreen(),
-    ),
-    GoRoute(
       path: '/add-collection',
       builder: (context, state) {
         final family = state.extra as Family?;
@@ -111,16 +124,8 @@ final appRouter = GoRouter(
       },
     ),
     GoRoute(
-      path: '/deposits',
-      builder: (context, state) => const DepositRequestsScreen(),
-    ),
-    GoRoute(
       path: '/create-deposit',
       builder: (context, state) => const CreateDepositScreen(),
-    ),
-    GoRoute(
-      path: '/expenses',
-      builder: (context, state) => const ExpensesListScreen(),
     ),
     GoRoute(
       path: '/add-expense',
@@ -129,10 +134,6 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/reports',
       builder: (context, state) => const ReportsScreen(),
-    ),
-    GoRoute(
-      path: '/settings',
-      builder: (context, state) => const SettingsScreen(),
     ),
     GoRoute(
       path: '/vargani-config',

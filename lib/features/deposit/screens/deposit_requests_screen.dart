@@ -222,7 +222,7 @@ class _DepositRequestsScreenState extends ConsumerState<DepositRequestsScreen> w
         child: ResponsiveContainer(
           maxWidth: 760,
           padding: EdgeInsets.zero,
-          child: depositState.isLoading
+          child: depositState.isLoading && depositState.requests.isEmpty
               ? const Center(child: CircularProgressIndicator(color: AppColors.primaryPurple))
               : TabBarView(
                   controller: _tabController,

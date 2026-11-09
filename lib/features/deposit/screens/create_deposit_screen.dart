@@ -23,6 +23,7 @@ class _CreateDepositScreenState extends ConsumerState<CreateDepositScreen> {
   final _descController = TextEditingController();
   String? _selectedTreasurerId;
   String _paymentMode = 'cash';
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -89,21 +90,28 @@ class _CreateDepositScreenState extends ConsumerState<CreateDepositScreen> {
       return;
     }
 
-    final success = await ref.read(depositProvider.notifier).createDepositRequest(
-      designatedTreasurerId: _selectedTreasurerId!,
-      amount: amount,
-      paymentMode: _paymentMode,
-      description: _descController.text.trim().isNotEmpty ? _descController.text.trim() : null,
-    );
-
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: AppColors.success,
-          content: Text(lang.tr('ठेव विनंती यशस्वीपणे पाठवली गेली! खजिनदाराला सूचना पाठवली आहे.', 'Deposit request submitted successfully! Notification sent to treasurer.')),
-        ),
+    setState(() => _isSubmitting = true);
+    try {
+      final success = await ref.read(depositProvider.notifier).createDepositRequest(
+        designatedTreasurerId: _selectedTreasurerId!,
+        amount: amount,
+        paymentMode: _paymentMode,
+        description: _descController.text.trim().isNotEmpty ? _descController.text.trim() : null,
       );
-      context.pop();
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.success,
+            content: Text(lang.tr('ठेव विनंती यशस्वीपणे पाठवली गेली! खजिनदाराला सूचना पाठवली आहे.', 'Deposit request submitted successfully! Notification sent to treasurer.')),
+          ),
+        );
+        context.pop();
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
@@ -114,6 +122,7 @@ class _CreateDepositScreenState extends ConsumerState<CreateDepositScreen> {
     final collectionState = ref.watch(collectionProvider);
 
     final maxDepositAllowed = collectionState.undepositedAmount;
+    final isBusy = _isSubmitting || depositState.isLoading;
 
     return Scaffold(
       appBar: AppBar(
@@ -237,7 +246,12 @@ class _CreateDepositScreenState extends ConsumerState<CreateDepositScreen> {
                       hintText: lang.tr('रक्कम टाका', 'Enter amount'),
                     ),
                     validator: (val) {
-                      final basicCheck = AppValidators.amount(val, fieldName: lang.tr('जमा रक्कम', 'Deposit amount'), min: 1);
+                      final basicCheck = AppValidators.amount(
+                        val,
+                        fieldName: lang.tr('जमा रक्कम', 'Deposit amount'),
+                        min: 1,
+                        isEnglish: lang.isEnglish,
+                      );
                       if (basicCheck != null) return basicCheck;
                       final num = double.tryParse(val!.trim()) ?? 0.0;
                       if (maxDepositAllowed > 0 && num > maxDepositAllowed) {
@@ -251,7 +265,7 @@ class _CreateDepositScreenState extends ConsumerState<CreateDepositScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Payment Mode
+                  // Payment Mode (Removed 'other' as requested)
                   FormLabel(lang.tr('पेमेंट पद्धत', 'Payment Mode'), isRequired: true),
                   DropdownButtonFormField<String>(
                     isExpanded: true,
@@ -263,17 +277,15 @@ class _CreateDepositScreenState extends ConsumerState<CreateDepositScreen> {
                       DropdownMenuItem(value: 'cash', child: Text(lang.tr('रोख', 'Cash'))),
                       DropdownMenuItem(value: 'upi', child: Text(lang.tr('UPI ट्रान्सफर', 'UPI Transfer'))),
                       DropdownMenuItem(value: 'bank_transfer', child: Text(lang.tr('बँक खात्यात थेट जमा', 'Direct Bank Deposit'))),
-                      DropdownMenuItem(value: 'other', child: Text(lang.tr('इतर', 'Other'))),
                     ],
                     onChanged: (val) => setState(() => _paymentMode = val ?? 'cash'),
                   ),
                   const SizedBox(height: 16),
 
-                  // Description
+                  // Description (Single line so prefixIcon is vertically centered and compact)
                   FormLabel(lang.tr('तपशील / वर्णन', 'Description / Details')),
                   TextFormField(
                     controller: _descController,
-                    maxLines: 3,
                     decoration: InputDecoration(
                       hintText: lang.tr('तपशील किंवा वर्णन टाका', 'Enter details or description'),
                       prefixIcon: const Icon(Icons.description),
@@ -283,9 +295,9 @@ class _CreateDepositScreenState extends ConsumerState<CreateDepositScreen> {
 
                   // Submit
                   ElevatedButton(
-                    onPressed: (depositState.isLoading || maxDepositAllowed <= 0) ? null : () => _handleSubmit(maxDepositAllowed),
+                    onPressed: (isBusy || maxDepositAllowed <= 0) ? null : () => _handleSubmit(maxDepositAllowed),
                     style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-                    child: depositState.isLoading
+                    child: isBusy
                         ? const SizedBox(
                             height: 20,
                             width: 20,

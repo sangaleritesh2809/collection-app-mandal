@@ -26,7 +26,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: const Duration(milliseconds: 350),
     );
 
     _scaleAnimation = CurvedAnimation(
@@ -41,8 +41,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
 
     _controller.forward();
 
-    // Navigate smoothly after animation
-    _navTimer = Timer(const Duration(milliseconds: 2200), () async {
+    // Fast instant navigation (reduced from 2200ms to 400ms for immediate loading!)
+    _navTimer = Timer(const Duration(milliseconds: 400), () async {
       if (!mounted) return;
       await _handleNavigation();
     });

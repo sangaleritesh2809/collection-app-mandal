@@ -49,11 +49,11 @@ class SupportTicket {
     return SupportTicket(
       id: json['id'] as String,
       userId: json['user_id'] as String? ?? '',
-      userName: json['user_name'] as String? ?? 'अनामिक वापरकर्ता',
+      userName: json['user_name'] as String? ?? 'वापरकर्ता',
       userMobile: json['user_mobile'] as String?,
       userEmail: json['user_email'] as String?,
       mandalId: json['mandal_id'] as String?,
-      mandalName: json['mandal_name'] as String? ?? 'मंडळ स्पष्ट नाही',
+      mandalName: json['mandal_name'] as String? ?? 'मंडळ',
       mandalCode: json['mandal_code'] as String?,
       mandalLocation: json['mandal_location'] as String?,
       userRole: json['user_role'] as String?,
@@ -114,6 +114,22 @@ class SupportTicket {
     }
   }
 
+  String statusLabel(bool isEnglish) {
+    if (!isEnglish) return statusMarathi;
+    switch (status) {
+      case 'open':
+        return 'Open';
+      case 'in_progress':
+        return 'In Progress';
+      case 'resolved':
+        return 'Resolved';
+      case 'closed':
+        return 'Closed';
+      default:
+        return status;
+    }
+  }
+
   String get categoryMarathi {
     switch (category) {
       case 'payment_qr':
@@ -131,6 +147,24 @@ class SupportTicket {
     }
   }
 
+  String categoryLabel(bool isEnglish) {
+    if (!isEnglish) return categoryMarathi;
+    switch (category) {
+      case 'payment_qr':
+        return 'Payment / UPI / QR Issue';
+      case 'receipt_vargani':
+        return 'Receipt / Collection Issue';
+      case 'report_calc':
+        return 'Accounts / Reports Error';
+      case 'feature_request':
+        return 'New Feature Request';
+      case 'technical':
+        return 'Technical Issue / Bug';
+      default:
+        return 'Other Issue';
+    }
+  }
+
   String get priorityMarathi {
     switch (priority) {
       case 'urgent':
@@ -144,6 +178,19 @@ class SupportTicket {
     }
   }
 
+  String priorityLabel(bool isEnglish) {
+    if (!isEnglish) return priorityMarathi;
+    switch (priority) {
+      case 'urgent':
+        return 'Urgent';
+      case 'high':
+        return 'High';
+      case 'low':
+        return 'Low';
+      default:
+        return 'Normal';
+    }
+  }
+
   String get formattedDate => AppFormatters.formatDate(createdAt);
 }
-

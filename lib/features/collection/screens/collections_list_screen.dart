@@ -164,7 +164,7 @@ class _CollectionsListScreenState extends ConsumerState<CollectionsListScreen> {
 
               // Receipts List
               Expanded(
-                child: collectionState.isLoading
+                child: collectionState.isLoading && collectionState.collections.isEmpty
                     ? const Center(child: CircularProgressIndicator(color: AppColors.primaryPurple))
                     : filtered.isEmpty
                         ? Center(

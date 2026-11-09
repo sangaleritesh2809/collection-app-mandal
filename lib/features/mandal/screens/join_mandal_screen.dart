@@ -25,17 +25,17 @@ class _JoinMandalScreenState extends ConsumerState<JoinMandalScreen> {
     super.dispose();
   }
 
-  Future<void> _handleJoin() async {
+  Future<void> _handleJoin(AppLanguage lang) async {
     if (!_formKey.currentState!.validate()) return;
     final code = _codeController.text.trim();
 
     final success = await ref.read(mandalProvider.notifier).joinMandal(code);
     if (success && mounted) {
-      final mandalName = ref.read(mandalProvider).selectedMandal?.name ?? 'मंडळ';
+      final mandalName = ref.read(mandalProvider).selectedMandal?.name ?? (lang.isEnglish ? 'Mandal' : 'मंडळ');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: AppColors.success,
-          content: Text('$mandalName मध्ये सहभाग यशस्वी झाला!'),
+          content: Text(lang.tr('$mandalName मध्ये सहभाग यशस्वी झाला!', 'Successfully joined $mandalName!')),
         ),
       );
       context.go('/dashboard');
@@ -119,12 +119,12 @@ class _JoinMandalScreenState extends ConsumerState<JoinMandalScreen> {
                     counterText: '',
                     prefixIcon: const Icon(Icons.vpn_key),
                   ),
-                  validator: AppValidators.inviteCode,
+                  validator: (val) => AppValidators.inviteCode(val, isEnglish: lang.isEnglish),
                 ),
                 const SizedBox(height: 24),
 
                 ElevatedButton(
-                  onPressed: mandalState.isLoading ? null : _handleJoin,
+                  onPressed: mandalState.isLoading ? null : () => _handleJoin(lang),
                   child: mandalState.isLoading
                       ? const SizedBox(
                           height: 20,
@@ -142,4 +142,3 @@ class _JoinMandalScreenState extends ConsumerState<JoinMandalScreen> {
   );
 }
 }
-
