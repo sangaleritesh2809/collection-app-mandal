@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account & Data Deletion Request | Vargani Collection</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0F172A;
+            --primary-accent: #1E40AF;
+            --danger: #DC2626;
+            --danger-bg: #FEF2F2;
+            --danger-border: #FCA5A5;
+            --text-main: #1E293B;
+            --text-secondary: #475569;
+            --text-muted: #64748B;
+            --bg-body: #FFFFFF;
+            --bg-card: #F8FAFC;
+            --border: #E2E8F0;
+            --font-en: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-mr: 'Noto Sans Devanagari', 'Inter', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-en);
+            color: var(--text-main);
+            background-color: var(--bg-body);
+            line-height: 1.7;
+            font-size: 15px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .header {
+            border-bottom: 1px solid var(--border);
+            background: #FFFFFF;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .header-container {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .brand-icon {
+            width: 38px;
+            height: 38px;
+            background: var(--primary);
+            color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 18px;
+        }
+
+        .brand-text h1 {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--primary);
+            line-height: 1.2;
+        }
+
+        .brand-text span {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            font-weight: 600;
+        }
+
+        .lang-control {
+            display: inline-flex;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 3px;
+        }
+
+        .lang-btn {
+            border: none;
+            background: transparent;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .lang-btn.active {
+            background: #FFFFFF;
+            color: var(--primary);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .container {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 40px 20px 80px 20px;
+        }
+
+        .compliance-badge {
+            display: inline-block;
+            background: #EFF6FF;
+            color: #1E40AF;
+            border: 1px solid #DBEAFE;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        h2.title {
+            font-size: 30px;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: -0.6px;
+            line-height: 1.25;
+            margin-bottom: 14px;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+
+        .meta-strip {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 32px;
+            font-size: 13px;
+        }
+
+        .meta-strip strong {
+            display: block;
+            color: var(--text-muted);
+            font-size: 11px;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        .meta-strip span {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .section {
+            margin-top: 36px;
+        }
+
+        .section-title {
+            font-size: 19px;
+            font-weight: 700;
+            color: var(--primary);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+        }
+
+        /* Step Card */
+        .step-card {
+            background: #FFFFFF;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .step-number {
+            width: 28px;
+            height: 28px;
+            background: #0F172A;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .step-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        /* Deletion Form Box */
+        .form-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            margin: 20px 0;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 13.5px;
+            color: var(--primary);
+            margin-bottom: 6px;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            background: #FFFFFF;
+            color: var(--text-main);
+        }
+
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-accent);
+            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+        }
+
+        .btn-delete {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-delete:hover {
+            background: #B91C1C;
+        }
+
+        /* Table */
+        .table-wrap {
+            overflow-x: auto;
+            margin: 16px 0;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13.5px;
+        }
+
+        th {
+            background: var(--bg-card);
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 700;
+            color: var(--primary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+            vertical-align: top;
+        }
+
+        tr:last-child td { border-bottom: none; }
+
+        .badge-del {
+            display: inline-block;
+            background: var(--danger-bg);
+            color: var(--danger);
+            border: 1px solid var(--danger-border);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .badge-keep {
+            display: inline-block;
+            background: #FEF3C7;
+            color: #92400E;
+            border: 1px solid #FCD34D;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .footer {
+            border-top: 1px solid var(--border);
+            background: #FFFFFF;
+            padding: 28px 20px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .lang-mr { font-family: var(--font-mr); }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="header-container">
+            <a href="privacy_policy.html" class="brand-link">
+                <div class="brand-icon">V</div>
+                <div class="brand-text">
+                    <h1>Vargani Collection</h1>
+                    <span>Data Privacy & Security Desk</span>
+                </div>
+            </a>
+            <div class="lang-control">
+                <button class="lang-btn active" id="btn-en" onclick="setLang('en')">English</button>
+                <button class="lang-btn" id="btn-mr" onclick="setLang('mr')">मराठी</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- ============================================================== -->
+        <!-- ENGLISH CONTENT -->
+        <!-- ============================================================== -->
+        <article id="del-en">
+            <span class="compliance-badge">Google Play User Data Policy Compliant</span>
+            <h2 class="title">Request Account & Associated Data Deletion</h2>
+            <p class="subtitle">
+                This page explains how users of <strong>Vargani Collection</strong> can exercise their right to request permanent deletion of their account and all associated personal data, without needing to reinstall the application.
+            </p>
+
+            <div class="meta-strip">
+                <div>
+                    <strong>Application Name</strong>
+                    <span>Vargani Collection</span>
+                </div>
+                <div>
+                    <strong>Package Identifier</strong>
+                    <span>com.vargani.vargani_collection</span>
+                </div>
+                <div>
+                    <strong>Developer / Controller</strong>
+                    <span>Ritesh Sangale</span>
+                </div>
+                <div>
+                    <strong>Support Email</strong>
+                    <span>sangaleritesh2809@gmail.com</span>
+                </div>
+            </div>
+
+            <!-- Steps Section -->
+            <section class="section">
+                <h3 class="section-title">Steps to Request Account & Data Deletion</h3>
+                <p>You can submit an account and data erasure request using any of the following simple methods:</p>
+
+                <!-- Method 1: Interactive Web Form -->
+                <div class="step-card">
+                    <div class="step-header">
+                        <div class="step-number">1</div>
+                        <div class="step-title">Direct Web Request (Immediate Submission)</div>
+                    </div>
+                    <p style="margin-bottom: 14px;">Fill out the verified request form below. This will generate an authenticated deletion ticket directly to our compliance desk:</p>
+
+                    <div class="form-box">
+                        <div class="form-group">
+                            <label for="phone">Registered Mobile Number *</label>
+                            <input type="tel" id="phone" placeholder="e.g. 98XXXXXXXX" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="mandal">Mandal / Organization Name (Optional)</label>
+                            <input type="text" id="mandal" placeholder="e.g. Shiv Jayanti Mandal">
+                        </div>
+                        <div class="form-group">
+                            <label for="reason">Reason for Deletion (Optional)</label>
+                            <textarea id="reason" rows="3" placeholder="Brief reason why you wish to delete your account"></textarea>
+                        </div>
+                        <button class="btn-delete" onclick="submitDeletionRequest()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            Submit Account Deletion Request
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Method 2: Direct Email -->
+                <div class="step-card">
+                    <div class="step-header">
+                        <div class="step-number">2</div>
+                        <div class="step-title">Direct Email Request</div>
+                    </div>
+                    <p>
+                        Send an email from your registered email address or mentioning your registered mobile number to:<br>
+                        <strong>Email:</strong> <a href="mailto:sangaleritesh2809@gmail.com?subject=Account%20Deletion%20Request%20-%20Vargani%20Collection" style="color: var(--primary-accent); font-weight: 700;">sangaleritesh2809@gmail.com</a><br>
+                        <strong>Subject:</strong> <code>Account Deletion Request - Vargani Collection</code><br>
+                        <strong>Body details:</strong> State your registered 10-digit mobile number and confirm that you wish to permanently delete your account.
+                    </p>
+                </div>
+
+                <!-- Method 3: In-App -->
+                <div class="step-card">
+                    <div class="step-header">
+                        <div class="step-number">3</div>
+                        <div class="step-title">In-App Deletion (If app is installed)</div>
+                    </div>
+                    <p>
+                        Open the <strong>Vargani Collection</strong> app &gt; Tap <strong>Settings</strong> &gt; Select <strong>Support &amp; Legal</strong> &gt; Tap <strong>"Request Account Deletion"</strong> and confirm.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Data Specification Table -->
+            <section class="section">
+                <h3 class="section-title">Types of Data Deleted vs. Retained</h3>
+                <p>Google Play requires transparent declaration of what data is purged and what data is legally retained:</p>
+
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Data Category</th>
+                                <th>Exact Information</th>
+                                <th>Status After Request</th>
+                                <th>Timeline / Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Personal Credentials</strong></td>
+                                <td>Full name, phone number, email ID, encrypted password hash, auth tokens.</td>
+                                <td><span class="badge-del">PERMANENTLY DELETED</span></td>
+                                <td>Purged from production database within 7 business days.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Admin & Member Roles</strong></td>
+                                <td>Committee admin associations, permissions, member invitations.</td>
+                                <td><span class="badge-del">PERMANENTLY DELETED</span></td>
+                                <td>Revoked immediately upon processing.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Device Information</strong></td>
+                                <td>Push notification tokens, device identifiers, session cookies.</td>
+                                <td><span class="badge-del">PERMANENTLY DELETED</span></td>
+                                <td>Wiped immediately from backend.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Mandal Collective Tallies</strong></td>
+                                <td>Aggregated monetary totals on published mandal balance sheets (without personal donor names).</td>
+                                <td><span class="badge-keep">ANONYMIZED TALLY</span></td>
+                                <td>Mathematical balance-sheet totals are preserved strictly for community audit transparency, stripped of any individual personal identifiers.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- SLA & Retention Period -->
+            <section class="section">
+                <h3 class="section-title">Processing Timeline & Retention Policy</h3>
+                <ul style="margin-left: 20px; color: var(--text-secondary);">
+                    <li style="margin-bottom: 8px;"><strong>Verification:</strong> We verify the request within <strong>24 to 48 business hours</strong>.</li>
+                    <li style="margin-bottom: 8px;"><strong>Production Purge:</strong> All personal credentials, individual profiles, and login permissions are completely erased within <strong>7 business days</strong>.</li>
+                    <li style="margin-bottom: 8px;"><strong>Backup Retention:</strong> Encrypted system database snapshots overwrite automatically within a rolling <strong>30-day</strong> disaster recovery retention cycle, after which no copies remain.</li>
+                </ul>
+            </section>
+
+        </article>
+
+        <!-- ============================================================== -->
+        <!-- MARATHI CONTENT -->
+        <!-- ============================================================== -->
+        <article id="del-mr" class="lang-mr" style="display: none;">
+            <span class="compliance-badge">गुगल प्ले डेटा पॉलिसीनुसार अधिकृत</span>
+            <h2 class="title">खाते आणि वैयक्तिक माहिती कायमस्वरूपी हटवण्याची विनंती</h2>
+            <p class="subtitle">
+                <strong>Vargani Collection (वर्गणी कलेक्शन)</strong> वापरकर्त्यांना त्यांचे खाते आणि वैयक्तिक माहिती सर्व्हरवरून कायमची हटवण्याचा (Delete करण्याचा) पूर्ण अधिकार आहे.
+            </p>
+
+            <div class="meta-strip">
+                <div>
+                    <strong>अ‍ॅपचे नाव</strong>
+                    <span>Vargani Collection</span>
+                </div>
+                <div>
+                    <strong>डेव्हलपर</strong>
+                    <span>रितेश सांगळे (Ritesh Sangale)</span>
+                </div>
+                <div>
+                    <strong>पॅकेज आयडी</strong>
+                    <span>com.vargani.vargani_collection</span>
+                </div>
+                <div>
+                    <strong>सपोर्ट ईमेल</strong>
+                    <span>sangaleritesh2809@gmail.com</span>
+                </div>
+            </div>
+
+            <!-- Steps Section -->
+            <section class="section">
+                <h3 class="section-title">खाते डिलीट करण्याच्या सोप्या पायऱ्या</h3>
+
+                <div class="step-card">
+                    <div class="step-header">
+                        <div class="step-number">१</div>
+                        <div class="step-title">थेट फॉर्मद्वारे विनंती पाठवा</div>
+                    </div>
+                    <p style="margin-bottom: 12px;">खालील फॉर्ममध्ये तुमचा नोंदणीकृत मोबाईल नंबर टाका आणि सबमिट बटणावर क्लिक करा:</p>
+
+                    <div class="form-box">
+                        <div class="form-group">
+                            <label for="phone-mr">नोंदणीकृत मोबाईल नंबर *</label>
+                            <input type="tel" id="phone-mr" placeholder="उदा. 98XXXXXXXX" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="mandal-mr">मंडळाचे नाव (ऐच्छिक)</label>
+                            <input type="text" id="mandal-mr" placeholder="उदा. शिवजयंती मंडळ">
+                        </div>
+                        <button class="btn-delete" onclick="submitDeletionRequestMr()">
+                            खाते डिलीट करण्याची विनंती पाठवा
+                        </button>
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-header">
+                        <div class="step-number">२</div>
+                        <div class="step-title">थेट ईमेलने विनंती करा</div>
+                    </div>
+                    <p>
+                        तुमचा नोंदणीकृत मोबाईल नंबर लिहून थेट खालील पत्त्यावर ईमेल करा:<br>
+                        <strong>ईमेल:</strong> <a href="mailto:sangaleritesh2809@gmail.com?subject=Account%20Deletion%20Request%20-%20Vargani%20Collection" style="color: var(--primary-accent); font-weight: 700;">sangaleritesh2809@gmail.com</a>
+                    </p>
+                </div>
+            </section>
+
+            <!-- Table -->
+            <section class="section">
+                <h3 class="section-title">कोणता डेटा डिलीट केला जातो आणि कोणता डेटा ठेवला जातो?</h3>
+
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>माहितीचा प्रकार</th>
+                                <th>तपशील</th>
+                                <th>स्थिती</th>
+                                <th>कालावधी</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>वैयक्तिक प्रोफाईल</strong></td>
+                                <td>पूर्ण नाव, मोबाईल नंबर, पासवर्ड, ईमेल.</td>
+                                <td><span class="badge-del">कायमचे नष्ट (DELETED)</span></td>
+                                <td>७ दिवसांच्या आत पूर्ण नष्ट.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>कार्यकर्ता हक्क</strong></td>
+                                <td>मंडळाचे ॲडमिन अधिकार, परवानग्या.</td>
+                                <td><span class="badge-del">कायमचे रद्द</span></td>
+                                <td>तात्काळ रद्द.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>मंडळाचा ताळेबंद</strong></td>
+                                <td>मंडळाच्या जमा-खर्चाची एकूण बेरीज (नावांशिवाय).</td>
+                                <td><span class="badge-keep">पारदर्शक ऑडिट बेरीज</span></td>
+                                <td>मंडळाच्या हिशोबातील पारदर्शकतेसाठी एकूण बेरीज ठेवली जाते.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </article>
+
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2026 Vargani Collection. Developed by Ritesh Sangale. All rights reserved.</p>
+        <p style="font-size: 11px; margin-top: 4px; color: #94A3B8;">Compliance URL for Google Play Store Listing Account Deletion Requirements.</p>
+    </footer>
+
+    <script>
+        function setLang(lang) {
+            const isEn = (lang === 'en');
+            document.getElementById('del-en').style.display = isEn ? 'block' : 'none';
+            document.getElementById('del-mr').style.display = isEn ? 'none' : 'block';
+            document.getElementById('btn-en').classList.toggle('active', isEn);
+            document.getElementById('btn-mr').classList.toggle('active', !isEn);
+        }
+
+        function submitDeletionRequest() {
+            const phone = document.getElementById('phone').value.trim();
+            const mandal = document.getElementById('mandal').value.trim();
+            const reason = document.getElementById('reason').value.trim();
+
+            if (!phone) {
+                alert('Please enter your registered mobile number.');
+                return;
+            }
+
+            const subject = encodeURIComponent(`Account Deletion Request - Vargani Collection (${phone})`);
+            const body = encodeURIComponent(
+                `Hello Support Team,\n\nI request the permanent deletion of my Vargani Collection account and all associated personal data.\n\nRegistered Phone: ${phone}\nMandal: ${mandal || 'N/A'}\nReason: ${reason || 'N/A'}\n\nPlease confirm once my records are purged.\n\nThank you.`
+            );
+            window.location.href = `mailto:sangaleritesh2809@gmail.com?subject=${subject}&body=${body}`;
+        }
+
+        function submitDeletionRequestMr() {
+            const phone = document.getElementById('phone-mr').value.trim();
+            const mandal = document.getElementById('mandal-mr').value.trim();
+
+            if (!phone) {
+                alert('कृपया तुमचा नोंदणीकृत मोबाईल नंबर प्रविष्ट करा.');
+                return;
+            }
+
+            const subject = encodeURIComponent(`Account Deletion Request - Vargani Collection (${phone})`);
+            const body = encodeURIComponent(
+                `नमस्कार,\n\nमी Vargani Collection अ‍ॅपमधील माझे खाते आणि सर्व वैयक्तिक माहिती कायमस्वरूपी डिलीट करण्याची विनंती करत आहे.\n\nमोबाईल नंबर: ${phone}\nमंडळ: ${mandal || 'N/A'}\n\nकृपया माहिती नष्ट झाल्यावर कळवावे.\n\nधन्यवाद.`
+            );
+            window.location.href = `mailto:sangaleritesh2809@gmail.com?subject=${subject}&body=${body}`;
+        }
+    </script>
+</body>
+</html>
