@@ -1,4 +1,4 @@
-package com.vargani.vargani_collection
+package vargani.app
 
 import android.content.Intent
 import android.net.Uri
@@ -9,7 +9,7 @@ import io.flutter.plugin.common.MethodChannel
 import java.io.File
 
 class MainActivity : FlutterActivity() {
-    private val CHANNEL = "com.vargani.vargani_collection/whatsapp_share"
+    private val CHANNEL = "vargani.app/whatsapp_share"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -90,3 +90,4 @@ class MainActivity : FlutterActivity() {
         }
     }
 }
+
